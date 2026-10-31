@@ -12,3 +12,7 @@ Render: Dockerfile `apps/api/Dockerfile`, build context `apps/api`, command `nod
 Gói Free có thời gian ngủ khi không truy cập; PostgreSQL Free hết hạn sau 30 ngày. Giữ bản sao lưu riêng trước ngày hết hạn. Không dùng tài khoản/mật khẩu trên laptop để đăng nhập database cloud mới.
 
 APK phát hành được ký riêng; khóa ký không nằm trong repository. iOS cần build và phân phối Apple riêng.
+
+## Tải và thử từ xa
+
+Xem [hướng dẫn Android](REMOTE_ANDROID.md). API thử: https://agristock-trunghieu-test-1704.onrender.com. Tài khoản do chủ cửa hàng cấp qua kênh riêng; không có mật khẩu trong repository.
