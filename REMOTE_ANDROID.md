@@ -1,6 +1,6 @@
-# Thử AgriStock Android từ xa — bản 4
+# Thử AgriStock Android từ xa — bản 5
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-remote-test-v4/AgriStock-internal-signed-4.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 4. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-compact-form-v5/AgriStock-internal-signed-5.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 5. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
 
 ## Cài và đăng nhập
 
@@ -19,3 +19,6 @@ Render Free có thể ngủ sau 15 phút không truy cập. Lần đầu mở c�
 API và PostgreSQL đều chọn gói Free, không tự nâng cấp gói trả phí. Database thử hiện hết hạn ngày **30/11/2026**. Đây là môi trường thử; sao lưu/chuyển dữ liệu trước ngày hết hạn nếu muốn giữ. Giới hạn: https://render.com/docs/free
 
 Đã kiểm tra nghiệp vụ trực tiếp qua HTTPS và xác minh APK. Chưa nghiệm thu cài/mở, camera và in trên điện thoại thật. iPhone cần bản build và phân phối Apple riêng; APK này dành cho Android.
+
+
+Bản 5 gom màn hình thêm/sửa hàng hóa theo nhóm, giữ đủ 15 trường, nút quét mã và quyền cấu hình số chấm. Cài cập nhật lên bản AgriStock trước bằng cùng khóa ký. Giữ tài khoản và địa chỉ cloud hiện tại.
