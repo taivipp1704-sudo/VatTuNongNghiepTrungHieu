@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "AgriStock",
+    "slug": "agristock-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "agristock",
+    "userInterfaceStyle": "light",
+    "ios": { "bundleIdentifier": "vn.agristock.internal", "supportsTablet": true },
+    "android": {
+      "package": "vn.agristock.internal",
+      "permissions": ["CAMERA", "POST_NOTIFICATIONS"],
+      "adaptiveIcon": {
+        "backgroundColor": "#176B46",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7F9F8",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 76
+        }
+      ],
+      ["expo-camera", { "cameraPermission": "Cho phép AgriStock quét mã sản phẩm.", "recordAudioAndroid": false }],
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-sharing",
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

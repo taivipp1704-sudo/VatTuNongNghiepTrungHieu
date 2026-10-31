@@ -1,0 +1,24 @@
+{
+  "cli": { "appVersionSource": "remote" },
+  "build": {
+    "development": { "developmentClient": true, "distribution": "internal" },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "AGRISTOCK_ALLOW_HTTP": "1" }
+    },
+    "internal-release": {
+      "distribution": "internal",
+      "environment": "production",
+      "autoIncrement": true,
+      "android": { "buildType": "apk" },
+      "env": { "AGRISTOCK_RELEASE": "1" }
+    },
+    "production": {
+      "environment": "production",
+      "android": { "buildType": "app-bundle" },
+      "autoIncrement": true,
+      "env": { "AGRISTOCK_RELEASE": "1" }
+    }
+  }
+}

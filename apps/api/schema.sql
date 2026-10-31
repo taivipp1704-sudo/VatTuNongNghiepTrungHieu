@@ -1,0 +1,115 @@
+CREATE TABLE IF NOT EXISTS warehouses (
+  id uuid PRIMARY KEY, name text NOT NULL, address text NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS roles (
+  id uuid PRIMARY KEY, name text UNIQUE NOT NULL, permissions text[] NOT NULL DEFAULT '{}', protected boolean NOT NULL DEFAULT false
+);
+CREATE TABLE IF NOT EXISTS users (
+  id uuid PRIMARY KEY, username text UNIQUE NOT NULL, name text NOT NULL, password_hash text NOT NULL,
+  owner boolean NOT NULL DEFAULT false, active boolean NOT NULL DEFAULT true, must_change_password boolean NOT NULL DEFAULT true,
+  warehouse_ids uuid[] NOT NULL DEFAULT '{}', created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id uuid REFERENCES users(id), role_id uuid REFERENCES roles(id), PRIMARY KEY(user_id, role_id)
+);
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash text PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id), expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS products (
+  id uuid PRIMARY KEY, sku text UNIQUE NOT NULL, barcode text UNIQUE, name text NOT NULL, category text NOT NULL,
+  base_unit text NOT NULL, pack_unit text NOT NULL, pack_factor numeric(18,3) NOT NULL CHECK(pack_factor > 0),
+  price_base numeric(18,0) NOT NULL CHECK(price_base >= 0), price_pack numeric(18,0) NOT NULL CHECK(price_pack >= 0),
+  cost_base numeric(18,0) NOT NULL CHECK(cost_base >= 0), min_stock numeric(18,3) NOT NULL DEFAULT 0 CHECK(min_stock >= 0),
+  track_lots boolean NOT NULL DEFAULT true, active boolean NOT NULL DEFAULT true, technical_info text NOT NULL DEFAULT ''
+);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS loyalty_rate numeric(7,4) NOT NULL DEFAULT 0 CHECK(loyalty_rate >= 0 AND loyalty_rate <= 100);
+CREATE TABLE IF NOT EXISTS lots (
+  id uuid PRIMARY KEY, product_id uuid NOT NULL REFERENCES products(id), warehouse_id uuid NOT NULL REFERENCES warehouses(id),
+  code text NOT NULL, expires_on date, location text NOT NULL DEFAULT '', state text NOT NULL DEFAULT 'AVAILABLE' CHECK(state IN ('AVAILABLE','QUARANTINE')),
+  quantity numeric(18,3) NOT NULL DEFAULT 0 CHECK(quantity >= 0), reserved numeric(18,3) NOT NULL DEFAULT 0 CHECK(reserved >= 0 AND reserved <= quantity),
+  cost_base numeric(18,0) NOT NULL CHECK(cost_base >= 0), UNIQUE(product_id, warehouse_id, code)
+);
+CREATE TABLE IF NOT EXISTS partners (
+  id uuid PRIMARY KEY, name text NOT NULL, kind text NOT NULL CHECK(kind IN ('CUSTOMER','SUPPLIER')),
+  phone text NOT NULL DEFAULT '', address text NOT NULL DEFAULT '', tax_code text NOT NULL DEFAULT '',
+  credit_limit numeric(18,0) NOT NULL DEFAULT 10000000 CHECK(credit_limit >= 0)
+);
+CREATE TABLE IF NOT EXISTS stock_documents (
+  id uuid PRIMARY KEY, code text UNIQUE NOT NULL, kind text NOT NULL CHECK(kind IN ('RECEIPT','ISSUE','COUNT','RETURN','TRANSFER','DISPOSAL')),
+  warehouse_id uuid NOT NULL REFERENCES warehouses(id), destination_id uuid REFERENCES warehouses(id), partner_id uuid REFERENCES partners(id),
+  lines jsonb NOT NULL, reason text NOT NULL DEFAULT '', status text NOT NULL DEFAULT 'PENDING' CHECK(status IN ('DRAFT','PENDING','POSTED','CANCELLED')),
+  created_by uuid NOT NULL REFERENCES users(id), posted_by uuid REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now(), posted_at timestamptz
+);
+CREATE TABLE IF NOT EXISTS orders (
+  id uuid PRIMARY KEY, code text UNIQUE NOT NULL, customer_id uuid REFERENCES partners(id), warehouse_id uuid NOT NULL REFERENCES warehouses(id),
+  lines jsonb NOT NULL, subtotal numeric(18,0) NOT NULL, discount numeric(18,0) NOT NULL, total numeric(18,0) NOT NULL CHECK(total >= 0),
+  paid numeric(18,0) NOT NULL CHECK(paid >= 0 AND paid <= total), payment_method text NOT NULL,
+  delivery_status text NOT NULL DEFAULT 'DELIVERED', payment_status text NOT NULL, returned boolean NOT NULL DEFAULT false,
+  created_by uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS debts (
+  id uuid PRIMARY KEY, partner_id uuid NOT NULL REFERENCES partners(id), warehouse_id uuid NOT NULL REFERENCES warehouses(id),
+  order_id uuid REFERENCES orders(id), document_id uuid REFERENCES stock_documents(id), kind text NOT NULL CHECK(kind IN ('RECEIVABLE','PAYABLE')),
+  original numeric(18,0) NOT NULL CHECK(original > 0), balance numeric(18,0) NOT NULL CHECK(balance >= 0 AND balance <= original),
+  due_on date NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS payments (
+  id uuid PRIMARY KEY, debt_id uuid REFERENCES debts(id), order_id uuid REFERENCES orders(id),
+  warehouse_id uuid NOT NULL REFERENCES warehouses(id), amount numeric(18,0) NOT NULL CHECK(amount > 0),
+  direction text NOT NULL CHECK(direction IN ('IN','OUT')), method text NOT NULL, note text NOT NULL DEFAULT '',
+  created_by uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS invoices (
+  id uuid PRIMARY KEY, order_id uuid UNIQUE NOT NULL REFERENCES orders(id), code text UNIQUE NOT NULL,
+  status text NOT NULL DEFAULT 'DRAFT', provider_reference text, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS stock_ledger (
+  id uuid PRIMARY KEY, lot_id uuid NOT NULL REFERENCES lots(id), document_id uuid REFERENCES stock_documents(id), order_id uuid REFERENCES orders(id),
+  delta numeric(18,3) NOT NULL, balance numeric(18,3) NOT NULL CHECK(balance >= 0),
+  reason text NOT NULL, created_by uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS audit_log (
+  id uuid PRIMARY KEY, user_id uuid REFERENCES users(id), action text NOT NULL, entity_id text,
+  detail jsonb NOT NULL DEFAULT '{}', created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS idempotency (
+  user_id uuid NOT NULL REFERENCES users(id), key text NOT NULL, request_hash text NOT NULL,
+  response jsonb, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(user_id,key)
+);
+CREATE TABLE IF NOT EXISTS settings (key text PRIMARY KEY, value jsonb NOT NULL);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_snapshot jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_earned numeric(18,0) NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_spent numeric(18,0) NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_discount numeric(18,0) NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS loyalty_accounts (
+  customer_id uuid PRIMARY KEY REFERENCES partners(id), balance numeric(18,0) NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS loyalty_ledger (
+  id uuid PRIMARY KEY, customer_id uuid NOT NULL REFERENCES partners(id), order_id uuid NOT NULL REFERENCES orders(id),
+  warehouse_id uuid NOT NULL REFERENCES warehouses(id), delta numeric(18,0) NOT NULL, balance numeric(18,0) NOT NULL,
+  kind text NOT NULL CHECK(kind IN ('EARN','REDEEM','RETURN_EARN','RETURN_REDEEM')), source_key text UNIQUE NOT NULL,
+  created_by uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS loyalty_customer_history ON loyalty_ledger(customer_id,created_at DESC);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url text NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_code text NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS carrier text NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS returned_at timestamptz;
+ALTER TABLE loyalty_ledger ALTER COLUMN order_id DROP NOT NULL;
+ALTER TABLE loyalty_ledger ALTER COLUMN warehouse_id DROP NOT NULL;
+ALTER TABLE loyalty_ledger ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT '';
+ALTER TABLE loyalty_ledger DROP CONSTRAINT IF EXISTS loyalty_ledger_kind_check;
+ALTER TABLE loyalty_ledger ADD CONSTRAINT loyalty_ledger_kind_check CHECK(kind IN ('EARN','REDEEM','RETURN_EARN','RETURN_REDEEM','ADJUST'));
+DO $$ BEGIN
+  IF EXISTS(SELECT 1 FROM roles) AND NOT EXISTS(SELECT 1 FROM settings WHERE key='_stitch_permissions_v1') THEN
+    UPDATE roles SET permissions=permissions || ARRAY['loyalty.redeem'] WHERE 'sales.create'=ANY(permissions) AND NOT 'loyalty.redeem'=ANY(permissions);
+    INSERT INTO settings(key,value) VALUES('_stitch_permissions_v1','true');
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS lots_lookup ON lots(warehouse_id,product_id,expires_on);
+CREATE INDEX IF NOT EXISTS ledger_lot ON stock_ledger(lot_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS debts_balance ON debts(warehouse_id,balance);
+CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+CREATE INDEX IF NOT EXISTS audit_created ON audit_log(created_at DESC);

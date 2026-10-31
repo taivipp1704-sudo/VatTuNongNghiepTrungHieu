@@ -1,0 +1,27 @@
+{
+  "name": "agristock",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/api",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "api:build": "npm run build --workspace @agristock/api",
+    "api:start": "npm run start --workspace @agristock/api",
+    "db:start": "node scripts/local-postgres.mjs",
+    "db:seed": "npm run seed --workspace @agristock/api",
+    "db:provision": "npm run api:build && npm run provision --workspace @agristock/api",
+    "mobile": "npm run start --workspace @agristock/mobile",
+    "check": "node scripts/generate-mobile-routes.cjs && npm run build --workspace @agristock/api && npm run typecheck --workspace @agristock/mobile",
+    "test": "npm run api:build && npm run test --workspace @agristock/api",
+    "backup": "node --env-file-if-exists=.local/api.env scripts/backup.mjs",
+    "restore": "node --env-file-if-exists=.local/api.env scripts/backup.mjs restore"
+  },
+  "devDependencies": {
+    "embedded-postgres": "18.4.0-beta.17"
+  },
+  "dependencies": {
+    "hermes-compiler": "260318099.0.4"
+  }
+}
