@@ -1,6 +1,6 @@
-# Thử AgriStock Android từ xa — bản 5
+# Thử AgriStock Android từ xa — bản 6
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-compact-form-v5/AgriStock-internal-signed-5.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 5. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-photos-v6/AgriStock-internal-signed-6.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 6. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
 
 ## Cài và đăng nhập
 
@@ -21,4 +21,4 @@ API và PostgreSQL đều chọn gói Free, không tự nâng cấp gói trả p
 Đã kiểm tra nghiệp vụ trực tiếp qua HTTPS và xác minh APK. Chưa nghiệm thu cài/mở, camera và in trên điện thoại thật. iPhone cần bản build và phân phối Apple riêng; APK này dành cho Android.
 
 
-Bản 5 gom màn hình thêm/sửa hàng hóa theo nhóm, giữ đủ 15 trường, nút quét mã và quyền cấu hình số chấm. Cài cập nhật lên bản AgriStock trước bằng cùng khóa ký. Giữ tài khoản và địa chỉ cloud hiện tại.
+Bản 6 thêm chọn/chụp, thay và xóa ảnh sản phẩm, cùng ảnh xác nhận giao hàng theo đơn và theo quyền nhân viên. Xem [hướng dẫn dùng ảnh](PHOTOS.md). Bố cục hàng hóa vẫn giữ 15 trường, nút quét mã và cấu hình số chấm. Cài cập nhật lên bản AgriStock trước bằng cùng khóa ký. Giữ tài khoản và địa chỉ cloud hiện tại; nếu đã đổi mật khẩu thì dùng mật khẩu đang dùng.
