@@ -44,6 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         },
       ],
+      ["expo-image-picker", { photosPermission: "Cho phép AgriStock chọn ảnh hàng hóa và ảnh giao hàng.", cameraPermission: "Cho phép AgriStock chụp ảnh hàng hóa và xác nhận giao hàng.", microphonePermission: false }],
       "./plugins/with-release-signing.cjs",
     ],
   };

@@ -31,6 +31,7 @@ import {
   SectionHeading,
 } from "@/components/pos-ui";
 import { exportCsv, exportTablePdf } from "@/lib/export";
+import { DeliveryPhotos } from "@/components/delivery-photos";
 import { useScan } from "@/lib/scanner";
 
 const statusNames: Record<string, string> = {
@@ -720,6 +721,8 @@ export function Orders() {
                   {item.carrier} · Vận đơn {item.tracking_code}
                 </Caption>
               ) : null}
+              <DeliveryPhotos key={item.id} orderId={item.id} returned={item.returned} delivered={item.delivery_status === "DELIVERED"}
+                carrier={carrier} trackingCode={tracking} onDelivered={() => setDelivery("DELIVERED")} />
               {can("sales.return") && !item.returned ? (
                 <>
                   <Notice>

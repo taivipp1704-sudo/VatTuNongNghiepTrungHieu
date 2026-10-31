@@ -38,7 +38,7 @@ const labels: Record<string, string> = {
   "loyalty.manage": "Cấu hình % số chấm và quy đổi điểm",
   "loyalty.adjust": "Điều chỉnh điểm thưởng thủ công",
   "loyalty.redeem": "Đổi điểm giảm tiền khi bán hàng",
-  "sales.fulfillment": "Cập nhật đóng gói và giao hàng",
+  "sales.fulfillment": "Đóng gói, giao hàng và ảnh xác nhận",
   "sales.create": "Tạo đơn bán",
   "sales.view": "Xem đơn bán",
   "sales.price.edit": "Sửa giá bán",
@@ -124,7 +124,7 @@ const descriptions: Record<string, string> = {
   "loyalty.manage": "Quy tắc tích điểm, quy đổi và số chấm từng mặt hàng",
   "loyalty.adjust": "Cộng hoặc trừ điểm, bắt buộc có lý do và nhật ký",
   "reports.profit": "Bao gồm giá vốn và lãi gộp",
-  "sales.fulfillment": "Theo dõi giao hàng nội bộ trong phạm vi kho được cấp",
+  "sales.fulfillment": "Cập nhật giao hàng và chụp ảnh xác nhận đơn trong phạm vi kho được cấp. Cần kèm quyền xem đơn hàng.",
 };
 export default function Admin() {
   const params = useLocalSearchParams<{ tab?: string }>();

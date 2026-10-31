@@ -15,6 +15,7 @@ import { AuthService, SessionGuard } from "./auth";
 import { Operations } from "./operations";
 import { Loyalty } from "./loyalty";
 import { AppController, PublicController } from "./controller";
+import { PhotoController, Photos } from "./photos";
 
 @Catch()
 class ApiExceptionFilter implements ExceptionFilter {
@@ -25,7 +26,7 @@ class ApiExceptionFilter implements ExceptionFilter {
         ? error.getStatus()
         : error.code === "23505"
           ? 409
-          : error.status === 400 ||
+          : error.status === 413 ? 413 : error.status === 400 ||
               ["23503", "23514", "22P02", "22003", "22007", "22008"].includes(
                 error.code,
               )
@@ -36,7 +37,7 @@ class ApiExceptionFilter implements ExceptionFilter {
         ? error.message
         : status === 409
           ? "Mã hàng, tài khoản hoặc dữ liệu này đã tồn tại."
-          : status === 400
+          : status === 413 ? "Ảnh quá lớn. Chọn lại ảnh để nén trước khi gửi." : status === 400
             ? "Dữ liệu liên kết, số lượng hoặc giá trị không hợp lệ."
             : "Không thể hoàn tất yêu cầu. Vui lòng thử lại.";
     if (status === 500) console.error({ name: error.name, code: error.code });
@@ -45,8 +46,8 @@ class ApiExceptionFilter implements ExceptionFilter {
 }
 
 @Module({
-  controllers: [PublicController, AppController],
-  providers: [Database, AuthService, SessionGuard, Loyalty, Operations],
+  controllers: [PublicController, AppController, PhotoController],
+  providers: [Database, AuthService, SessionGuard, Loyalty, Operations, Photos],
 })
 export class AppModule {}
 

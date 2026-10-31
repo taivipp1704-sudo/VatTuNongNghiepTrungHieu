@@ -15,6 +15,7 @@ const tables = [
   "partners",
   "stock_documents",
   "orders",
+  "photos",
   "loyalty_accounts",
   "loyalty_ledger",
   "debts",
@@ -41,8 +42,10 @@ export async function backup(pool, destination) {
     const name = (await client.query("SELECT current_database() name")).rows[0]
       .name;
     const data = {};
-    for (const table of tables)
-      data[table] = (await client.query("SELECT * FROM " + table)).rows;
+    for (const table of tables) {
+      const rows = (await client.query("SELECT * FROM " + table)).rows;
+      data[table] = table === "photos" ? rows.map(row => ({ ...row, data: row.data.toString("base64") })) : rows;
+    }
     await client.query("COMMIT");
     const snapshot = {
       format: "agristock-backup-v1",
@@ -97,7 +100,7 @@ export async function restore(pool, source) {
         if (keys.some((key) => !columns.has(key) || !/^[a-z_]+$/.test(key)))
           throw new Error("Cột dữ liệu không hợp lệ.");
         const values = keys.map((key) =>
-          jsonFields.has(table + "." + key) && row[key] !== null
+          table === "photos" && key === "data" ? Buffer.from(row[key], "base64") : jsonFields.has(table + "." + key) && row[key] !== null
             ? JSON.stringify(row[key])
             : row[key],
         );

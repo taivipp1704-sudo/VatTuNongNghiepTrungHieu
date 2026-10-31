@@ -1,6 +1,6 @@
-import { ComponentRef, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { BottomSheet } from "@expo/ui";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import {
@@ -17,7 +17,7 @@ import { can, userKey } from "@/lib/session";
 import { Bootstrap, Product } from "@/types";
 import { theme } from "@/theme";
 import { AppText } from "@/components/text";
-import { ChoiceList, Icon, ProductPicture } from "@/components/pos-ui";
+import { ChoiceList, Icon } from "@/components/pos-ui";
 import {
   ProductFormCard,
   ProductFormColumns,
@@ -25,6 +25,7 @@ import {
 } from "@/components/product-form-ui";
 import { useWarehouse } from "@/lib/warehouse";
 import { useScan } from "@/lib/scanner";
+import { ProductImageEditor } from "@/components/product-image-editor";
 import { parseRate } from "@/lib/loyalty";
 
 export function ProductForm() {
@@ -52,7 +53,7 @@ export function ProductForm() {
   });
   const [loadedId, setLoadedId] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const imageInput = useRef<ComponentRef<typeof TextInput>>(null);
+  const [imageBusy, setImageBusy] = useState(false);
   const bootstrap = useApi<Bootstrap>("/bootstrap");
   const warehouseId = useWarehouse((state) => state.warehouseId);
   const warehouseNamespace = userKey("active-warehouse");
@@ -100,18 +101,8 @@ export function ProductForm() {
   const warehouse = bootstrap.data?.warehouses.find(
     (item) => item.id === warehouseId,
   );
-  let previewImage = "";
-  try {
-    const image = new URL(form.imageUrl);
-    if (
-      ["http:", "https:"].includes(image.protocol) &&
-      !image.username &&
-      !image.password
-    )
-      previewImage = image.href;
-  } catch {}
   const save = async () => {
-    if (!ready || command.pending) return;
+    if (!ready || command.pending || imageBusy) return;
     const { loyaltyRate: rateInput, ...details } = form;
     const rate = parseRate(rateInput);
     if (can("loyalty.manage") && rate === undefined) {
@@ -196,15 +187,15 @@ export function ProductForm() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Lưu hàng hóa trên thanh tiêu đề"
-            accessibilityState={{ disabled: command.pending || !ready }}
-            disabled={command.pending || !ready}
+            accessibilityState={{ disabled: command.pending || imageBusy || !ready }}
+            disabled={command.pending || imageBusy || !ready}
             onPress={save}
             style={({ pressed }) => ({
               minWidth: 48,
               minHeight: 48,
               alignItems: "center",
               justifyContent: "center",
-              opacity: command.pending || !ready ? 0.4 : pressed ? 0.6 : 1,
+              opacity: command.pending || imageBusy || !ready ? 0.4 : pressed ? 0.6 : 1,
             })}
           >
             <Icon name="check" size={27} />
@@ -220,7 +211,7 @@ export function ProductForm() {
               testID="product-save"
               onPress={save}
               pending={command.pending}
-              disabled={!ready}
+              disabled={!ready || imageBusy}
             />
           </View>
         }
@@ -243,49 +234,8 @@ export function ProductForm() {
             }}
           />
         ) : null}
-        <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Nhập đường dẫn ảnh hàng hóa"
-            onPress={() => imageInput.current?.focus()}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-          >
-            <ProductPicture
-              key={previewImage}
-              product={{
-                name: form.name,
-                category: form.category,
-                image_url: previewImage,
-              }}
-              size={58}
-            />
-            <View
-              style={{
-                position: "absolute",
-                right: -3,
-                bottom: -3,
-                backgroundColor: theme.colors.paper,
-                borderRadius: 12,
-                padding: 2,
-              }}
-            >
-              <Icon name="image-plus-outline" size={18} />
-            </View>
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Field
-              inputRef={imageInput}
-              label="Ảnh hàng hóa"
-              accessibilityLabel="Đường dẫn ảnh sản phẩm (HTTP/HTTPS)"
-              value={form.imageUrl}
-              onChangeText={(value) => field("imageUrl", value)}
-              autoCapitalize="none"
-              keyboardType="url"
-              placeholder="Dán đường dẫn ảnh HTTP/HTTPS"
-              style={{ fontSize: 13 }}
-            />
-          </View>
-        </View>
+        <ProductImageEditor value={form.imageUrl} onChange={value => field("imageUrl", value)}
+          name={form.name} category={form.category} disabled={command.pending || !ready} onBusyChange={setImageBusy} />
         <ProductFormCard>
           <Field
             label="Tên hàng hóa"

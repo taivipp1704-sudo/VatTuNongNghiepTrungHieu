@@ -60,7 +60,7 @@ export const productSchema = z
       .string()
       .max(2000)
       .refine((value) => {
-        if (!value) return true;
+        if (!value || /^\/api\/photos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value)) return true;
         try {
           const url = new URL(value);
           return (

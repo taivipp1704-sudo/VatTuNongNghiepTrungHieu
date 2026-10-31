@@ -11,6 +11,7 @@ import { Database } from "./db";
 import { seedDatabase } from "./seed";
 import { defaultLoyaltySettings, loyaltyAmounts } from "./loyalty";
 import { saleSchema } from "./validation";
+import sharp from "sharp";
 
 const config = JSON.parse(
   readFileSync(resolve(__dirname, "../../..", ".local/postgres.json"), "utf8"),
@@ -79,6 +80,74 @@ before(async () => {
 });
 after(async () => {
   if (app) await app.close();
+});
+
+test("uploaded product photos validate content, bind once, survive omitted fields, replace and delete transactionally", async () => {
+  const base64 = (await sharp({ create: { width: 32, height: 24, channels: 3, background: "#176b46" } }).jpeg().toBuffer()).toString("base64");
+  assert.equal((await request("/photos/product", { base64 }, "banhang")).status, 403);
+  assert.equal((await request("/photos/product", { base64 }, "anonymous")).status, 401);
+  assert.equal((await request("/photos/product", { base64: Buffer.from("<svg>fake</svg>").toString("base64") })).status, 400);
+  const key = randomUUID();
+  const uploaded = await request("/photos/product", { base64 }, "owner", key);
+  assert.equal(uploaded.status, 201);
+  assert.deepEqual((await request("/photos/product", { base64 }, "owner", key)).data, uploaded.data);
+  const { products } = await loyaltyFixture();
+  const item = products[0];
+  const patch = (imageUrl?: string) => request("/products/" + item.id, { ...item.body, ...(imageUrl !== undefined ? { imageUrl } : {}) }, "owner", randomUUID(), "PATCH");
+  assert.equal((await patch(uploaded.data.imageUrl)).status, 200);
+  const viewed = await request("/photos/" + uploaded.data.id, undefined, "banhang");
+  assert.equal(viewed.status, 200);
+  assert.match(viewed.data.dataUrl, /^data:image\/jpeg;base64,/);
+  assert.equal((await patch()).status, 200);
+  assert.equal((await request("/photos/" + uploaded.data.id)).status, 200);
+  assert.equal((await request("/products/" + products[1].id, { ...products[1].body, imageUrl: uploaded.data.imageUrl }, "owner", randomUUID(), "PATCH")).status, 400);
+  assert.equal((await patch("/api/photos/" + randomUUID())).status, 400);
+  assert.equal((await request("/photos/" + uploaded.data.id)).status, 200);
+  const replacement = await request("/photos/product", { base64 });
+  assert.equal((await patch(replacement.data.imageUrl)).status, 200);
+  assert.equal((await request("/photos/" + uploaded.data.id)).status, 404);
+  assert.equal((await patch("")).status, 200);
+  assert.equal((await request("/photos/" + replacement.data.id)).status, 404);
+  const stored = (await db.pool.query("SELECT image_url FROM products WHERE id=$1", [item.id])).rows[0];
+  assert.equal(stored.image_url, "");
+});
+
+test("delivery evidence is scoped, idempotent, retained on returns and confirms delivery atomically", async () => {
+  const { products } = await loyaltyFixture();
+  const sold = await request("/sales", { warehouseId: main, lines: [{ productId: products[0].id, quantity: 1, unit: "BASE" }], paid: 1000000, method: "CASH", deliveryStatus: "SHIPPING" });
+  assert.equal(sold.status, 201);
+  const path = "/orders/" + sold.data.id + "/photos";
+  const base64 = (await sharp({ create: { width: 32, height: 24, channels: 3, background: "white" } }).jpeg().toBuffer()).toString("base64");
+  const body = { base64, confirmDelivered: true, note: "Đã giao đủ hàng" };
+  assert.equal((await request(path, body, "banhang")).status, 403);
+  const role = await request("/admin/roles", { name: "Nhân viên giao hàng kiểm thử", permissions: ["sales.view", "sales.fulfillment"] });
+  const password = "Delivery-Photo-Test-2026!";
+  const staff = await request("/admin/users", { username: "delivery-photo", name: "Giao hàng", password, roleIds: [role.data.id], warehouseIds: [main] });
+  assert.equal(staff.status, 201);
+  const login = await request("/auth/login", { username: "delivery-photo", password });
+  tokens.deliveryPhoto = login.data.token;
+  assert.equal((await request("/auth/password", { currentPassword: password, newPassword: "Delivery-Photo-Changed-2026!" }, "deliveryPhoto")).status, 201);
+  const key = randomUUID();
+  const added = await request(path, body, "deliveryPhoto", key);
+  assert.equal(added.status, 201);
+  assert.deepEqual((await request(path, body, "deliveryPhoto", key)).data, added.data);
+  assert.equal((await request(path, { ...body, note: "changed" }, "deliveryPhoto", key)).status, 409);
+  assert.equal((await request(path, undefined, "deliveryPhoto")).data.length, 1);
+  assert.equal((await request("/photos/" + added.data.id, undefined, "banhang")).status, 404);
+  assert.equal((await request("/photos/" + added.data.id, undefined, "deliveryPhoto")).status, 200);
+  await db.pool.query("UPDATE users SET warehouse_ids=$2 WHERE id=$1", [staff.data.id, [secondary]]);
+  assert.equal((await request(path, undefined, "deliveryPhoto")).status, 403);
+  assert.equal((await request(path, body, "deliveryPhoto")).status, 403);
+  assert.equal((await request("/photos/" + added.data.id, undefined, "deliveryPhoto")).status, 403);
+  await db.pool.query("UPDATE users SET warehouse_ids=$2 WHERE id=$1", [staff.data.id, [main]]);
+  const order = (await db.pool.query("SELECT delivery_status FROM orders WHERE id=$1", [sold.data.id])).rows[0];
+  assert.equal(order.delivery_status, "DELIVERED");
+  for (let i=0;i<4;i++) assert.equal((await request(path, { base64 }, "deliveryPhoto")).status, 201);
+  assert.equal((await request(path, { base64 }, "deliveryPhoto")).status, 409);
+  assert.equal((await request("/orders/" + sold.data.id + "/return", { reason: "Kiểm thử lưu ảnh khi trả hàng" })).status, 201);
+  assert.equal((await request(path, undefined, "deliveryPhoto")).data.length, 5);
+  assert.equal((await request(path, body, "deliveryPhoto")).status, 409);
+  assert.equal((await request("/photos/" + added.data.id, undefined, "deliveryPhoto")).status, 200);
 });
 
 test("warehouse scope and cost redaction are enforced at the API", async () => {

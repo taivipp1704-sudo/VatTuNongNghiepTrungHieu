@@ -27,6 +27,7 @@ try{
   const targetLots=(await target.query('SELECT id,expires_on,quantity::text,reserved::text FROM lots ORDER BY id')).rows;
   assert.deepEqual(sourceLots,targetLots);
   for(const sql of [
+    "SELECT id,kind,data,created_by,created_at,product_id,order_id,note FROM photos ORDER BY id",
     'SELECT customer_id,balance::text FROM loyalty_accounts ORDER BY customer_id',
     'SELECT id,delta::text,balance::text,source_key FROM loyalty_ledger ORDER BY id',
     'SELECT id,loyalty_snapshot,loyalty_earned::text,loyalty_spent::text,loyalty_discount::text FROM orders ORDER BY id',

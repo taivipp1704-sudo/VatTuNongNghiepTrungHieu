@@ -1,5 +1,5 @@
-import { ComponentProps, PropsWithChildren, useState } from "react";
-import { Image } from "expo-image";
+import { ComponentProps, PropsWithChildren, useState, useEffect } from "react";
+import { PhotoImage } from "./private-photo";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Pressable, ScrollView, View } from "react-native";
 import { AppText } from "./text";
@@ -87,6 +87,7 @@ export function ProductPicture({
   size?: number;
 }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [product.image_url]);
   return (
     <View
       style={{
@@ -100,11 +101,11 @@ export function ProductPicture({
       }}
     >
       {product.image_url && !failed ? (
-        <Image
-          source={{ uri: product.image_url }}
-          accessibilityLabel={product.name}
-          style={{ width: size, height: size }}
-          contentFit="cover"
+        <PhotoImage
+          uri={product.image_url}
+          label={product.name || "Ảnh hàng hóa"}
+          width={size}
+          height={size}
           onError={() => setFailed(true)}
         />
       ) : (

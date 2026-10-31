@@ -93,6 +93,20 @@ CREATE TABLE IF NOT EXISTS loyalty_ledger (
 );
 CREATE INDEX IF NOT EXISTS loyalty_customer_history ON loyalty_ledger(customer_id,created_at DESC);
 ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url text NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS photos (
+  id uuid PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('PRODUCT','DELIVERY')),
+  data bytea NOT NULL CHECK (octet_length(data) BETWEEN 1 AND 350000),
+  created_by uuid NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  product_id uuid REFERENCES products(id),
+  order_id uuid REFERENCES orders(id),
+  note text NOT NULL DEFAULT '' CHECK (length(note)<=500),
+  CHECK ((kind='PRODUCT' AND order_id IS NULL) OR (kind='DELIVERY' AND product_id IS NULL AND order_id IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS photos_order_idx ON photos(order_id);
+CREATE INDEX IF NOT EXISTS photos_product_idx ON photos(product_id);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_code text NOT NULL DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS carrier text NOT NULL DEFAULT '';

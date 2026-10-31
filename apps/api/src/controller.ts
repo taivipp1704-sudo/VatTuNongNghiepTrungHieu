@@ -42,6 +42,7 @@ import {
   uuid,
 } from "./validation";
 import { Loyalty } from "./loyalty";
+import { Photos } from "./photos";
 
 const scopeOf = (request: AuthRequest) => {
   if (request.query.warehouseId) {
@@ -99,6 +100,7 @@ export class AppController {
     private readonly auth: AuthService,
     private readonly operations: Operations,
     private readonly loyalty: Loyalty,
+    private readonly photos: Photos,
   ) {}
 
   @Get("me")
@@ -306,6 +308,7 @@ export class AppController {
             input.imageUrl ?? "",
           ],
         );
+        await this.photos.bindProduct(client, request.user, id, input.imageUrl);
         await audit(client, request.user.id, "PRODUCT_CREATED", id, input);
         return { id };
       },
@@ -357,6 +360,7 @@ export class AppController {
           input.imageUrl ?? old.image_url,
         ],
       );
+      await this.photos.bindProduct(client, request.user, id, input.imageUrl, old.image_url);
       await audit(client, request.user.id, "PRODUCT_UPDATED", id, {
         before: old,
         after: input,

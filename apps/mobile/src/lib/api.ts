@@ -128,6 +128,7 @@ export function useApi<Result>(path: string, enabled = true) {
 export function useCommand() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const errorStatus = useRef<number | undefined>(undefined);
   const requestKey = useRef<string | null>(null);
   const busy = useRef(false);
   const queries = useQueryClient();
@@ -141,6 +142,7 @@ export function useCommand() {
     busy.current = true;
     setPending(true);
     setError("");
+    errorStatus.current = undefined;
     requestKey.current = stableKey ?? requestKey.current ?? Crypto.randomUUID();
     try {
       const result = await api<Result>(path, {
@@ -152,6 +154,7 @@ export function useCommand() {
       await queries.invalidateQueries();
       return result;
     } catch (error) {
+      errorStatus.current = error instanceof ApiError ? error.status : undefined;
       setError(
         error instanceof Error ? error.message : "Không thể lưu dữ liệu.",
       );
@@ -161,5 +164,5 @@ export function useCommand() {
       setPending(false);
     }
   };
-  return { run, pending, error, setError };
+  return { run, pending, error, setError, errorStatus };
 }
