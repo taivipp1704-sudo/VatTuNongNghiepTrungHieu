@@ -82,6 +82,55 @@ after(async () => {
   if (app) await app.close();
 });
 
+test("employee roles, warehouses and active state can be saved independently without granting access", async () => {
+  const role = await request("/admin/roles", {
+    name: "Kiểm tra gán quyền độc lập",
+    permissions: ["inventory.view", "inventory.receipt.create", "sales.view"],
+  });
+  assert.equal(role.status, 201);
+  const initialPassword = "Unassigned-Employee-Test-2026!";
+  const currentPassword = "Unassigned-Employee-Changed-2026!";
+  const username = "unassigned-employee-test";
+  const created = await request("/admin/users", {
+    username, name: "Nhân viên chưa gán quyền",
+    password: initialPassword, roleIds: [], warehouseIds: [],
+  });
+  assert.equal(created.status, 201);
+  const initial = await request("/auth/login", { username, password: initialPassword });
+  assert.equal(initial.status, 201);
+  tokens.independentEmployee = initial.data.token;
+  assert.equal((await request("/auth/password", { currentPassword: initialPassword, newPassword: currentPassword }, "independentEmployee")).status, 201);
+  for (const active of [true, false]) {
+    for (const withRole of [true, false]) {
+      for (const withWarehouse of [true, false]) {
+        const body = { active, roleIds: withRole ? [role.data.id] : [], warehouseIds: withWarehouse ? [main] : [] };
+        const saved = await request("/admin/users/" + created.data.id, body, "owner", randomUUID(), "PATCH");
+        assert.equal(saved.status, 200, JSON.stringify(body));
+        assert.equal((await request("/me", undefined, "independentEmployee")).status, 401, "Old session must be revoked");
+        const login = await request("/auth/login", { username, password: currentPassword });
+        if (!active) { assert.equal(login.status, 401); continue; }
+        assert.equal(login.status, 201);
+        tokens.independentEmployee = login.data.token;
+        assert.deepEqual(login.data.user.warehouseIds, body.warehouseIds);
+        assert.equal(login.data.user.roles.length, withRole ? 1 : 0);
+        assert.equal(login.data.user.permissions.includes("inventory.view"), withRole);
+        const bootstrap = await request("/bootstrap", undefined, "independentEmployee");
+        assert.equal(bootstrap.data.warehouses.length, withWarehouse ? 1 : 0);
+        const inventory = await request("/inventory", undefined, "independentEmployee");
+        assert.equal(inventory.status, withRole ? 200 : 403);
+        if (withRole && !withWarehouse) {
+          assert.ok(inventory.data.every((p: any) => p.lots.length === 0));
+          assert.equal((await request("/inventory?warehouseId=" + main, undefined, "independentEmployee")).status, 403);
+          assert.deepEqual((await request("/orders", undefined, "independentEmployee")).data, []);
+        }
+      }
+    }
+  }
+  const owner = await request("/me");
+  assert.equal((await request("/admin/users/" + owner.data.id, { active: false, roleIds: [], warehouseIds: [] }, "owner", randomUUID(), "PATCH")).status, 400);
+  assert.equal((await request("/me")).status, 200);
+});
+
 test("uploaded product photos validate content, bind once, survive omitted fields, replace and delete transactionally", async () => {
   const base64 = (await sharp({ create: { width: 32, height: 24, channels: 3, background: "#176b46" } }).jpeg().toBuffer()).toString("base64");
   assert.equal((await request("/photos/product", { base64 }, "banhang")).status, 403);
@@ -110,6 +159,34 @@ test("uploaded product photos validate content, bind once, survive omitted field
   assert.equal((await request("/photos/" + replacement.data.id)).status, 404);
   const stored = (await db.pool.query("SELECT image_url FROM products WHERE id=$1", [item.id])).rows[0];
   assert.equal(stored.image_url, "");
+});
+
+test("non-owner administrators may reduce or disable their own access without escalating or altering the owner", async () => {
+  const role = await request("/admin/roles", { name: "Quản trị nhân viên kiểm thử tự lưu", permissions: ["users.manage"] });
+  const username = "self-edit-admin-test";
+  const password = "Self-Edit-Admin-Test-2026!";
+  const changedPassword = "Self-Edit-Admin-Changed-2026!";
+  const created = await request("/admin/users", { username, name: "Quản trị tự chỉnh", password, roleIds: [role.data.id], warehouseIds: [main] });
+  assert.equal(created.status, 201);
+  const login = await request("/auth/login", { username, password });
+  tokens.selfEditAdmin = login.data.token;
+  assert.equal((await request("/auth/password", { currentPassword: password, newPassword: changedPassword }, "selfEditAdmin")).status, 201);
+  const adminRole = await request("/admin/roles", { name: "Quyền ngoài phạm vi người sửa", permissions: ["users.manage", "roles.manage"] });
+  assert.equal((await request("/admin/users/" + created.data.id, { active: true, roleIds: [adminRole.data.id], warehouseIds: [main] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 400);
+  const owner = await request("/me");
+  assert.equal((await request("/admin/users/" + owner.data.id, { active: false, roleIds: [], warehouseIds: [] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 400);
+  assert.equal((await request("/admin/users/" + created.data.id, { active: true, roleIds: [], warehouseIds: [] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 200);
+  assert.equal((await request("/me", undefined, "selfEditAdmin")).status, 401);
+  const reducedLogin = await request("/auth/login", { username, password: changedPassword });
+  assert.equal(reducedLogin.status, 201);
+  assert.deepEqual(reducedLogin.data.user.permissions, []);
+  tokens.selfEditAdmin = reducedLogin.data.token;
+  assert.equal((await request("/admin/users", undefined, "selfEditAdmin")).status, 403);
+  // Re-enable only the existing admin role as owner, then test independent self-locking.
+  assert.equal((await request("/admin/users/" + created.data.id, { active: true, roleIds: [role.data.id], warehouseIds: [main] }, "owner", randomUUID(), "PATCH")).status, 200);
+  tokens.selfEditAdmin = (await request("/auth/login", { username, password: changedPassword })).data.token;
+  assert.equal((await request("/admin/users/" + created.data.id, { active: false, roleIds: [role.data.id], warehouseIds: [main] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 200);
+  assert.equal((await request("/auth/login", { username, password: changedPassword })).status, 401);
 });
 
 test("delivery evidence is scoped, idempotent, retained on returns and confirms delivery atomically", async () => {

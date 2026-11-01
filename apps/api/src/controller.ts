@@ -1148,8 +1148,8 @@ export class AppController {
             .regex(/^[a-zA-Z0-9_.-]{3,40}$/),
           name: text,
           password,
-          roleIds: z.array(uuid).min(1).max(10),
-          warehouseIds: z.array(uuid).min(1).max(20),
+          roleIds: z.array(uuid).max(10),
+          warehouseIds: z.array(uuid).max(20),
         })
         .strict(),
       body,
@@ -1226,8 +1226,8 @@ export class AppController {
       z
         .object({
           active: z.boolean(),
-          roleIds: z.array(uuid).min(1).max(10),
-          warehouseIds: z.array(uuid).min(1).max(20),
+          roleIds: z.array(uuid).max(10),
+          warehouseIds: z.array(uuid).max(20),
         })
         .strict(),
       body,
@@ -1237,9 +1237,9 @@ export class AppController {
         await client.query("SELECT * FROM users WHERE id=$1 FOR UPDATE", [id])
       ).rows[0];
       if (!target) throw new NotFoundException("Không tìm thấy nhân viên.");
-      if (target.owner || id === request.user.id)
+      if (target.owner)
         throw new BadRequestException(
-          "Không thay đổi quyền hoặc khóa tài khoản chủ cửa hàng/chính mình tại đây.",
+          "Không thay đổi quyền hoặc khóa tài khoản chủ cửa hàng tại đây.",
         );
       if (!request.user.owner) {
         target.warehouse_ids.forEach((warehouseId: string) =>

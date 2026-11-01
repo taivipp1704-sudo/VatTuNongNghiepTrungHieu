@@ -5,7 +5,7 @@ import {
   Switch as NativeSwitch,
   Text as NativeText,
 } from "@expo/ui";
-import { ComponentProps, PropsWithChildren, ReactNode, useState } from "react";
+import { ComponentProps, ComponentRef, PropsWithChildren, ReactNode, Ref, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -125,10 +125,12 @@ export function Page({
   onRefresh,
   refreshing = false,
   footer,
+  scrollRef,
 }: PropsWithChildren<{
   onRefresh?: () => void;
   refreshing?: boolean;
   footer?: ReactNode;
+  scrollRef?: Ref<ComponentRef<typeof ScrollView>>;
 }>) {
   const insets = useSafeAreaInsets();
   return (
@@ -138,6 +140,7 @@ export function Page({
       keyboardVerticalOffset={100}
     >
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"

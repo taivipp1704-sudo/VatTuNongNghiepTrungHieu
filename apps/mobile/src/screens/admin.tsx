@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { ComponentRef, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { AppText } from "@/components/text";
@@ -21,7 +21,7 @@ import {
   Toggle,
   confirmAction,
 } from "@/components/ui";
-import { useApi, useCommand } from "@/lib/api";
+import { queryClient, useApi, useCommand } from "@/lib/api";
 import { can, useSession } from "@/lib/session";
 import { newKey } from "@/lib/drafts";
 import { day } from "@/lib/format";
@@ -149,8 +149,13 @@ export default function Admin() {
   );
   const command = useCommand();
   const owner = useSession((state) => state.user?.owner);
+  const currentUserId = useSession((state) => state.user?.id);
   const [editUser, setEditUser] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const pageScroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  useEffect(() => {
+    if (showForm && tab === "users") pageScroll.current?.scrollTo({ y: 0, animated: false });
+  }, [showForm, editUser, tab]);
   const [form, setForm] = useState({
     username: "",
     name: "",
@@ -187,11 +192,14 @@ export default function Admin() {
   const toggleArray = (items: string[], id: string) =>
     items.includes(id) ? items.filter((item) => item !== id) : [...items, id];
   const saveUser = async () => {
+    const editingSelf = Boolean(editUser && editUser === currentUserId);
     if (
       !(await confirmAction(
         editUser ? "Cập nhật nhân viên" : "Tạo tài khoản nội bộ",
         editUser
-          ? "Các phiên đăng nhập của nhân viên sẽ bị thu hồi."
+          ? editingSelf
+            ? "Bạn đang sửa tài khoản đang đăng nhập. Lưu xong sẽ đăng xuất; đăng nhập lại bằng quyền mới hoặc nhờ chủ cửa hàng mở lại nếu bạn khóa tài khoản."
+            : "Các phiên đăng nhập của nhân viên sẽ bị thu hồi."
           : "Nhân viên cần đổi mật khẩu ở lần đăng nhập đầu.",
       ))
     )
@@ -215,6 +223,12 @@ export default function Admin() {
       editUser ? "PATCH" : "POST",
     );
     if (result) {
+      if (editingSelf) {
+        await useSession.getState().logout();
+        queryClient.clear();
+        useSession.setState({ message: "Đã lưu tài khoản. Đăng nhập lại để sử dụng quyền mới; tài khoản bị khóa cần chủ cửa hàng mở lại." });
+        return;
+      }
       setShowForm(false);
       setForm({
         username: "",
@@ -259,7 +273,7 @@ export default function Admin() {
     }
   };
   return (
-    <Page>
+    <Page scrollRef={pageScroll}>
       <Select
         label="Khu vực quản trị"
         value={tab}
@@ -296,10 +310,11 @@ export default function Admin() {
             }}
           />
           {showForm ? (
-            <Panel>
+            <Panel testID="employee-editor">
               <Section
                 title={editUser ? "Sửa quyền nhân viên" : "Nhân viên mới"}
               >
+                {editUser ? <Caption>Đang sửa: {form.name} · {form.username}</Caption> : null}
                 {!editUser ? (
                   <>
                     <Field
@@ -336,8 +351,8 @@ export default function Admin() {
                   />
                 )}
                 <Caption>
-                  Gán một hoặc nhiều vai trò. Quyền hiệu lực là hợp của các
-                  role.
+                  Có thể gán nhiều vai trò hoặc bỏ chọn tất cả. Không có vai
+                  trò thì nhân viên chưa có quyền chức năng.
                 </Caption>
                 {roles.data
                   ?.filter((role) => !role.protected)
@@ -355,6 +370,10 @@ export default function Admin() {
                     />
                   ))}
                 <Label>Kho được phép thao tác</Label>
+                <Caption>
+                  Có thể bỏ chọn tất cả kho và vẫn lưu. Nhân viên chưa được
+                  gán kho sẽ không thể thao tác dữ liệu kho.
+                </Caption>
                 {bootstrap.data?.warehouses.map((warehouse) => (
                   <Toggle
                     key={warehouse.id}
@@ -373,11 +392,10 @@ export default function Admin() {
                 ))}
                 <Button
                   title="Lưu tài khoản"
+                  testID="employee-save"
                   onPress={saveUser}
                   pending={command.pending}
                   disabled={
-                    !form.roleIds.length ||
-                    !form.warehouseIds.length ||
                     (!editUser &&
                       (!form.username ||
                         !form.name ||
@@ -411,7 +429,7 @@ export default function Admin() {
                         roles.data?.find((role) => role.id === id)?.name,
                     )
                     .filter(Boolean)
-                    .join(" · ")}
+                    .join(" · ") || "Chưa gán vai trò"}
                 </Caption>
                 <Caption>
                   {user.warehouse_ids
@@ -422,13 +440,15 @@ export default function Admin() {
                         )?.name,
                     )
                     .filter(Boolean)
-                    .join(" · ")}
+                    .join(" · ") || "Chưa gán kho"}
                 </Caption>
                 {!user.owner ? (
                   <>
                     <Button
                       title="Sửa quyền / khóa tài khoản"
+                      testID={"employee-edit-" + user.id}
                       secondary
+                      disabled={command.pending}
                       onPress={() => {
                         setEditUser(user.id);
                         setForm({
@@ -440,6 +460,7 @@ export default function Admin() {
                           warehouseIds: user.warehouse_ids,
                         });
                         setShowForm(true);
+                        pageScroll.current?.scrollTo({ y: 0, animated: false });
                       }}
                     />
                     {owner ? (
