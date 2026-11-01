@@ -147,3 +147,13 @@ APK 5 build thành công 4 phút 7 giây, đã xác minh chữ ký cùng khóa p
 - Cloud: API commit `f3ccd0012f74aa3bb7319c6adc75fa30802dae5a`, deploy `dep-dbjbn45g1s2s73fqoii0` live. Tạo tài khoản QA mới không có vai trò, lưu có/không kho và bật/tắt hoạt động qua HTTPS thành công. Tài khoản QA kết thúc ở trạng thái khóa; không thay đổi quyền tài khoản owner/tester đang dùng.
 - APK 7 build thành công, cùng package/chứng chỉ APK 6, API cloud HTTPS; metadata lưu hash và source commit `70937ad4473da229bfd797d5e19c79397b8ba574`. Giữ chức năng ảnh, tích điểm và bố cục hàng hóa.
 
+## Bán tại quầy, khách hàng và biểu đồ — APK 8, 01/11/2026
+
+- TypeScript API/mobile đạt; 31/31 bài kiểm thử API, 4/4 kiểm thử cấu hình release và đối chiếu sao lưu/khôi phục kể cả byte ảnh đạt.
+- Bổ sung kiểm thử tuần bắt đầu thứ Hai, tháng nhuận, biên giờ Việt Nam, ngày/tuần/tháng/quý/năm, khách/kho/quyền và ẩn giá vốn. Đơn bán tháng 12, thu nợ tháng 1, trả tháng 2 được ghi đúng kỳ; tiền thu nợ không tăng doanh thu kỳ thu.
+- Web ở 390×844, 375×844 và 320×740: tổng quan, năm kỳ báo cáo, đổi kỳ, chạm cột/chọn mốc, đổi doanh thu/thực thu, tải CSV, hồ sơ khách và ba đơn đúng khách. Không tràn ngang hoặc lỗi JavaScript trong các màn đã kiểm tra. Cả năm tab kỳ hiển thị ở chiều rộng 320. Chưa tự động hóa xác nhận thu tiền cuối qua hộp thoại IAB; đường ghi API được kiểm thử riêng.
+- Dữ liệu QA riêng cho hồ sơ khách: tổng mua 108.000đ, đã trả 72.000đ, còn nợ 36.000đ; lịch sử ba đơn khớp. Ảnh giao diện trong `artifacts/counter-home-390.jpg`, `counter-report-chart-390.jpg`, `counter-customer-summary-390.jpg`; CSV đã tải trong `counter-report-export.csv`.
+- Render API commit `4faa884f650d0e68b0c6c97f2f1a54c173eea75f`, deploy `dep-dbjie1mq1p3s73ap5f50` live. HTTPS kiểm tra năm kỳ, lịch sử khách, UNPAID → thu một phần → PAID và trả đơn thành công. Chỉ dùng bản ghi TEST mới; đơn thử đã trả, không sửa mật khẩu/quyền tài khoản đang dùng. Kết quả `artifacts/cloud-counter-validation.json`.
+- Ghi âm 189 giây được xử lý cục bộ để phân tích yêu cầu. Không công bố âm thanh, ảnh tham khảo hay bản chép riêng. Ý chưa rõ và câu cuối bị ngắt không được suy diễn; hướng dẫn dùng tại `COUNTER_APP.md`.
+- Bản 8 giữ luồng trả toàn bộ đơn. Chưa nghiệm thu cài/mở, biểu đồ cảm ứng, camera, in/chia sẻ trên Android thật; iOS chưa build. Kiểm thử web/API không thay cho nghiệm thu thiết bị.
+

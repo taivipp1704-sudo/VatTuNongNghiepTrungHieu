@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 7
+# Thử AgriStock Android từ xa — bản 8
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-employee-access-v7/AgriStock-internal-signed-7.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 7. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-counter-v8/AgriStock-internal-signed-8.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 8. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 8 tập trung **bán tại quầy**, trạng thái theo số tiền đã thanh toán, tổng chi tiêu/lịch sử mua của khách và biểu đồ doanh thu ngày/tuần/tháng/quý/năm. Giao diện xanh lá đậm và cam, bỏ các mục tra cước, vận chuyển và kênh bán ngoài. Giữ quyền nhân viên, ảnh sản phẩm, nhập/sửa/trả hàng và tích điểm tùy chỉnh. Xem [hướng dẫn bán tại quầy](COUNTER_APP.md), gồm cách thu thêm tiền trên đơn còn nợ và phân biệt doanh thu với thực thu. Trả hàng hiện áp dụng toàn bộ đơn.
 
 ## Cài và đăng nhập
 
