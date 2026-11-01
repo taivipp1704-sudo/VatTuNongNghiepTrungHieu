@@ -435,6 +435,33 @@ export function ProductDetail() {
                 <Caption>{product.technical_info}</Caption>
               ) : null}
             </Panel>
+            <Row>
+              {can("inventory.receipt.create") ? (
+                <Button
+                  title="Nhập hàng"
+                  secondary
+                  onPress={() => router.push("/stock-form?kind=RECEIPT")}
+                />
+              ) : null}
+              {can("sales.create") ? (
+                <Button
+                  title="Bán sản phẩm này"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/pos",
+                      params: { search: product.sku },
+                    })
+                  }
+                />
+              ) : null}
+              {can("sales.return") ? (
+                <Button
+                  title="Mở đơn để trả hàng"
+                  secondary
+                  onPress={() => router.push("/orders")}
+                />
+              ) : null}
+            </Row>
             {can("products.manage") ? (
               <Button
                 title="Chỉnh sửa hàng hóa"

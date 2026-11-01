@@ -12,6 +12,7 @@ import { seedDatabase } from "./seed";
 import { defaultLoyaltySettings, loyaltyAmounts } from "./loyalty";
 import { saleSchema } from "./validation";
 import sharp from "sharp";
+import { reportRange } from "./reports";
 
 const config = JSON.parse(
   readFileSync(resolve(__dirname, "../../..", ".local/postgres.json"), "utf8"),
@@ -82,6 +83,215 @@ after(async () => {
   if (app) await app.close();
 });
 
+test("counter report ranges cover calendar weeks, leap months, quarters and years", () => {
+  assert.deepEqual(
+    [
+      reportRange("WEEK", "2025-01-01").start,
+      reportRange("WEEK", "2025-01-01").end,
+    ],
+    ["2024-12-30", "2025-01-06"],
+  );
+  assert.deepEqual(
+    [
+      reportRange("MONTH", "2024-02-29").start,
+      reportRange("MONTH", "2024-02-29").end,
+    ],
+    ["2024-02-01", "2024-03-01"],
+  );
+  assert.deepEqual(
+    [
+      reportRange("QUARTER", "2025-12-31").start,
+      reportRange("QUARTER", "2025-12-31").end,
+    ],
+    ["2025-10-01", "2026-01-01"],
+  );
+  assert.deepEqual(
+    [
+      reportRange("YEAR", "2024-02-29").start,
+      reportRange("YEAR", "2024-02-29").end,
+    ],
+    ["2024-01-01", "2025-01-01"],
+  );
+  assert.throws(() => reportRange("DAY", "2025-02-29"));
+});
+
+test("revenue reports separate sales, later debt collections and returns by Vietnam calendar dates", async () => {
+  const { customerId, products } = await loyaltyFixture();
+  const sale = await request("/sales", {
+    warehouseId: main,
+    customerId,
+    lines: [{ productId: products[0].id, quantity: 1, unit: "BASE" }],
+    paid: 400000,
+    method: "CASH",
+  });
+  assert.equal(sale.status, 201);
+  await db.pool.query(
+    "UPDATE orders SET created_at='2024-12-31T16:59:00Z' WHERE id=$1",
+    [sale.data.id],
+  );
+  await db.pool.query(
+    "UPDATE payments SET created_at='2024-12-31T16:59:00Z' WHERE order_id=$1",
+    [sale.data.id],
+  );
+  const debt = (
+    await db.pool.query("SELECT id FROM debts WHERE order_id=$1", [
+      sale.data.id,
+    ])
+  ).rows[0];
+  assert.equal(
+    (
+      await request("/debts/" + debt.id + "/pay", {
+        amount: 600000,
+        method: "CASH",
+      })
+    ).status,
+    201,
+  );
+  await db.pool.query(
+    "UPDATE payments SET created_at='2024-12-31T17:01:00Z' WHERE order_id=$1 AND amount=600000",
+    [sale.data.id],
+  );
+  assert.equal(
+    (
+      await request("/orders/" + sale.data.id + "/return", {
+        reason: "Kiểm tra trả ở kỳ sau",
+      })
+    ).status,
+    201,
+  );
+  await db.pool.query(
+    "UPDATE orders SET returned_at='2025-02-01T08:00:00+07' WHERE id=$1",
+    [sale.data.id],
+  );
+  await db.pool.query(
+    "UPDATE payments SET created_at='2025-02-01T08:00:00+07' WHERE order_id=$1 AND direction='OUT'",
+    [sale.data.id],
+  );
+  const dec = await request(
+    "/reports?period=DAY&anchor=2024-12-31&warehouseId=" + main,
+  );
+  assert.equal(dec.status, 200);
+  assert.equal(dec.data.series.length, 24);
+  assert.equal(dec.data.totals.revenue, 1000000);
+  assert.equal(dec.data.totals.collected, 400000);
+  assert.equal(dec.data.series[23].revenue, 1000000);
+  assert.equal(dec.data.grossProfit, 500000);
+  const jan = await request(
+    "/reports?period=MONTH&anchor=2025-01-01&warehouseId=" + main,
+  );
+  assert.equal(jan.data.series.length, 31);
+  assert.equal(jan.data.totals.revenue, 0);
+  assert.equal(jan.data.totals.collected, 600000);
+  const feb = await request(
+    "/reports?period=MONTH&anchor=2025-02-01&warehouseId=" + main,
+  );
+  assert.equal(feb.data.series.length, 28);
+  assert.equal(feb.data.totals.revenue, -1000000);
+  assert.equal(feb.data.totals.collected, -1000000);
+  assert.equal(feb.data.totals.returns, 1);
+  assert.equal(feb.data.grossProfit, -500000);
+  const other = await request(
+    "/reports?period=YEAR&anchor=2025-01-01&warehouseId=" + secondary,
+  );
+  assert.equal(other.data.series.length, 12);
+  assert.equal(other.data.totals.revenue, 0);
+  assert.equal((await request("/reports?period=BAD")).status, 400);
+  assert.equal(
+    (await request("/reports?period=MONTH&anchor=2025-02-30")).status,
+    400,
+  );
+  assert.equal((await request("/reports", undefined, "banhang")).status, 403);
+});
+
+test("customer purchase history and reports enforce warehouse access and redact costs", async () => {
+  const { customerId, products } = await loyaltyFixture();
+  const sale = await request("/sales", {
+    warehouseId: main,
+    customerId,
+    lines: [{ productId: products[0].id, quantity: 1, unit: "BASE" }],
+    paid: 100000,
+    method: "CASH",
+  });
+  assert.equal(sale.status, 201);
+  const role = await request("/admin/roles", {
+    name: "Xem lịch sử và doanh thu không giá vốn",
+    permissions: ["reports.view", "partners.view", "sales.view"],
+  });
+  const username = "counter-report-test",
+    password = "Counter-Report-Test-2026!";
+  const user = await request("/admin/users", {
+    username,
+    password,
+    name: "Kiểm tra báo cáo",
+    roleIds: [role.data.id],
+    warehouseIds: [main],
+  });
+  assert.equal(user.status, 201);
+  tokens.counterReporter = (
+    await request("/auth/login", { username, password })
+  ).data.token;
+  await request(
+    "/auth/password",
+    { currentPassword: password, newPassword: "Counter-Report-Changed-2026!" },
+    "counterReporter",
+  );
+  const history = await request(
+    "/partners/" + customerId + "/purchases",
+    undefined,
+    "counterReporter",
+  );
+  assert.equal(history.status, 200);
+  assert.equal(history.data.summary.spent, 1000000);
+  assert.equal(history.data.summary.paid, 100000);
+  assert.equal(history.data.summary.outstanding, 900000);
+  assert.equal(history.data.orders[0].id, sale.data.id);
+  assert.equal(JSON.stringify(history.data).includes("costBase"), false);
+  const filtered = await request(
+    "/orders?customerId=" + customerId,
+    undefined,
+    "counterReporter",
+  );
+  assert.equal(filtered.data.length, 1);
+  const report = await request(
+    "/reports?period=QUARTER",
+    undefined,
+    "counterReporter",
+  );
+  assert.equal(report.status, 200);
+  assert.equal(report.data.series.length, 3);
+  assert.equal("grossProfit" in report.data, false);
+  assert.equal(JSON.stringify(report.data).includes('"cost"'), false);
+  assert.equal(
+    (
+      await request(
+        "/reports?warehouseId=" + secondary,
+        undefined,
+        "counterReporter",
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(
+        "/partners/" + customerId + "/purchases?warehouseId=" + secondary,
+        undefined,
+        "counterReporter",
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await request("/partners/" + customerId + "/purchases?page=0")).status,
+    400,
+  );
+  assert.equal(
+    (await request("/partners/" + customerId + "/purchases", undefined, "kho"))
+      .status,
+    403,
+  );
+});
+
 test("employee roles, warehouses and active state can be saved independently without granting access", async () => {
   const role = await request("/admin/roles", {
     name: "Kiểm tra gán quyền độc lập",
@@ -92,64 +302,177 @@ test("employee roles, warehouses and active state can be saved independently wit
   const currentPassword = "Unassigned-Employee-Changed-2026!";
   const username = "unassigned-employee-test";
   const created = await request("/admin/users", {
-    username, name: "Nhân viên chưa gán quyền",
-    password: initialPassword, roleIds: [], warehouseIds: [],
+    username,
+    name: "Nhân viên chưa gán quyền",
+    password: initialPassword,
+    roleIds: [],
+    warehouseIds: [],
   });
   assert.equal(created.status, 201);
-  const initial = await request("/auth/login", { username, password: initialPassword });
+  const initial = await request("/auth/login", {
+    username,
+    password: initialPassword,
+  });
   assert.equal(initial.status, 201);
   tokens.independentEmployee = initial.data.token;
-  assert.equal((await request("/auth/password", { currentPassword: initialPassword, newPassword: currentPassword }, "independentEmployee")).status, 201);
+  assert.equal(
+    (
+      await request(
+        "/auth/password",
+        { currentPassword: initialPassword, newPassword: currentPassword },
+        "independentEmployee",
+      )
+    ).status,
+    201,
+  );
   for (const active of [true, false]) {
     for (const withRole of [true, false]) {
       for (const withWarehouse of [true, false]) {
-        const body = { active, roleIds: withRole ? [role.data.id] : [], warehouseIds: withWarehouse ? [main] : [] };
-        const saved = await request("/admin/users/" + created.data.id, body, "owner", randomUUID(), "PATCH");
+        const body = {
+          active,
+          roleIds: withRole ? [role.data.id] : [],
+          warehouseIds: withWarehouse ? [main] : [],
+        };
+        const saved = await request(
+          "/admin/users/" + created.data.id,
+          body,
+          "owner",
+          randomUUID(),
+          "PATCH",
+        );
         assert.equal(saved.status, 200, JSON.stringify(body));
-        assert.equal((await request("/me", undefined, "independentEmployee")).status, 401, "Old session must be revoked");
-        const login = await request("/auth/login", { username, password: currentPassword });
-        if (!active) { assert.equal(login.status, 401); continue; }
+        assert.equal(
+          (await request("/me", undefined, "independentEmployee")).status,
+          401,
+          "Old session must be revoked",
+        );
+        const login = await request("/auth/login", {
+          username,
+          password: currentPassword,
+        });
+        if (!active) {
+          assert.equal(login.status, 401);
+          continue;
+        }
         assert.equal(login.status, 201);
         tokens.independentEmployee = login.data.token;
         assert.deepEqual(login.data.user.warehouseIds, body.warehouseIds);
         assert.equal(login.data.user.roles.length, withRole ? 1 : 0);
-        assert.equal(login.data.user.permissions.includes("inventory.view"), withRole);
-        const bootstrap = await request("/bootstrap", undefined, "independentEmployee");
+        assert.equal(
+          login.data.user.permissions.includes("inventory.view"),
+          withRole,
+        );
+        const bootstrap = await request(
+          "/bootstrap",
+          undefined,
+          "independentEmployee",
+        );
         assert.equal(bootstrap.data.warehouses.length, withWarehouse ? 1 : 0);
-        const inventory = await request("/inventory", undefined, "independentEmployee");
+        const inventory = await request(
+          "/inventory",
+          undefined,
+          "independentEmployee",
+        );
         assert.equal(inventory.status, withRole ? 200 : 403);
         if (withRole && !withWarehouse) {
           assert.ok(inventory.data.every((p: any) => p.lots.length === 0));
-          assert.equal((await request("/inventory?warehouseId=" + main, undefined, "independentEmployee")).status, 403);
-          assert.deepEqual((await request("/orders", undefined, "independentEmployee")).data, []);
+          assert.equal(
+            (
+              await request(
+                "/inventory?warehouseId=" + main,
+                undefined,
+                "independentEmployee",
+              )
+            ).status,
+            403,
+          );
+          assert.deepEqual(
+            (await request("/orders", undefined, "independentEmployee")).data,
+            [],
+          );
         }
       }
     }
   }
   const owner = await request("/me");
-  assert.equal((await request("/admin/users/" + owner.data.id, { active: false, roleIds: [], warehouseIds: [] }, "owner", randomUUID(), "PATCH")).status, 400);
+  assert.equal(
+    (
+      await request(
+        "/admin/users/" + owner.data.id,
+        { active: false, roleIds: [], warehouseIds: [] },
+        "owner",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    400,
+  );
   assert.equal((await request("/me")).status, 200);
 });
 
 test("uploaded product photos validate content, bind once, survive omitted fields, replace and delete transactionally", async () => {
-  const base64 = (await sharp({ create: { width: 32, height: 24, channels: 3, background: "#176b46" } }).jpeg().toBuffer()).toString("base64");
-  assert.equal((await request("/photos/product", { base64 }, "banhang")).status, 403);
-  assert.equal((await request("/photos/product", { base64 }, "anonymous")).status, 401);
-  assert.equal((await request("/photos/product", { base64: Buffer.from("<svg>fake</svg>").toString("base64") })).status, 400);
+  const base64 = (
+    await sharp({
+      create: { width: 32, height: 24, channels: 3, background: "#176b46" },
+    })
+      .jpeg()
+      .toBuffer()
+  ).toString("base64");
+  assert.equal(
+    (await request("/photos/product", { base64 }, "banhang")).status,
+    403,
+  );
+  assert.equal(
+    (await request("/photos/product", { base64 }, "anonymous")).status,
+    401,
+  );
+  assert.equal(
+    (
+      await request("/photos/product", {
+        base64: Buffer.from("<svg>fake</svg>").toString("base64"),
+      })
+    ).status,
+    400,
+  );
   const key = randomUUID();
   const uploaded = await request("/photos/product", { base64 }, "owner", key);
   assert.equal(uploaded.status, 201);
-  assert.deepEqual((await request("/photos/product", { base64 }, "owner", key)).data, uploaded.data);
+  assert.deepEqual(
+    (await request("/photos/product", { base64 }, "owner", key)).data,
+    uploaded.data,
+  );
   const { products } = await loyaltyFixture();
   const item = products[0];
-  const patch = (imageUrl?: string) => request("/products/" + item.id, { ...item.body, ...(imageUrl !== undefined ? { imageUrl } : {}) }, "owner", randomUUID(), "PATCH");
+  const patch = (imageUrl?: string) =>
+    request(
+      "/products/" + item.id,
+      { ...item.body, ...(imageUrl !== undefined ? { imageUrl } : {}) },
+      "owner",
+      randomUUID(),
+      "PATCH",
+    );
   assert.equal((await patch(uploaded.data.imageUrl)).status, 200);
-  const viewed = await request("/photos/" + uploaded.data.id, undefined, "banhang");
+  const viewed = await request(
+    "/photos/" + uploaded.data.id,
+    undefined,
+    "banhang",
+  );
   assert.equal(viewed.status, 200);
   assert.match(viewed.data.dataUrl, /^data:image\/jpeg;base64,/);
   assert.equal((await patch()).status, 200);
   assert.equal((await request("/photos/" + uploaded.data.id)).status, 200);
-  assert.equal((await request("/products/" + products[1].id, { ...products[1].body, imageUrl: uploaded.data.imageUrl }, "owner", randomUUID(), "PATCH")).status, 400);
+  assert.equal(
+    (
+      await request(
+        "/products/" + products[1].id,
+        { ...products[1].body, imageUrl: uploaded.data.imageUrl },
+        "owner",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    400,
+  );
   assert.equal((await patch("/api/photos/" + randomUUID())).status, 400);
   assert.equal((await request("/photos/" + uploaded.data.id)).status, 200);
   const replacement = await request("/photos/product", { base64 });
@@ -157,74 +480,249 @@ test("uploaded product photos validate content, bind once, survive omitted field
   assert.equal((await request("/photos/" + uploaded.data.id)).status, 404);
   assert.equal((await patch("")).status, 200);
   assert.equal((await request("/photos/" + replacement.data.id)).status, 404);
-  const stored = (await db.pool.query("SELECT image_url FROM products WHERE id=$1", [item.id])).rows[0];
+  const stored = (
+    await db.pool.query("SELECT image_url FROM products WHERE id=$1", [item.id])
+  ).rows[0];
   assert.equal(stored.image_url, "");
 });
 
 test("non-owner administrators may reduce or disable their own access without escalating or altering the owner", async () => {
-  const role = await request("/admin/roles", { name: "Quản trị nhân viên kiểm thử tự lưu", permissions: ["users.manage"] });
+  const role = await request("/admin/roles", {
+    name: "Quản trị nhân viên kiểm thử tự lưu",
+    permissions: ["users.manage"],
+  });
   const username = "self-edit-admin-test";
   const password = "Self-Edit-Admin-Test-2026!";
   const changedPassword = "Self-Edit-Admin-Changed-2026!";
-  const created = await request("/admin/users", { username, name: "Quản trị tự chỉnh", password, roleIds: [role.data.id], warehouseIds: [main] });
+  const created = await request("/admin/users", {
+    username,
+    name: "Quản trị tự chỉnh",
+    password,
+    roleIds: [role.data.id],
+    warehouseIds: [main],
+  });
   assert.equal(created.status, 201);
   const login = await request("/auth/login", { username, password });
   tokens.selfEditAdmin = login.data.token;
-  assert.equal((await request("/auth/password", { currentPassword: password, newPassword: changedPassword }, "selfEditAdmin")).status, 201);
-  const adminRole = await request("/admin/roles", { name: "Quyền ngoài phạm vi người sửa", permissions: ["users.manage", "roles.manage"] });
-  assert.equal((await request("/admin/users/" + created.data.id, { active: true, roleIds: [adminRole.data.id], warehouseIds: [main] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 400);
+  assert.equal(
+    (
+      await request(
+        "/auth/password",
+        { currentPassword: password, newPassword: changedPassword },
+        "selfEditAdmin",
+      )
+    ).status,
+    201,
+  );
+  const adminRole = await request("/admin/roles", {
+    name: "Quyền ngoài phạm vi người sửa",
+    permissions: ["users.manage", "roles.manage"],
+  });
+  assert.equal(
+    (
+      await request(
+        "/admin/users/" + created.data.id,
+        { active: true, roleIds: [adminRole.data.id], warehouseIds: [main] },
+        "selfEditAdmin",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    400,
+  );
   const owner = await request("/me");
-  assert.equal((await request("/admin/users/" + owner.data.id, { active: false, roleIds: [], warehouseIds: [] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 400);
-  assert.equal((await request("/admin/users/" + created.data.id, { active: true, roleIds: [], warehouseIds: [] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 200);
+  assert.equal(
+    (
+      await request(
+        "/admin/users/" + owner.data.id,
+        { active: false, roleIds: [], warehouseIds: [] },
+        "selfEditAdmin",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "/admin/users/" + created.data.id,
+        { active: true, roleIds: [], warehouseIds: [] },
+        "selfEditAdmin",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    200,
+  );
   assert.equal((await request("/me", undefined, "selfEditAdmin")).status, 401);
-  const reducedLogin = await request("/auth/login", { username, password: changedPassword });
+  const reducedLogin = await request("/auth/login", {
+    username,
+    password: changedPassword,
+  });
   assert.equal(reducedLogin.status, 201);
   assert.deepEqual(reducedLogin.data.user.permissions, []);
   tokens.selfEditAdmin = reducedLogin.data.token;
-  assert.equal((await request("/admin/users", undefined, "selfEditAdmin")).status, 403);
+  assert.equal(
+    (await request("/admin/users", undefined, "selfEditAdmin")).status,
+    403,
+  );
   // Re-enable only the existing admin role as owner, then test independent self-locking.
-  assert.equal((await request("/admin/users/" + created.data.id, { active: true, roleIds: [role.data.id], warehouseIds: [main] }, "owner", randomUUID(), "PATCH")).status, 200);
-  tokens.selfEditAdmin = (await request("/auth/login", { username, password: changedPassword })).data.token;
-  assert.equal((await request("/admin/users/" + created.data.id, { active: false, roleIds: [role.data.id], warehouseIds: [main] }, "selfEditAdmin", randomUUID(), "PATCH")).status, 200);
-  assert.equal((await request("/auth/login", { username, password: changedPassword })).status, 401);
+  assert.equal(
+    (
+      await request(
+        "/admin/users/" + created.data.id,
+        { active: true, roleIds: [role.data.id], warehouseIds: [main] },
+        "owner",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    200,
+  );
+  tokens.selfEditAdmin = (
+    await request("/auth/login", { username, password: changedPassword })
+  ).data.token;
+  assert.equal(
+    (
+      await request(
+        "/admin/users/" + created.data.id,
+        { active: false, roleIds: [role.data.id], warehouseIds: [main] },
+        "selfEditAdmin",
+        randomUUID(),
+        "PATCH",
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/auth/login", { username, password: changedPassword }))
+      .status,
+    401,
+  );
 });
 
 test("delivery evidence is scoped, idempotent, retained on returns and confirms delivery atomically", async () => {
   const { products } = await loyaltyFixture();
-  const sold = await request("/sales", { warehouseId: main, lines: [{ productId: products[0].id, quantity: 1, unit: "BASE" }], paid: 1000000, method: "CASH", deliveryStatus: "SHIPPING" });
+  const sold = await request("/sales", {
+    warehouseId: main,
+    lines: [{ productId: products[0].id, quantity: 1, unit: "BASE" }],
+    paid: 1000000,
+    method: "CASH",
+    deliveryStatus: "SHIPPING",
+  });
   assert.equal(sold.status, 201);
   const path = "/orders/" + sold.data.id + "/photos";
-  const base64 = (await sharp({ create: { width: 32, height: 24, channels: 3, background: "white" } }).jpeg().toBuffer()).toString("base64");
+  const base64 = (
+    await sharp({
+      create: { width: 32, height: 24, channels: 3, background: "white" },
+    })
+      .jpeg()
+      .toBuffer()
+  ).toString("base64");
   const body = { base64, confirmDelivered: true, note: "Đã giao đủ hàng" };
   assert.equal((await request(path, body, "banhang")).status, 403);
-  const role = await request("/admin/roles", { name: "Nhân viên giao hàng kiểm thử", permissions: ["sales.view", "sales.fulfillment"] });
+  const role = await request("/admin/roles", {
+    name: "Nhân viên giao hàng kiểm thử",
+    permissions: ["sales.view", "sales.fulfillment"],
+  });
   const password = "Delivery-Photo-Test-2026!";
-  const staff = await request("/admin/users", { username: "delivery-photo", name: "Giao hàng", password, roleIds: [role.data.id], warehouseIds: [main] });
+  const staff = await request("/admin/users", {
+    username: "delivery-photo",
+    name: "Giao hàng",
+    password,
+    roleIds: [role.data.id],
+    warehouseIds: [main],
+  });
   assert.equal(staff.status, 201);
-  const login = await request("/auth/login", { username: "delivery-photo", password });
+  const login = await request("/auth/login", {
+    username: "delivery-photo",
+    password,
+  });
   tokens.deliveryPhoto = login.data.token;
-  assert.equal((await request("/auth/password", { currentPassword: password, newPassword: "Delivery-Photo-Changed-2026!" }, "deliveryPhoto")).status, 201);
+  assert.equal(
+    (
+      await request(
+        "/auth/password",
+        {
+          currentPassword: password,
+          newPassword: "Delivery-Photo-Changed-2026!",
+        },
+        "deliveryPhoto",
+      )
+    ).status,
+    201,
+  );
   const key = randomUUID();
   const added = await request(path, body, "deliveryPhoto", key);
   assert.equal(added.status, 201);
-  assert.deepEqual((await request(path, body, "deliveryPhoto", key)).data, added.data);
-  assert.equal((await request(path, { ...body, note: "changed" }, "deliveryPhoto", key)).status, 409);
-  assert.equal((await request(path, undefined, "deliveryPhoto")).data.length, 1);
-  assert.equal((await request("/photos/" + added.data.id, undefined, "banhang")).status, 404);
-  assert.equal((await request("/photos/" + added.data.id, undefined, "deliveryPhoto")).status, 200);
-  await db.pool.query("UPDATE users SET warehouse_ids=$2 WHERE id=$1", [staff.data.id, [secondary]]);
+  assert.deepEqual(
+    (await request(path, body, "deliveryPhoto", key)).data,
+    added.data,
+  );
+  assert.equal(
+    (await request(path, { ...body, note: "changed" }, "deliveryPhoto", key))
+      .status,
+    409,
+  );
+  assert.equal(
+    (await request(path, undefined, "deliveryPhoto")).data.length,
+    1,
+  );
+  assert.equal(
+    (await request("/photos/" + added.data.id, undefined, "banhang")).status,
+    404,
+  );
+  assert.equal(
+    (await request("/photos/" + added.data.id, undefined, "deliveryPhoto"))
+      .status,
+    200,
+  );
+  await db.pool.query("UPDATE users SET warehouse_ids=$2 WHERE id=$1", [
+    staff.data.id,
+    [secondary],
+  ]);
   assert.equal((await request(path, undefined, "deliveryPhoto")).status, 403);
   assert.equal((await request(path, body, "deliveryPhoto")).status, 403);
-  assert.equal((await request("/photos/" + added.data.id, undefined, "deliveryPhoto")).status, 403);
-  await db.pool.query("UPDATE users SET warehouse_ids=$2 WHERE id=$1", [staff.data.id, [main]]);
-  const order = (await db.pool.query("SELECT delivery_status FROM orders WHERE id=$1", [sold.data.id])).rows[0];
+  assert.equal(
+    (await request("/photos/" + added.data.id, undefined, "deliveryPhoto"))
+      .status,
+    403,
+  );
+  await db.pool.query("UPDATE users SET warehouse_ids=$2 WHERE id=$1", [
+    staff.data.id,
+    [main],
+  ]);
+  const order = (
+    await db.pool.query("SELECT delivery_status FROM orders WHERE id=$1", [
+      sold.data.id,
+    ])
+  ).rows[0];
   assert.equal(order.delivery_status, "DELIVERED");
-  for (let i=0;i<4;i++) assert.equal((await request(path, { base64 }, "deliveryPhoto")).status, 201);
+  for (let i = 0; i < 4; i++)
+    assert.equal(
+      (await request(path, { base64 }, "deliveryPhoto")).status,
+      201,
+    );
   assert.equal((await request(path, { base64 }, "deliveryPhoto")).status, 409);
-  assert.equal((await request("/orders/" + sold.data.id + "/return", { reason: "Kiểm thử lưu ảnh khi trả hàng" })).status, 201);
-  assert.equal((await request(path, undefined, "deliveryPhoto")).data.length, 5);
+  assert.equal(
+    (
+      await request("/orders/" + sold.data.id + "/return", {
+        reason: "Kiểm thử lưu ảnh khi trả hàng",
+      })
+    ).status,
+    201,
+  );
+  assert.equal(
+    (await request(path, undefined, "deliveryPhoto")).data.length,
+    5,
+  );
   assert.equal((await request(path, body, "deliveryPhoto")).status, 409);
-  assert.equal((await request("/photos/" + added.data.id, undefined, "deliveryPhoto")).status, 200);
+  assert.equal(
+    (await request("/photos/" + added.data.id, undefined, "deliveryPhoto"))
+      .status,
+    200,
+  );
 });
 
 test("warehouse scope and cost redaction are enforced at the API", async () => {

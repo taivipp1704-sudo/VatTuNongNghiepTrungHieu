@@ -121,12 +121,12 @@ export function Notifications() {
             {can("sales.view") ? (
               <LinkRow
                 title={
-                  String(query.data?.jobs?.shipping || 0) + " đơn đang giao"
+                  String(query.data?.jobs?.unpaid || 0) + " đơn đang giao dịch"
                 }
                 onPress={() =>
                   router.push({
                     pathname: "/orders",
-                    params: { filter: "SHIPPING" },
+                    params: { filter: "UNPAID" },
                   })
                 }
               />
@@ -161,30 +161,6 @@ export function Connections() {
           <Caption>
             Phiếu PDF là chứng từ nội bộ. Cần nhà cung cấp HĐĐT và tài khoản
             được cấp để phát hành hóa đơn điện tử thật.
-          </Caption>
-        </Panel>
-      </Section>
-      <Section title="Giao hàng & kênh bán">
-        <Panel>
-          <Label>Theo dõi giao hàng nội bộ</Label>
-          <Caption>
-            Chọn đơn để cập nhật đóng gói, bàn giao, đang giao hoặc hoàn tất,
-            kèm đơn vị vận chuyển và mã vận đơn. Báo cước trực tiếp cần tài
-            khoản hãng vận chuyển.
-          </Caption>
-          <Button
-            title="Mở đơn hàng"
-            secondary
-            onPress={() => router.push("/orders")}
-            disabled={!can("sales.view")}
-          />
-        </Panel>
-        <Panel>
-          <Label>Facebook / kênh bán bên ngoài</Label>
-          <Badge label="Chưa kết nối" />
-          <Caption>
-            Chưa có tài khoản kênh bán được cấu hình. Không có hội thoại hoặc
-            đơn bên ngoài được tự nhập vào hệ thống.
           </Caption>
         </Panel>
       </Section>

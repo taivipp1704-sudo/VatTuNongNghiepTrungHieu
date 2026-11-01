@@ -51,6 +51,7 @@ export default function Pos() {
   const params = useLocalSearchParams<{
     customerId?: string;
     delivery?: string;
+    search?: string;
   }>();
   const warehouse = useWarehouse((state) => state.warehouseId);
   const appliedContext = useRef("");
@@ -92,6 +93,9 @@ export default function Pos() {
       }));
   }, [draft.ready, value.warehouseId, bootstrap.data]);
   useEffect(() => {
+    if (params.search) setSearch(params.search);
+  }, [params.search]);
+  useEffect(() => {
     if (scan.target === "pos" && scan.code) {
       setSearch(scan.code);
       scan.clear();
@@ -117,7 +121,7 @@ export default function Pos() {
         ...(params.customerId
           ? { customerId: params.customerId, redeemPoints: "" }
           : {}),
-        ...(params.delivery ? { deliveryStatus: "PENDING_PACK" } : {}),
+        deliveryStatus: "DELIVERED",
       }));
     };
     void apply();
@@ -265,9 +269,7 @@ export default function Pos() {
       redeemPoints: Number(value.redeemPoints || 0),
       expectedTotal: total,
       ...(value.note ? { note: value.note } : {}),
-      ...(value.deliveryStatus && value.deliveryStatus !== "DELIVERED"
-        ? { deliveryStatus: value.deliveryStatus }
-        : {}),
+      deliveryStatus: "DELIVERED",
       paid,
       method: value.method,
     };
@@ -906,15 +908,6 @@ export default function Pos() {
           Điểm cộng theo quy tắc admin đã chọn; đơn ghi nợ có thể có điểm đang
           chờ thu tiền.
         </Caption>
-        <Select
-          label="Giao hàng"
-          value={value.deliveryStatus || "DELIVERED"}
-          onChange={(deliveryStatus) => update({ deliveryStatus })}
-          options={[
-            { value: "DELIVERED", label: "Đã giao tại quầy" },
-            { value: "PENDING_PACK", label: "Đơn giao hàng — chờ đóng gói" },
-          ]}
-        />
         <Field
           label="Ghi chú đơn / mã chứng từ liên kết"
           value={value.note || ""}

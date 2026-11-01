@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ComponentRef, useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { FlatList, Pressable, RefreshControl, View } from "react-native";
 import {
@@ -30,6 +30,7 @@ import { Partner, LoyaltySettings } from "@/types";
 import { fold, money, number } from "@/lib/format";
 import { memberTier } from "@/lib/loyalty";
 import { theme } from "@/theme";
+import { CustomerPurchases } from "@/components/customer-purchases";
 const blank = {
   name: "",
   kind: "CUSTOMER",
@@ -46,6 +47,12 @@ export default function Partners() {
   const [search, setSearch] = useState("");
   const [tier, setTier] = useState("all");
   const [selected, setSelected] = useState("");
+  const listRef = useRef<ComponentRef<typeof FlatList<Partner>>>(null);
+  useEffect(() => {
+    if (selected)
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [selected]);
+  useEffect(() => setSelected(""), [search, tier]);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState("");
   const [form, setForm] = useState(blank);
@@ -72,9 +79,9 @@ export default function Partners() {
           ? item.kind === "SUPPLIER"
           : item.kind === "CUSTOMER" && memberTier(item, rules.data) === tier),
     );
-  const featured =
-    rows.find((item) => item.id === selected && item.kind === "CUSTOMER") ||
-    rows.find((item) => item.kind === "CUSTOMER");
+  const featured = rows.find(
+    (item) => item.id === selected && item.kind === "CUSTOMER",
+  );
   useEffect(() => {
     setAdjust(false);
     setDelta("");
@@ -131,7 +138,8 @@ export default function Partners() {
     }
   };
   return (
-    <FlatList
+    <FlatList<Partner>
+      ref={listRef}
       style={{ backgroundColor: theme.colors.canvas }}
       contentContainerStyle={{
         padding: 16,
@@ -141,7 +149,7 @@ export default function Partners() {
         width: "100%",
         alignSelf: "center",
       }}
-      data={rows.filter((item) => item.id !== featured?.id)}
+      data={featured ? [] : rows}
       keyExtractor={(item) => item.id}
       keyboardShouldPersistTaps="handled"
       refreshControl={
@@ -201,6 +209,16 @@ export default function Partners() {
             ]}
           />
           <Notice>{notice}</Notice>
+          {featured ? (
+            <Button
+              title="Quay lại danh sách khách hàng"
+              secondary
+              onPress={() => {
+                setSelected("");
+                listRef.current?.scrollToOffset({ offset: 0, animated: false });
+              }}
+            />
+          ) : null}
           <Notice error>{command.error}</Notice>
           {creating ? (
             <Panel>
@@ -282,6 +300,9 @@ export default function Partners() {
                     </Caption>
                   </View>
                 </View>
+                {can("sales.view") ? (
+                  <CustomerPurchases customerId={featured.id} />
+                ) : null}
                 <View
                   style={{
                     padding: 14,
@@ -535,9 +556,9 @@ export default function Partners() {
                     color: theme.colors.primary,
                   }}
                 >
-                  {number(item.loyalty_balance || 0)}
+                  {money(item.kind === "SUPPLIER" ? item.debt_balance || 0 : item.lifetime_spend || 0)}
                 </AppText>
-                <Caption>điểm</Caption>
+                <Caption>{item.kind === "SUPPLIER" ? "Phải trả" : "Đã mua · " + number(item.loyalty_balance || 0) + " điểm"}</Caption>
               </View>
             </View>
           </Panel>

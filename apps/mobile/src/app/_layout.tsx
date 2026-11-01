@@ -33,7 +33,7 @@ const titles: Record<string, string> = {
   "/partners": "Khách hàng & nhà cung cấp",
   "/admin": "Quản trị nội bộ",
   "/settings": "Cửa hàng & bảo mật",
-  "/reports": "Báo cáo 30 ngày",
+  "/reports": "Doanh thu cửa hàng",
   "/change-password": "Đổi mật khẩu",
 };
 export default function RootLayout() {

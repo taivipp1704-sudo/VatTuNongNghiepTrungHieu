@@ -43,7 +43,8 @@ export async function api<Result>(
         options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: options.signal ?? AbortSignal.timeout(15000),
     });
-  } catch {
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
     useSession.getState().setOffline(true);
     throw new ApiError(
       "Chưa nhận được xác nhận từ máy chủ. Giữ nguyên nội dung và thử lại để tránh tạo trùng.",
@@ -96,6 +97,7 @@ export function useApi<Result>(path: string, enabled = true) {
       "/invoices",
     ].includes(path.split("?")[0]) ||
     path.startsWith("/loyalty/customers/") ||
+    (path.startsWith("/partners/") && path.includes("/purchases")) ||
     path === "/loyalty/ledger";
   if (scoped && warehouseId && !/[?&]warehouseId=/.test(path))
     path += (path.includes("?") ? "&" : "?") + "warehouseId=" + warehouseId;
@@ -154,7 +156,8 @@ export function useCommand() {
       await queries.invalidateQueries();
       return result;
     } catch (error) {
-      errorStatus.current = error instanceof ApiError ? error.status : undefined;
+      errorStatus.current =
+        error instanceof ApiError ? error.status : undefined;
       setError(
         error instanceof Error ? error.message : "Không thể lưu dữ liệu.",
       );

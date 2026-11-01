@@ -16,6 +16,7 @@ import { Operations } from "./operations";
 import { Loyalty } from "./loyalty";
 import { AppController, PublicController } from "./controller";
 import { PhotoController, Photos } from "./photos";
+import { Reports } from "./reports";
 
 @Catch()
 class ApiExceptionFilter implements ExceptionFilter {
@@ -26,20 +27,24 @@ class ApiExceptionFilter implements ExceptionFilter {
         ? error.getStatus()
         : error.code === "23505"
           ? 409
-          : error.status === 413 ? 413 : error.status === 400 ||
-              ["23503", "23514", "22P02", "22003", "22007", "22008"].includes(
-                error.code,
-              )
-            ? 400
-            : 500;
+          : error.status === 413
+            ? 413
+            : error.status === 400 ||
+                ["23503", "23514", "22P02", "22003", "22007", "22008"].includes(
+                  error.code,
+                )
+              ? 400
+              : 500;
     const message =
       error instanceof HttpException
         ? error.message
         : status === 409
           ? "Mã hàng, tài khoản hoặc dữ liệu này đã tồn tại."
-          : status === 413 ? "Ảnh quá lớn. Chọn lại ảnh để nén trước khi gửi." : status === 400
-            ? "Dữ liệu liên kết, số lượng hoặc giá trị không hợp lệ."
-            : "Không thể hoàn tất yêu cầu. Vui lòng thử lại.";
+          : status === 413
+            ? "Ảnh quá lớn. Chọn lại ảnh để nén trước khi gửi."
+            : status === 400
+              ? "Dữ liệu liên kết, số lượng hoặc giá trị không hợp lệ."
+              : "Không thể hoàn tất yêu cầu. Vui lòng thử lại.";
     if (status === 500) console.error({ name: error.name, code: error.code });
     response.status(status).json({ statusCode: status, message });
   }
@@ -47,7 +52,15 @@ class ApiExceptionFilter implements ExceptionFilter {
 
 @Module({
   controllers: [PublicController, AppController, PhotoController],
-  providers: [Database, AuthService, SessionGuard, Loyalty, Operations, Photos],
+  providers: [
+    Database,
+    AuthService,
+    SessionGuard,
+    Loyalty,
+    Operations,
+    Photos,
+    Reports,
+  ],
 })
 export class AppModule {}
 

@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { router, Href } from "expo-router";
 import { Pressable, View } from "react-native";
-import {
-  Badge,
-  Caption,
-  Label,
-  Page,
-  Panel,
-  QueryState,
-  Row,
-} from "@/components/ui";
+import { Caption, Label, Page, Panel, QueryState, Row } from "@/components/ui";
 import { AppText } from "@/components/text";
 import {
   Icon,
@@ -17,28 +9,24 @@ import {
   IconName,
   SectionHeading,
 } from "@/components/pos-ui";
+import { RevenueChart } from "@/components/revenue-chart";
 import { useApi } from "@/lib/api";
 import { can } from "@/lib/session";
 import { money, number } from "@/lib/format";
 import { DataRow } from "@/types";
 import { theme } from "@/theme";
+
 export default function Home() {
   const [hidden, setHidden] = useState(false);
   const query = useApi<DataRow>("/dashboard");
+  const weekly = useApi<DataRow>("/reports?period=WEEK", can("reports.view"));
   const data = query.data;
   const actions: {
     name: string;
     icon: IconName;
     route: string;
     permission?: string;
-    green?: boolean;
   }[] = [
-    {
-      name: "Thêm sản phẩm",
-      icon: "package-variant-plus",
-      route: "/product-form",
-      permission: "products.manage",
-    },
     {
       name: "Nhập hàng",
       icon: "cart-arrow-down",
@@ -52,24 +40,28 @@ export default function Home() {
       permission: "inventory.view",
     },
     {
-      name: "Chứng từ bán",
-      icon: "receipt-text-outline",
-      route: "/invoices",
-      permission: "invoices.view",
+      name: "Trả hàng",
+      icon: "keyboard-return",
+      route: "/orders",
+      permission: "sales.return",
+    },
+    {
+      name: "Khách hàng",
+      icon: "account-group-outline",
+      route: "/partners",
+      permission: "partners.view",
     },
     {
       name: "Công nợ",
-      icon: "cash-multiple",
+      icon: "cash-clock",
       route: "/debts",
       permission: "debts.view",
-      green: true,
     },
     {
-      name: can("loyalty.manage") ? "Tích điểm thưởng" : "Khách hàng",
-      icon: "tag-outline",
-      route: can("loyalty.manage") ? "/loyalty" : "/partners",
-      permission: can("loyalty.manage") ? "loyalty.manage" : "partners.view",
-      green: true,
+      name: "Tích điểm",
+      icon: "star-circle-outline",
+      route: "/loyalty",
+      permission: "loyalty.manage",
     },
     {
       name: "Báo cáo",
@@ -77,83 +69,44 @@ export default function Home() {
       route: "/reports",
       permission: "reports.view",
     },
-    { name: "Kết nối / in", icon: "printer-outline", route: "/connections" },
     {
-      name: "Phân quyền",
-      icon: "account-lock-outline",
-      route: "/admin?tab=roles",
-      permission: "roles.manage",
+      name: "Thêm hàng",
+      icon: "package-variant-plus",
+      route: "/product-form",
+      permission: "products.manage",
     },
-    { name: "Xem thêm", icon: "view-grid-outline", route: "/more" },
-  ]
-    .filter((item) => !item.permission || can(item.permission))
-    .slice(0, 8) as {
+  ].filter((item) => !item.permission || can(item.permission)) as {
     name: string;
     icon: IconName;
     route: string;
     permission?: string;
-    green?: boolean;
   }[];
-  const jobs = [
-    {
-      name: "Chờ duyệt phiếu kho",
-      icon: "clipboard-check-outline",
-      count: data?.pending,
-      route: "/documents",
-      permission: "inventory.view",
-    },
-    {
-      name: "Chờ thanh toán",
-      icon: "cash-clock",
-      count: data?.jobs?.unpaid,
-      route: "/orders?filter=UNPAID",
-      permission: "sales.view",
-    },
-    {
-      name: "Chờ đóng gói",
-      icon: "package-variant",
-      count: data?.jobs?.pack,
-      route: "/orders?filter=PENDING_PACK",
-      permission: "sales.view",
-    },
-    {
-      name: "Chờ bàn giao",
-      icon: "account-arrow-right-outline",
-      count: data?.jobs?.handover,
-      route: "/orders?filter=PENDING_HANDOVER",
-      permission: "sales.view",
-    },
-    {
-      name: "Đang giao hàng",
-      icon: "truck-outline",
-      count: data?.jobs?.shipping,
-      route: "/orders?filter=SHIPPING",
-      permission: "sales.view",
-    },
-    {
-      name: "Đơn đã trả hàng",
-      icon: "package-variant-remove",
-      count: data?.jobs?.returned,
-      route: "/orders?filter=RETURNED",
-      permission: "sales.view",
-    },
-  ].filter((item) => can(item.permission));
   return (
     <Page
-      onRefresh={() => void query.refetch()}
+      onRefresh={() => {
+        void query.refetch();
+        if (can("reports.view")) void weekly.refetch();
+      }}
       refreshing={query.isRefetching}
     >
       <QueryState query={query}>
-        <Panel>
+        <View
+          style={{
+            backgroundColor: theme.colors.hero,
+            borderRadius: 24,
+            padding: 20,
+            gap: 13,
+          }}
+        >
           <Row>
             <AppText
               style={{
-                fontSize: 12,
+                color: theme.colors.onHeroMuted,
+                fontSize: 13,
                 fontWeight: "600",
-                color: theme.colors.muted,
               }}
             >
-              DOANH THU NGÀY
+              DOANH THU HÔM NAY
             </AppText>
             <IconButton
               name={hidden ? "eye-off-outline" : "eye-outline"}
@@ -164,8 +117,9 @@ export default function Home() {
           <AppText
             selectable
             style={{
-              fontSize: 30,
-              lineHeight: 42,
+              color: theme.colors.onPrimary,
+              fontSize: 31,
+              lineHeight: 43,
               fontWeight: "700",
               fontVariant: ["tabular-nums"],
             }}
@@ -176,219 +130,229 @@ export default function Home() {
                 ? money(data.sales.revenue)
                 : "Theo quyền tài khoản"}
           </AppText>
-          <Caption>
+          {data?.sales ? (
+            <Row>
+              <AppText
+                style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
+              >
+                Thực thu {hidden ? "•••" : money(data.sales.collected)}
+              </AppText>
+              <AppText
+                style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
+              >
+                {number(data.sales.orders)} đơn bán
+              </AppText>
+            </Row>
+          ) : null}
+          <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 12 }}>
+            Bán tại quầy · Cập nhật{" "}
             {data?.updatedAt
-              ? "Cập nhật " +
-                new Date(data.updatedAt).toLocaleTimeString("vi-VN", {
+              ? new Date(data.updatedAt).toLocaleTimeString("vi-VN", {
                   hour: "2-digit",
                   minute: "2-digit",
                 })
-              : "Đang tải dữ liệu cửa hàng"}
-          </Caption>
-          {data?.sales ? (
-            <View
-              style={{
-                flexDirection: "row",
-                padding: 14,
-                backgroundColor: theme.colors.soft,
-                borderRadius: theme.radius.md,
-                gap: 10,
-              }}
-            >
-              {[
-                { label: "Đơn hôm nay", value: data.sales.orders },
-                { label: "Chưa thu (90 ngày)", value: data.jobs?.unpaid || 0 },
-                { label: "Đã trả (90 ngày)", value: data.jobs?.returned || 0 },
-              ].map((item) => (
-                <View
-                  key={item.label}
-                  style={{ flex: 1, gap: 8, alignItems: "center" }}
-                >
-                  <AppText
-                    style={{
-                      fontSize: 11,
-                      color: theme.colors.muted,
-                      textAlign: "center",
-                      lineHeight: 18,
-                    }}
-                  >
-                    {item.label}
-                  </AppText>
-                  <Label big>{hidden ? "—" : number(item.value)}</Label>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Caption>
-              Tồn kho và công việc hiển thị theo phạm vi được cấp.
-            </Caption>
-          )}
-        </Panel>
+              : "…"}
+          </AppText>
+        </View>
         {can("sales.create") ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Bán tại quầy"
+            onPress={() => router.push("/pos")}
+            style={({ pressed }) => ({
+              backgroundColor: theme.colors.accent,
+              opacity: pressed ? 0.8 : 1,
+              borderRadius: theme.radius.lg,
+              padding: 18,
+              flexDirection: "row",
+              gap: 14,
+              alignItems: "center",
+              minHeight: 78,
+            })}
+          >
+            <Icon
+              name="cash-register"
+              size={30}
+              color={theme.colors.onPrimary}
+            />
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText
+                style={{
+                  color: theme.colors.onPrimary,
+                  fontWeight: "700",
+                  fontSize: 20,
+                }}
+              >
+                Bán tại quầy
+              </AppText>
+              <AppText style={{ color: theme.colors.onPrimary, fontSize: 12 }}>
+                Chọn hàng, chọn khách và thanh toán
+              </AppText>
+            </View>
+            <Icon name="arrow-right" color={theme.colors.onPrimary} />
+          </Pressable>
+        ) : null}
+        {can("sales.view") ? (
           <View style={{ flexDirection: "row", gap: 12 }}>
             {[
               {
-                title: "Bán giao hàng",
-                sub: "Tạo đơn giao",
-                icon: "truck-fast-outline",
-                bg: theme.colors.primary,
-                route: "/pos?delivery=1",
+                label: "Đang giao dịch",
+                count: data?.jobs?.unpaid || 0,
+                icon: "cash-clock" as IconName,
+                color: theme.colors.warning,
+                background: theme.colors.warningBg,
+                filter: "UNPAID",
               },
               {
-                title: "Bán tại quầy",
-                sub: "Thu ngân POS",
-                icon: "storefront-outline",
-                bg: theme.colors.success,
-                route: "/pos",
+                label: "Hoàn thành",
+                count: data?.jobs?.completed || 0,
+                icon: "check-circle-outline" as IconName,
+                color: theme.colors.success,
+                background: theme.colors.successBg,
+                filter: "PAID",
               },
             ].map((item) => (
               <Pressable
+                key={item.label}
                 accessibilityRole="button"
-                key={item.title}
-                onPress={() => router.push(item.route as Href)}
+                accessibilityLabel={item.label}
+                onPress={() =>
+                  router.push(("/orders?filter=" + item.filter) as Href)
+                }
                 style={{
                   flex: 1,
-                  minHeight: 84,
-                  borderRadius: 16,
-                  backgroundColor: item.bg,
-                  padding: 12,
-                  gap: 6,
+                  borderRadius: theme.radius.lg,
+                  backgroundColor: item.background,
+                  padding: 16,
+                  gap: 8,
+                  minHeight: 120,
                 }}
               >
-                <Icon
-                  name={item.icon as IconName}
-                  color={theme.colors.onPrimary}
-                  size={24}
-                />
+                <Icon name={item.icon} color={item.color} />
                 <AppText
-                  style={{
-                    fontSize: 15,
-                    fontWeight: "700",
-                    color: theme.colors.onPrimary,
-                  }}
+                  style={{ fontSize: 26, fontWeight: "700", color: item.color }}
                 >
-                  {item.title}
+                  {hidden ? "—" : number(item.count)}
                 </AppText>
                 <AppText
-                  style={{
-                    fontSize: 11,
-                    lineHeight: 16,
-                    color: theme.colors.onPrimary,
-                  }}
+                  style={{ fontSize: 13, color: item.color, fontWeight: "600" }}
                 >
-                  {item.sub}
+                  {item.label}
+                </AppText>
+                <AppText style={{ fontSize: 11, color: item.color }}>
+                  Đơn trong 90 ngày
                 </AppText>
               </Pressable>
             ))}
           </View>
         ) : null}
         <SectionHeading
-          title="Thao tác nhanh"
-          action="Tất cả"
+          title="Thao tác tại cửa hàng"
+          action="Xem thêm"
           onPress={() => router.push("/more")}
         />
         <Panel>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-            {actions.map((item) => (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 18 }}>
+            {actions.map((action, index) => (
               <Pressable
-                key={item.name}
+                key={action.name}
                 accessibilityRole="button"
-                onPress={() => router.push(item.route as Href)}
-                style={{
-                  flexBasis: "21%",
-                  flexGrow: 1,
-                  minWidth: 58,
+                onPress={() => router.push(action.route as Href)}
+                style={({ pressed }) => ({
+                  width: "25%",
                   alignItems: "center",
                   gap: 8,
-                  paddingVertical: 6,
-                }}
+                  opacity: pressed ? 0.6 : 1,
+                  minHeight: 78,
+                  paddingHorizontal: 3,
+                })}
               >
                 <View
                   style={{
                     width: 46,
                     height: 46,
+                    borderRadius: 15,
+                    backgroundColor:
+                      index % 3 === 0
+                        ? theme.colors.accentSoft
+                        : theme.colors.soft,
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: 23,
-                    backgroundColor: item.green
-                      ? theme.colors.successBg
-                      : theme.colors.blueLight,
                   }}
                 >
                   <Icon
-                    name={item.icon}
+                    name={action.icon}
+                    size={23}
                     color={
-                      item.green ? theme.colors.success : theme.colors.primary
+                      index % 3 === 0
+                        ? theme.colors.accent
+                        : theme.colors.primary
                     }
                   />
                 </View>
                 <AppText
-                  style={{ fontSize: 12, lineHeight: 19, textAlign: "center" }}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    textAlign: "center",
+                    lineHeight: 19,
+                  }}
                 >
-                  {item.name}
+                  {action.name}
                 </AppText>
               </Pressable>
             ))}
           </View>
         </Panel>
-        <SectionHeading title="Công việc chờ xử lý" />
-        <Caption>
-          Đơn hàng trong 90 ngày gần nhất · Phiếu kho đang chờ duyệt
-        </Caption>
-        <Panel>
-          {jobs.map((job) => (
-            <Pressable
-              key={job.name}
-              accessibilityRole="button"
-              onPress={() => router.push(job.route as Href)}
-              style={{
-                minHeight: 58,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: theme.colors.border,
-              }}
-            >
-              <View
-                style={{
-                  padding: 8,
-                  borderRadius: 10,
-                  backgroundColor: theme.colors.soft,
-                }}
-              >
-                <Icon name={job.icon as IconName} />
-              </View>
-              <AppText style={{ flex: 1, fontSize: 14 }}>{job.name}</AppText>
-              <AppText
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: job.count ? theme.colors.primary : theme.colors.muted,
-                }}
-              >
-                {number(job.count || 0)}
-              </AppText>
-              <Icon name="chevron-right" color={theme.colors.muted} size={18} />
-            </Pressable>
-          ))}
-        </Panel>
-        {data?.stock ? (
+        {can("reports.view") && !hidden ? (
           <Panel>
-            <SectionHeading title="Theo dõi kho" />
+            <SectionHeading
+              title="Doanh thu tuần này"
+              action="Chi tiết"
+              onPress={() => router.push("/reports")}
+            />
+            <QueryState query={weekly}>
+              {weekly.data ? (
+                <RevenueChart points={weekly.data.series} period="WEEK" />
+              ) : null}
+            </QueryState>
+          </Panel>
+        ) : null}
+        {can("inventory.view") ? (
+          <Panel>
+            <SectionHeading
+              title="Theo dõi kho"
+              action="Mở kho"
+              onPress={() => router.push("/inventory")}
+            />
             <Row>
-              <Caption>Lô hết hạn trong 90 ngày</Caption>
-              <Badge
-                label={number(data.stock.expiring)}
-                tone={data.stock.expiring ? "warning" : "neutral"}
-              />
+              <Caption>Phiếu cần duyệt</Caption>
+              <Label>{number(data?.pending || 0)}</Label>
+            </Row>
+            <Row>
+              <Caption>Lô cận hạn trong 90 ngày</Caption>
+              <Label>{number(data?.stock?.expiring || 0)}</Label>
             </Row>
             <Row>
               <Caption>Lô đã hết hạn</Caption>
-              <Badge
-                label={number(data.stock.expired)}
-                tone={data.stock.expired ? "danger" : "neutral"}
-              />
+              <Label>{number(data?.stock?.expired || 0)}</Label>
+            </Row>
+          </Panel>
+        ) : null}
+        {data?.debts && can("debts.view") ? (
+          <Panel>
+            <SectionHeading
+              title="Công nợ cửa hàng"
+              action="Xem sổ nợ"
+              onPress={() => router.push("/debts")}
+            />
+            <Row>
+              <Caption>Phải thu khách hàng</Caption>
+              <Label>{hidden ? "•••" : money(data.debts.receivable)}</Label>
+            </Row>
+            <Row>
+              <Caption>Phải trả nhà cung cấp</Caption>
+              <Label>{hidden ? "•••" : money(data.debts.payable)}</Label>
             </Row>
           </Panel>
         ) : null}

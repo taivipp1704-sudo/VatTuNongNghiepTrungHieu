@@ -109,7 +109,7 @@ export function More() {
           ))}
         <LinkRow
           title="Kết nối & thiết bị"
-          description="In Android, PDF, vận chuyển và kênh bán"
+          description="In Android và chia sẻ phiếu PDF"
           onPress={() => router.push("/connections")}
         />
         <LinkRow

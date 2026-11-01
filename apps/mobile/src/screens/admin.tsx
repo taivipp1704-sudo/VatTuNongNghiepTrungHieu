@@ -38,7 +38,7 @@ const labels: Record<string, string> = {
   "loyalty.manage": "Cấu hình % số chấm và quy đổi điểm",
   "loyalty.adjust": "Điều chỉnh điểm thưởng thủ công",
   "loyalty.redeem": "Đổi điểm giảm tiền khi bán hàng",
-  "sales.fulfillment": "Đóng gói, giao hàng và ảnh xác nhận",
+  "sales.fulfillment": "Quản lý đơn của nhân viên trong kho",
   "sales.create": "Tạo đơn bán",
   "sales.view": "Xem đơn bán",
   "sales.price.edit": "Sửa giá bán",
@@ -124,7 +124,8 @@ const descriptions: Record<string, string> = {
   "loyalty.manage": "Quy tắc tích điểm, quy đổi và số chấm từng mặt hàng",
   "loyalty.adjust": "Cộng hoặc trừ điểm, bắt buộc có lý do và nhật ký",
   "reports.profit": "Bao gồm giá vốn và lãi gộp",
-  "sales.fulfillment": "Cập nhật giao hàng và chụp ảnh xác nhận đơn trong phạm vi kho được cấp. Cần kèm quyền xem đơn hàng.",
+  "sales.fulfillment":
+    "Xem đơn của nhân viên trong kho được cấp. Quyền nhận tiền và trả hàng được thiết lập riêng; cần kèm quyền xem đơn bán.",
 };
 export default function Admin() {
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -154,7 +155,8 @@ export default function Admin() {
   const [showForm, setShowForm] = useState(false);
   const pageScroll = useRef<ComponentRef<typeof ScrollView>>(null);
   useEffect(() => {
-    if (showForm && tab === "users") pageScroll.current?.scrollTo({ y: 0, animated: false });
+    if (showForm && tab === "users")
+      pageScroll.current?.scrollTo({ y: 0, animated: false });
   }, [showForm, editUser, tab]);
   const [form, setForm] = useState({
     username: "",
@@ -226,7 +228,10 @@ export default function Admin() {
       if (editingSelf) {
         await useSession.getState().logout();
         queryClient.clear();
-        useSession.setState({ message: "Đã lưu tài khoản. Đăng nhập lại để sử dụng quyền mới; tài khoản bị khóa cần chủ cửa hàng mở lại." });
+        useSession.setState({
+          message:
+            "Đã lưu tài khoản. Đăng nhập lại để sử dụng quyền mới; tài khoản bị khóa cần chủ cửa hàng mở lại.",
+        });
         return;
       }
       setShowForm(false);
@@ -314,7 +319,11 @@ export default function Admin() {
               <Section
                 title={editUser ? "Sửa quyền nhân viên" : "Nhân viên mới"}
               >
-                {editUser ? <Caption>Đang sửa: {form.name} · {form.username}</Caption> : null}
+                {editUser ? (
+                  <Caption>
+                    Đang sửa: {form.name} · {form.username}
+                  </Caption>
+                ) : null}
                 {!editUser ? (
                   <>
                     <Field
@@ -351,8 +360,8 @@ export default function Admin() {
                   />
                 )}
                 <Caption>
-                  Có thể gán nhiều vai trò hoặc bỏ chọn tất cả. Không có vai
-                  trò thì nhân viên chưa có quyền chức năng.
+                  Có thể gán nhiều vai trò hoặc bỏ chọn tất cả. Không có vai trò
+                  thì nhân viên chưa có quyền chức năng.
                 </Caption>
                 {roles.data
                   ?.filter((role) => !role.protected)
@@ -371,8 +380,8 @@ export default function Admin() {
                   ))}
                 <Label>Kho được phép thao tác</Label>
                 <Caption>
-                  Có thể bỏ chọn tất cả kho và vẫn lưu. Nhân viên chưa được
-                  gán kho sẽ không thể thao tác dữ liệu kho.
+                  Có thể bỏ chọn tất cả kho và vẫn lưu. Nhân viên chưa được gán
+                  kho sẽ không thể thao tác dữ liệu kho.
                 </Caption>
                 {bootstrap.data?.warehouses.map((warehouse) => (
                   <Toggle
@@ -396,105 +405,108 @@ export default function Admin() {
                   onPress={saveUser}
                   pending={command.pending}
                   disabled={
-                    (!editUser &&
-                      (!form.username ||
-                        !form.name ||
-                        form.password.length < 12))
+                    !editUser &&
+                    (!form.username || !form.name || form.password.length < 12)
                   }
                 />
               </Section>
             </Panel>
           ) : null}
-          {!showForm ? <QueryState query={users}>
-            {users.data?.map((user) => (
-              <Panel key={user.id}>
-                <Row>
-                  <Label big>{user.name}</Label>
-                  <Badge
-                    label={
-                      user.owner
-                        ? "Chủ cửa hàng"
-                        : user.active
-                          ? "Hoạt động"
-                          : "Đã khóa"
-                    }
-                    tone={user.active ? "neutral" : "danger"}
-                  />
-                </Row>
-                <Caption>
-                  {user.username} ·{" "}
-                  {user.role_ids
-                    .map(
-                      (id: string) =>
-                        roles.data?.find((role) => role.id === id)?.name,
-                    )
-                    .filter(Boolean)
-                    .join(" · ") || "Chưa gán vai trò"}
-                </Caption>
-                <Caption>
-                  {user.warehouse_ids
-                    .map(
-                      (id: string) =>
-                        bootstrap.data?.warehouses.find(
-                          (item) => item.id === id,
-                        )?.name,
-                    )
-                    .filter(Boolean)
-                    .join(" · ") || "Chưa gán kho"}
-                </Caption>
-                {!user.owner ? (
-                  <>
-                    <Button
-                      title="Sửa quyền / khóa tài khoản"
-                      testID={"employee-edit-" + user.id}
-                      secondary
-                      disabled={command.pending}
-                      onPress={() => {
-                        setEditUser(user.id);
-                        setForm({
-                          username: user.username,
-                          name: user.name,
-                          password: "",
-                          active: user.active,
-                          roleIds: user.role_ids,
-                          warehouseIds: user.warehouse_ids,
-                        });
-                        setShowForm(true);
-                        pageScroll.current?.scrollTo({ y: 0, animated: false });
-                      }}
+          {!showForm ? (
+            <QueryState query={users}>
+              {users.data?.map((user) => (
+                <Panel key={user.id}>
+                  <Row>
+                    <Label big>{user.name}</Label>
+                    <Badge
+                      label={
+                        user.owner
+                          ? "Chủ cửa hàng"
+                          : user.active
+                            ? "Hoạt động"
+                            : "Đã khóa"
+                      }
+                      tone={user.active ? "neutral" : "danger"}
                     />
-                    {owner ? (
+                  </Row>
+                  <Caption>
+                    {user.username} ·{" "}
+                    {user.role_ids
+                      .map(
+                        (id: string) =>
+                          roles.data?.find((role) => role.id === id)?.name,
+                      )
+                      .filter(Boolean)
+                      .join(" · ") || "Chưa gán vai trò"}
+                  </Caption>
+                  <Caption>
+                    {user.warehouse_ids
+                      .map(
+                        (id: string) =>
+                          bootstrap.data?.warehouses.find(
+                            (item) => item.id === id,
+                          )?.name,
+                      )
+                      .filter(Boolean)
+                      .join(" · ") || "Chưa gán kho"}
+                  </Caption>
+                  {!user.owner ? (
+                    <>
                       <Button
-                        title="Đặt lại mật khẩu"
+                        title="Sửa quyền / khóa tài khoản"
+                        testID={"employee-edit-" + user.id}
                         secondary
-                        onPress={async () => {
-                          if (
-                            !(await confirmAction(
-                              "Đặt lại mật khẩu " + user.name,
-                              "Thu hồi mọi phiên đăng nhập. Mật khẩu tạm sẽ hiển thị một lần.",
-                            ))
-                          )
-                            return;
-                          const result = await command.run<DataRow>(
-                            "/admin/users/" + user.id + "/reset-password",
-                            {},
-                          );
-                          if (result)
-                            setNotice(
-                              "Mật khẩu tạm cho " +
-                                user.username +
-                                ": " +
-                                result.temporaryPassword,
-                            );
+                        disabled={command.pending}
+                        onPress={() => {
+                          setEditUser(user.id);
+                          setForm({
+                            username: user.username,
+                            name: user.name,
+                            password: "",
+                            active: user.active,
+                            roleIds: user.role_ids,
+                            warehouseIds: user.warehouse_ids,
+                          });
+                          setShowForm(true);
+                          pageScroll.current?.scrollTo({
+                            y: 0,
+                            animated: false,
+                          });
                         }}
-                        pending={command.pending}
                       />
-                    ) : null}
-                  </>
-                ) : null}
-              </Panel>
-            ))}
-          </QueryState> : null}
+                      {owner ? (
+                        <Button
+                          title="Đặt lại mật khẩu"
+                          secondary
+                          onPress={async () => {
+                            if (
+                              !(await confirmAction(
+                                "Đặt lại mật khẩu " + user.name,
+                                "Thu hồi mọi phiên đăng nhập. Mật khẩu tạm sẽ hiển thị một lần.",
+                              ))
+                            )
+                              return;
+                            const result = await command.run<DataRow>(
+                              "/admin/users/" + user.id + "/reset-password",
+                              {},
+                            );
+                            if (result)
+                              setNotice(
+                                "Mật khẩu tạm cho " +
+                                  user.username +
+                                  ": " +
+                                  result.temporaryPassword,
+                              );
+                          }}
+                          pending={command.pending}
+                        />
+                      ) : null}
+                    </>
+                  ) : null}
+                </Panel>
+              ))}
+            </QueryState>
+          ) : null}
         </>
       ) : null}
       {tab === "roles" && can("roles.manage") ? (

@@ -229,6 +229,10 @@ export function LoyaltyAdmin() {
                 ]}
               />
               <Label>Thời điểm ghi nhận cộng điểm</Label>
+              <Caption>
+                Bán tại quầy: chọn thu đủ 100% tiền để đơn đang giao dịch chỉ
+                theo dõi điểm chờ, chưa cộng vào ví khách.
+              </Caption>
               <ChoiceList
                 label="Thời điểm ghi nhận cộng điểm"
                 value={form.earningTiming}

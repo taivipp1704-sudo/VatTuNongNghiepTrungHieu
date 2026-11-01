@@ -43,6 +43,7 @@ import {
 } from "./validation";
 import { Loyalty } from "./loyalty";
 import { Photos } from "./photos";
+import { Reports, reportRange } from "./reports";
 
 const scopeOf = (request: AuthRequest) => {
   if (request.query.warehouseId) {
@@ -101,6 +102,7 @@ export class AppController {
     private readonly operations: Operations,
     private readonly loyalty: Loyalty,
     private readonly photos: Photos,
+    private readonly reports: Reports,
   ) {}
 
   @Get("me")
@@ -360,7 +362,13 @@ export class AppController {
           input.imageUrl ?? old.image_url,
         ],
       );
-      await this.photos.bindProduct(client, request.user, id, input.imageUrl, old.image_url);
+      await this.photos.bindProduct(
+        client,
+        request.user,
+        id,
+        input.imageUrl,
+        old.image_url,
+      );
       await audit(client, request.user.id, "PRODUCT_UPDATED", id, {
         before: old,
         after: input,
@@ -785,8 +793,14 @@ export class AppController {
     return sanitizeMoney(
       (
         await this.db.pool.query(
-          "SELECT o.*,p.name customer_name,u.name actor FROM orders o LEFT JOIN partners p ON p.id=o.customer_id JOIN users u ON u.id=o.created_by WHERE ($1::uuid[] IS NULL OR o.warehouse_id=ANY($1)) AND ($2::uuid IS NULL OR o.created_by=$2) ORDER BY o.created_at DESC LIMIT 200",
-          [scopeOf(request), own],
+          "SELECT o.*,(SELECT d.id FROM debts d WHERE d.order_id=o.id AND d.kind='RECEIVABLE' AND d.balance>0 LIMIT 1) debt_id,p.name customer_name,u.name actor FROM orders o LEFT JOIN partners p ON p.id=o.customer_id JOIN users u ON u.id=o.created_by WHERE ($1::uuid[] IS NULL OR o.warehouse_id=ANY($1)) AND ($2::uuid IS NULL OR o.created_by=$2) AND ($3::uuid IS NULL OR o.customer_id=$3) ORDER BY o.created_at DESC LIMIT 200",
+          [
+            scopeOf(request),
+            own,
+            request.query.customerId
+              ? parse(uuid, request.query.customerId)
+              : null,
+          ],
         )
       ).rows,
       request.user,
@@ -877,6 +891,59 @@ export class AppController {
         [scopeOf(request)],
       )
     ).rows;
+  }
+
+  @Get("partners/:id/purchases")
+  async customerPurchases(
+    @Req() request: AuthRequest,
+    @Param("id") rawId: string,
+  ) {
+    requirePermission(request.user, "partners.view");
+    requirePermission(request.user, "sales.view");
+    const id = parse(uuid, rawId);
+    const page = parse(
+      z.coerce.number().int().min(1).max(10000),
+      request.query.page ?? 1,
+    );
+    const partner = (
+      await this.db.pool.query(
+        "SELECT id,name FROM partners WHERE id=$1 AND kind='CUSTOMER'",
+        [id],
+      )
+    ).rows[0];
+    if (!partner) throw new NotFoundException("Không tìm thấy khách hàng.");
+    const own =
+      has(request.user, "reports.view") ||
+      has(request.user, "sales.fulfillment")
+        ? null
+        : request.user.id;
+    const params = [id, scopeOf(request), own];
+    const [summary, orders] = await Promise.all([
+      this.db.pool.query(
+        `SELECT count(*)::int count,count(*) FILTER(WHERE NOT returned)::int orders,
+        COALESCE(sum(total) FILTER(WHERE NOT returned),0)::numeric spent,
+        COALESCE(sum(paid) FILTER(WHERE NOT returned),0)::numeric paid,
+        COALESCE(sum(total-paid) FILTER(WHERE NOT returned),0)::numeric outstanding
+        FROM orders WHERE customer_id=$1 AND ($2::uuid[] IS NULL OR warehouse_id=ANY($2)) AND ($3::uuid IS NULL OR created_by=$3)`,
+        params,
+      ),
+      this.db.pool.query(
+        `SELECT id,code,created_at,total,paid,returned,payment_status,lines
+        FROM orders WHERE customer_id=$1 AND ($2::uuid[] IS NULL OR warehouse_id=ANY($2)) AND ($3::uuid IS NULL OR created_by=$3)
+        ORDER BY created_at DESC,id DESC LIMIT 30 OFFSET $4`,
+        [...params, (page - 1) * 30],
+      ),
+    ]);
+    return sanitizeMoney(
+      {
+        customer: partner,
+        summary: summary.rows[0],
+        page,
+        pageSize: 30,
+        orders: orders.rows,
+      },
+      request.user,
+    );
   }
 
   @Post("partners")
@@ -1070,6 +1137,17 @@ export class AppController {
             )
           ).rows[0]
         : null;
+    const todaySeries = sales
+      ? await this.reports.financialSeries(scope, reportRange("DAY"), own)
+      : [];
+    if (sales) {
+      sales.orders = todaySeries.reduce((sum, row) => sum + row.orders, 0);
+      sales.revenue = todaySeries.reduce((sum, row) => sum + row.revenue, 0);
+      sales.collected = todaySeries.reduce(
+        (sum, row) => sum + row.collected,
+        0,
+      );
+    }
     return {
       sales,
       stock,
@@ -1077,7 +1155,7 @@ export class AppController {
       debts,
       jobs: (
         await this.db.pool.query(
-          "SELECT COUNT(*) FILTER(WHERE NOT returned AND paid<total)::int unpaid,COUNT(*) FILTER(WHERE NOT returned AND delivery_status='PENDING_PACK')::int pack,COUNT(*) FILTER(WHERE NOT returned AND delivery_status='PENDING_HANDOVER')::int handover,COUNT(*) FILTER(WHERE NOT returned AND delivery_status='SHIPPING')::int shipping,COUNT(*) FILTER(WHERE returned)::int returned FROM orders WHERE created_at>=CURRENT_DATE-89 AND ($1::uuid[] IS NULL OR warehouse_id=ANY($1)) AND ($2::uuid IS NULL OR created_by=$2)",
+          "SELECT COUNT(*) FILTER(WHERE NOT returned AND paid<total)::int unpaid,COUNT(*) FILTER(WHERE NOT returned AND paid=total)::int completed,COUNT(*) FILTER(WHERE NOT returned AND delivery_status='PENDING_PACK')::int pack,COUNT(*) FILTER(WHERE NOT returned AND delivery_status='PENDING_HANDOVER')::int handover,COUNT(*) FILTER(WHERE NOT returned AND delivery_status='SHIPPING')::int shipping,COUNT(*) FILTER(WHERE returned)::int returned FROM orders WHERE created_at>=CURRENT_DATE-89 AND ($1::uuid[] IS NULL OR warehouse_id=ANY($1)) AND ($2::uuid IS NULL OR created_by=$2)",
           [scope, own],
         )
       ).rows[0],
@@ -1094,32 +1172,25 @@ export class AppController {
   }
 
   @Get("reports")
-  async reports(@Req() request: AuthRequest) {
-    requirePermission(request.user, "reports.view");
-    const scope = scopeOf(request);
-    const daily = (
-      await this.db.pool.query(
-        "SELECT created_at::date day,COUNT(*)::int orders,sum(total)::numeric revenue,sum(paid)::numeric collected FROM orders WHERE NOT returned AND created_at>=CURRENT_DATE-29 AND ($1::uuid[] IS NULL OR warehouse_id=ANY($1)) GROUP BY created_at::date ORDER BY day",
-        [scope],
-      )
-    ).rows;
-    const top = (
-      await this.db.pool.query(
-        "SELECT item->>'name' name,sum((item->>'total')::numeric)::numeric revenue FROM orders o CROSS JOIN LATERAL jsonb_array_elements(o.lines) item WHERE NOT o.returned AND o.created_at>=CURRENT_DATE-29 AND ($1::uuid[] IS NULL OR o.warehouse_id=ANY($1)) GROUP BY item->>'name' ORDER BY revenue DESC LIMIT 10",
-        [scope],
-      )
-    ).rows;
-    let grossProfit: number | undefined;
-    if (has(request.user, "reports.profit")) {
-      const cost = (
-        await this.db.pool.query(
-          "SELECT COALESCE(sum((allocation->>'quantity')::numeric*(allocation->>'costBase')::numeric),0)::numeric cost FROM orders o CROSS JOIN LATERAL jsonb_array_elements(o.lines) item CROSS JOIN LATERAL jsonb_array_elements(item->'allocations') allocation WHERE NOT o.returned AND o.created_at>=CURRENT_DATE-29 AND ($1::uuid[] IS NULL OR o.warehouse_id=ANY($1))",
-          [scope],
-        )
-      ).rows[0].cost;
-      grossProfit = daily.reduce((sum, day) => sum + day.revenue, 0) - cost;
-    }
-    return { daily, top, grossProfit };
+  async report(@Req() request: AuthRequest) {
+    const query = parse(
+      z
+        .object({
+          period: z
+            .enum(["DAY", "WEEK", "MONTH", "QUARTER", "YEAR"])
+            .optional(),
+          anchor: z.iso.date().optional(),
+          warehouseId: uuid.optional(),
+        })
+        .strict(),
+      request.query,
+    );
+    return this.reports.build(
+      request.user,
+      scopeOf(request),
+      query.period,
+      query.anchor,
+    );
   }
 
   @Get("admin/users")

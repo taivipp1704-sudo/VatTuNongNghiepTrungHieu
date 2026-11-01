@@ -150,6 +150,7 @@ export function ChipTabs({
           key={item.value}
           accessibilityRole="tab"
           accessibilityState={{ selected: value === item.value }}
+          aria-selected={value === item.value}
           onPress={() => onChange(item.value)}
           style={{
             minHeight: 44,

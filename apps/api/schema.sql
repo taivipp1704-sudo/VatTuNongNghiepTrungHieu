@@ -93,6 +93,9 @@ CREATE TABLE IF NOT EXISTS loyalty_ledger (
 );
 CREATE INDEX IF NOT EXISTS loyalty_customer_history ON loyalty_ledger(customer_id,created_at DESC);
 ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url text NOT NULL DEFAULT '';
+CREATE INDEX IF NOT EXISTS orders_warehouse_created_idx ON orders(warehouse_id,created_at);
+CREATE INDEX IF NOT EXISTS orders_customer_created_idx ON orders(customer_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS payments_order_created_idx ON payments(order_id,created_at);
 
 CREATE TABLE IF NOT EXISTS photos (
   id uuid PRIMARY KEY,
@@ -111,6 +114,7 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_code text NOT NULL DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS carrier text NOT NULL DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS returned_at timestamptz;
+CREATE INDEX IF NOT EXISTS orders_returned_at_idx ON orders(returned_at) WHERE returned;
 ALTER TABLE loyalty_ledger ALTER COLUMN order_id DROP NOT NULL;
 ALTER TABLE loyalty_ledger ALTER COLUMN warehouse_id DROP NOT NULL;
 ALTER TABLE loyalty_ledger ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT '';

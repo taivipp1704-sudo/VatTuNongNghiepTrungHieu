@@ -31,7 +31,7 @@ import {
   SectionHeading,
 } from "@/components/pos-ui";
 import { exportCsv, exportTablePdf } from "@/lib/export";
-import { DeliveryPhotos } from "@/components/delivery-photos";
+import { counterStatus } from "@/lib/counter";
 import { useScan } from "@/lib/scanner";
 
 const statusNames: Record<string, string> = {
@@ -283,10 +283,18 @@ export function Documents() {
 }
 
 export function Orders() {
-  const params = useLocalSearchParams<{ filter?: string }>();
-  const query = useApi<DataRow[]>("/orders", can("sales.view"));
+  const params = useLocalSearchParams<{
+    filter?: string;
+    customerId?: string;
+  }>();
+  const query = useApi<DataRow[]>(
+    "/orders" +
+      (params.customerId
+        ? "?customerId=" + encodeURIComponent(params.customerId)
+        : ""),
+    can("sales.view"),
+  );
   const dashboard = useApi<DataRow>("/dashboard");
-  const points = useApi<DataRow[]>("/loyalty/ledger", can("sales.view"));
   const bootstrap = useApi<Bootstrap>("/bootstrap");
   const command = useCommand();
   const scan = useScan();
@@ -296,9 +304,8 @@ export function Orders() {
   const [filter, setFilter] = useState(params.filter || "all");
   const [reason, setReason] = useState("");
   const [refundMethod, setRefundMethod] = useState("CASH");
-  const [delivery, setDelivery] = useState("DELIVERED");
-  const [carrier, setCarrier] = useState("");
-  const [tracking, setTracking] = useState("");
+  const [collectionAmount, setCollectionAmount] = useState("");
+  const [collectionMethod, setCollectionMethod] = useState("CASH");
   const [exportBusy, setExportBusy] = useState(false);
   useEffect(() => {
     if (params.filter) setFilter(params.filter);
@@ -312,13 +319,7 @@ export function Orders() {
   if (!can("sales.view")) return <Denied />;
   const rows = (query.data || [])
     .filter((item) =>
-      fold(
-        item.code +
-          " " +
-          (item.customer_name || "") +
-          " " +
-          (item.tracking_code || ""),
-      ).includes(fold(search)),
+      fold(item.code + " " + (item.customer_name || "")).includes(fold(search)),
     )
     .filter(
       (item) =>
@@ -326,27 +327,22 @@ export function Orders() {
         (filter === "RETURNED"
           ? item.returned
           : filter === "PAID"
-            ? !item.returned && item.payment_status === "PAID"
+            ? !item.returned && item.paid >= item.total
             : filter === "UNPAID"
               ? !item.returned && item.paid < item.total
-              : !item.returned && item.delivery_status === filter),
+              : !item.returned && item.paid >= item.total),
     );
   const filters = [
     { value: "all", label: "Tất cả (" + (query.data?.length || 0) + ")" },
     { value: "PAID", label: "Hoàn thành" },
-    { value: "UNPAID", label: "Chưa thu đủ" },
+    { value: "UNPAID", label: "Đang giao dịch" },
     { value: "RETURNED", label: "Đã trả hàng" },
-    { value: "PENDING_PACK", label: "Chờ đóng gói" },
-    { value: "PENDING_HANDOVER", label: "Chờ bàn giao" },
-    { value: "SHIPPING", label: "Đang giao" },
-    { value: "DELIVERED", label: "Đã giao" },
   ];
   const open = (item: DataRow) => {
     setExpanded(expanded === item.id ? "" : item.id);
     setReason("");
-    setDelivery(item.delivery_status);
-    setCarrier(item.carrier || "");
-    setTracking(item.tracking_code || "");
+    setCollectionAmount(String(Math.max(0, item.total - item.paid)));
+    setCollectionMethod("CASH");
   };
   const print = async (item: DataRow) => {
     setExportBusy(true);
@@ -380,9 +376,7 @@ export function Orders() {
     item.paid,
     item.loyalty_discount || 0,
     item.loyalty_earned || 0,
-    item.returned
-      ? "Đã trả"
-      : statusNames[item.payment_status] || item.payment_status,
+    counterStatus(item as any),
   ]);
   const exportData = async (pdf: boolean) => {
     setExportBusy(true);
@@ -400,71 +394,6 @@ export function Orders() {
   const footer = (
     <>
       <Panel>
-        <SectionHeading title="Lịch sử biến động điểm" />
-        <Caption>30 giao dịch gần nhất trong phạm vi tài khoản</Caption>
-        <QueryState query={points}>
-          {points.data?.map((entry) => (
-            <View
-              key={entry.id}
-              style={{
-                flexDirection: "row",
-                gap: 12,
-                paddingVertical: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: theme.colors.border,
-              }}
-            >
-              <Icon
-                name={
-                  entry.delta >= 0
-                    ? "plus-circle-outline"
-                    : "minus-circle-outline"
-                }
-                color={
-                  entry.delta >= 0 ? theme.colors.success : theme.colors.danger
-                }
-              />
-              <View style={{ flex: 1 }}>
-                <AppText style={{ fontSize: 13, fontWeight: "600" }}>
-                  {entry.order_code}
-                </AppText>
-                <Caption>
-                  {entry.customer_name} · {day(entry.created_at)}
-                </Caption>
-                <Caption>
-                  {entry.note ||
-                    (
-                      {
-                        EARN: "Tích điểm đơn bán",
-                        REDEEM: "Dùng điểm trừ tiền",
-                        RETURN_EARN: "Thu hồi do trả hàng",
-                        RETURN_REDEEM: "Hoàn điểm đã dùng",
-                        ADJUST: "Điều chỉnh bởi admin",
-                      } as Record<string, string>
-                    )[entry.kind]}
-                </Caption>
-              </View>
-              <AppText
-                style={{
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color:
-                    entry.delta >= 0
-                      ? theme.colors.success
-                      : theme.colors.danger,
-                }}
-              >
-                {entry.delta > 0 ? "+" : ""}
-                {number(entry.delta)}
-              </AppText>
-            </View>
-          ))}
-          {points.data && !points.data.length ? (
-            <Caption>Chưa có biến động điểm.</Caption>
-          ) : null}
-        </QueryState>
-      </Panel>
-      <Panel>
         <Label>Công cụ POS & báo cáo nhanh</Label>
         <Button
           title="Xuất Excel (CSV)"
@@ -481,8 +410,7 @@ export function Orders() {
           disabled={!rows.length}
         />
         <Caption>
-          Xuất danh sách đang lọc, tối đa 200 đơn. In Bluetooth trực tiếp cần
-          model/driver; phiếu PDF có thể chia sẻ hoặc in qua Android.
+          Xuất danh sách đang lọc, tối đa 200 đơn. Phiếu PDF có thể chia sẻ hoặc in qua Android. Lịch sử điểm nằm trong hồ sơ khách hàng.
         </Caption>
       </Panel>
     </>
@@ -498,7 +426,7 @@ export function Orders() {
           >
             <View style={{ flex: 1 }}>
               <Field
-                label="Tìm mã đơn, khách hàng hoặc vận đơn"
+                label="Tìm mã đơn hoặc khách hàng"
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Mã đơn (#DH...), tên khách"
@@ -561,11 +489,7 @@ export function Orders() {
           </Row>
           <Row>
             <Badge
-              label={
-                item.returned
-                  ? "Đã trả hàng"
-                  : statusNames[item.payment_status] || item.payment_status
-              }
+              label={counterStatus(item as any)}
               tone={
                 item.returned
                   ? "danger"
@@ -624,21 +548,18 @@ export function Orders() {
                     false
                     ? "Giữ theo cấu hình"
                     : "Đã thu hồi"
-                  : "Đã cộng theo đơn"}
+                  : item.loyalty_earned > 0
+                    ? "Đã cộng điểm"
+                    : (item.loyalty_snapshot?.potentialPoints || 0) > 0
+                      ? "Chờ thanh toán đủ"
+                      : "Không tích điểm"}
               </AppText>
             </View>
           </View>
           <Caption>
             {item.returned
-              ? "Hoàn tiền thực thu · Hàng về cách ly"
-              : (
-                  {
-                    PENDING_PACK: "Chờ đóng gói",
-                    PENDING_HANDOVER: "Chờ bàn giao",
-                    SHIPPING: "Đang giao hàng",
-                    DELIVERED: "Đã giao",
-                  } as Record<string, string>
-                )[item.delivery_status] || item.delivery_status}{" "}
+              ? "Đã trả hàng · Hàng về cách ly"
+              : counterStatus(item as any)}{" "}
             · {item.lines.length} mặt hàng
           </Caption>
           {item.loyalty_spent > 0 ? (
@@ -679,50 +600,70 @@ export function Orders() {
                   pending={exportBusy}
                 />
               ) : null}
-              {can("sales.fulfillment") && !item.returned ? (
+              {!item.returned && item.paid < item.total ? (
                 <Panel>
-                  <Label>Theo dõi giao hàng nội bộ</Label>
-                  <Select
-                    label="Trạng thái giao hàng"
-                    value={delivery}
-                    onChange={setDelivery}
-                    options={[
-                      { value: "PENDING_PACK", label: "Chờ đóng gói" },
-                      { value: "PENDING_HANDOVER", label: "Chờ bàn giao" },
-                      { value: "SHIPPING", label: "Đang giao hàng" },
-                      { value: "DELIVERED", label: "Đã giao" },
-                    ]}
-                  />
-                  <Field
-                    label="Đơn vị vận chuyển"
-                    value={carrier}
-                    onChangeText={setCarrier}
-                  />
-                  <Field
-                    label="Mã vận đơn"
-                    value={tracking}
-                    onChangeText={setTracking}
-                  />
-                  <Button
-                    title="Lưu giao hàng"
-                    onPress={() =>
-                      void command.run(
-                        "/orders/" + item.id + "/delivery",
-                        { status: delivery, carrier, trackingCode: tracking },
-                        "PATCH",
-                      )
-                    }
-                    pending={command.pending}
-                    disabled={offline}
-                  />
+                  <Label>Đang giao dịch</Label>
+                  <Caption>
+                    Còn phải thu {money(item.total - item.paid)}. Thu đủ tiền sẽ
+                    tự chuyển Hoàn thành.
+                  </Caption>
+                  {can("payments.create") && item.debt_id ? (
+                    <>
+                      <Field
+                        label="Số tiền nhận thêm"
+                        value={collectionAmount}
+                        onChangeText={setCollectionAmount}
+                        keyboardType="numeric"
+                      />
+                      <Select
+                        label="Cách nhận tiền"
+                        value={collectionMethod}
+                        onChange={setCollectionMethod}
+                        options={[
+                          { value: "CASH", label: "Tiền mặt" },
+                          { value: "TRANSFER", label: "Chuyển khoản" },
+                        ]}
+                      />
+                      <Button
+                        title="Xác nhận thu tiền"
+                        pending={command.pending}
+                        disabled={offline || !Number(collectionAmount)}
+                        onPress={async () => {
+                          const amount = Number(collectionAmount);
+                          if (
+                            !Number.isSafeInteger(amount) ||
+                            amount <= 0 ||
+                            amount > item.total - item.paid
+                          ) {
+                            command.setError(
+                              "Nhập số tiền dương và không vượt số còn phải thu.",
+                            );
+                            return;
+                          }
+                          if (
+                            await confirmAction(
+                              "Nhận tiền đơn " + item.code,
+                              money(amount),
+                            )
+                          ) {
+                            const result = await command.run<DataRow>(
+                              "/debts/" + item.debt_id + "/pay",
+                              { amount, method: collectionMethod },
+                            );
+                            if (result)
+                              setCollectionAmount(String(result.balance ?? 0));
+                          }
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <Caption>
+                      Nhân viên được cấp quyền ghi nhận thu/chi công nợ có thể
+                      thu tiền cho đơn này.
+                    </Caption>
+                  )}
                 </Panel>
-              ) : item.tracking_code ? (
-                <Caption>
-                  {item.carrier} · Vận đơn {item.tracking_code}
-                </Caption>
               ) : null}
-              <DeliveryPhotos key={item.id} orderId={item.id} returned={item.returned} delivered={item.delivery_status === "DELIVERED"}
-                carrier={carrier} trackingCode={tracking} onDelivered={() => setDelivery("DELIVERED")} />
               {can("sales.return") && !item.returned ? (
                 <>
                   <Notice>
@@ -836,7 +777,7 @@ export function Invoices() {
           {item.tax_code ? <Caption>MST {item.tax_code}</Caption> : null}
           <Label big>{money(item.total)}</Label>
           <Caption>
-            {statusNames[item.payment_status] || item.payment_status} ·{" "}
+            {counterStatus(item as any)} ·{" "}
             {item.delivery_status === "RETURNED"
               ? "Đã trả hàng"
               : "Đã xuất kho"}
