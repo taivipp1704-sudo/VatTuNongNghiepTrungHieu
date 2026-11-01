@@ -134,16 +134,22 @@ export function ChipTabs({
   value,
   onChange,
   items,
+  compact = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   items: { value: string; label: string }[];
+  compact?: boolean;
 }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+      contentContainerStyle={{
+        gap: compact ? 4 : 8,
+        paddingVertical: 2,
+        ...(compact ? { flexGrow: 1 } : {}),
+      }}
     >
       {items.map((item) => (
         <Pressable
@@ -154,7 +160,9 @@ export function ChipTabs({
           onPress={() => onChange(item.value)}
           style={{
             minHeight: 44,
-            paddingHorizontal: 16,
+            minWidth: compact ? 44 : undefined,
+            flex: compact ? 1 : undefined,
+            paddingHorizontal: compact ? 4 : 16,
             borderRadius: theme.radius.pill,
             backgroundColor:
               value === item.value
@@ -165,7 +173,8 @@ export function ChipTabs({
         >
           <AppText
             style={{
-              fontSize: 13,
+              fontSize: compact ? 12 : 13,
+              textAlign: "center",
               fontWeight: "600",
               color:
                 value === item.value

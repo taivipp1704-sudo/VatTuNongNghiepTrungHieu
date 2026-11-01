@@ -88,6 +88,7 @@ export default function Reports() {
         <Caption>Theo ngày, tuần, tháng, quý hoặc năm · giờ Việt Nam</Caption>
       </View>
       <ChipTabs
+        compact
         items={Object.entries(periodNames).map(([value, label]) => ({
           value,
           label,
