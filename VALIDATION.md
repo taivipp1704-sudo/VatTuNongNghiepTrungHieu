@@ -157,3 +157,12 @@ APK 5 build thành công 4 phút 7 giây, đã xác minh chữ ký cùng khóa p
 - Ghi âm 189 giây được xử lý cục bộ để phân tích yêu cầu. Không công bố âm thanh, ảnh tham khảo hay bản chép riêng. Ý chưa rõ và câu cuối bị ngắt không được suy diễn; hướng dẫn dùng tại `COUNTER_APP.md`.
 - Bản 8 giữ luồng trả toàn bộ đơn. Chưa nghiệm thu cài/mở, biểu đồ cảm ứng, camera, in/chia sẻ trên Android thật; iOS chưa build. Kiểm thử web/API không thay cho nghiệm thu thiết bị.
 
+## Font và phối màu — Android 9, 01/11/2026
+
+- Thay đổi chỉ ở giao diện và đóng gói giấy phép font. API, schema, dữ liệu cloud và quy tắc nghiệp vụ không đổi; 31 kiểm thử API đã chạy ở bản 8, không chạy lại cho thay đổi màu/font này.
+- TypeScript API/mobile và 4/4 kiểm thử cấu hình release đạt. 16 cặp chữ/nền đều đạt ít nhất 4,87:1; viền ô nhập đạt 3,49:1 trên trắng. Kết quả tại `artifacts/ui-palette-contrast.json`.
+- Inter 400/500/600/700 và Manrope 600/700 được nhúng dưới dạng TTF tĩnh; xác minh đầy đủ dấu tiếng Việt, ký hiệu đồng, nguồn và SHA-256. Hai giấy phép OFL được sao chép vào APK. Hướng dẫn và nguồn tại `UI_STYLE.md`.
+- Kiểm tra UI qua CUA trong trình duyệt: tổng quan và báo cáo 390×844, kho 375×844; báo cáo/giỏ hàng/biểu mẫu ở 320×740; POS ngang 844×390. Năm kỳ báo cáo vừa màn hình nhỏ, chữ/số tiền dùng đúng font, nút Lưu và Ghi nhận đơn nằm trong viewport, không tràn ngang hoặc lỗi JavaScript trong các màn kiểm tra.
+- Lọc SKU PB001, mở biểu mẫu hàng hóa, thêm/bỏ sản phẩm trong giỏ, đối chiếu tổng 480.000đ và nút ghi nhận sẵn sàng. Không xác nhận bán hoặc ghi dữ liệu nghiệp vụ mới. Chỉ dùng database QA riêng.
+- Ảnh thực tế tại `artifacts/palette-home-390.jpg`, `palette-report-390.jpg`, `palette-report-320.jpg`, `palette-inventory-375.jpg`, `palette-form-320.jpg`, `palette-pos-320.jpg`. Chưa nghiệm thu trên Android/iOS thật hoặc cỡ chữ lớn của hệ điều hành; app vẫn dùng giao diện sáng đã cấu hình.
+

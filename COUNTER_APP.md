@@ -1,6 +1,6 @@
 # Dùng AgriStock để bán tại quầy
 
-Bản Android 8 tập trung vào bán trực tiếp ở cửa hàng. Giao diện dùng xanh lá đậm và cam, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện.
+Bản Android hiện tại tập trung vào bán trực tiếp ở cửa hàng, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện. Bản 9 dùng [font Inter/Manrope và phối navy–xanh ngọc–cam](UI_STYLE.md) để làm rõ thông tin và số tiền.
 
 ## Nhập, bán, sửa và trả hàng
 
