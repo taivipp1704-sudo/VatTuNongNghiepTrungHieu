@@ -410,7 +410,8 @@ export function Orders() {
           disabled={!rows.length}
         />
         <Caption>
-          Xuất danh sách đang lọc, tối đa 200 đơn. Phiếu PDF có thể chia sẻ hoặc in qua Android. Lịch sử điểm nằm trong hồ sơ khách hàng.
+          Xuất danh sách đang lọc, tối đa 200 đơn. Phiếu PDF có thể chia sẻ hoặc
+          in qua Android. Lịch sử điểm nằm trong hồ sơ khách hàng.
         </Caption>
       </Panel>
     </>
@@ -478,6 +479,7 @@ export function Orders() {
               {item.code}
             </AppText>
             <AppText
+              variant="amount"
               style={{
                 fontSize: 21,
                 fontWeight: "700",
@@ -589,7 +591,7 @@ export function Orders() {
                       {money(line.unitPrice)}
                     </Caption>
                   </View>
-                  <Label>{money(line.total)}</Label>
+                  <Label numeric>{money(line.total)}</Label>
                 </Row>
               ))}
               {can("invoices.view") ? (
@@ -775,7 +777,9 @@ export function Invoices() {
           </Caption>
           <Label>{item.customer_name || "Khách lẻ"}</Label>
           {item.tax_code ? <Caption>MST {item.tax_code}</Caption> : null}
-          <Label big>{money(item.total)}</Label>
+          <Label big numeric>
+            {money(item.total)}
+          </Label>
           <Caption>
             {counterStatus(item as any)} ·{" "}
             {item.delivery_status === "RETURNED"

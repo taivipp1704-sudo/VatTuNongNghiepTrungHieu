@@ -194,7 +194,7 @@ export default function Inventory() {
                 <View style={{ flex: 1 }}>
                   <Label>Quản trị số chấm từng mặt hàng</Label>
                   <Caption>
-                    Tỷ lệ được kiểm tra tại máy chủ và lưu nhật ký thay đổi.
+                    Chọn nhiều mặt hàng để cập nhật tỷ lệ tích điểm cùng lúc.
                   </Caption>
                 </View>
               </View>
@@ -293,16 +293,17 @@ export default function Inventory() {
                   </Row>
                   <AppText
                     numberOfLines={2}
-                    style={{ fontWeight: "600", fontSize: 15 }}
+                    style={{ fontWeight: "600", fontSize: 16 }}
                   >
                     {item.name}
                   </AppText>
                   <AppText
+                    variant="amount"
                     style={{
                       fontSize: 22,
                       lineHeight: 31,
                       fontWeight: "700",
-                      color: theme.colors.primary,
+                      color: theme.colors.info,
                     }}
                   >
                     {money(item.price_pack)}

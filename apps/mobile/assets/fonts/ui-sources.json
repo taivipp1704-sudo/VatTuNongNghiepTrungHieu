@@ -1,0 +1,44 @@
+[
+  {
+    "file": "Inter-Regular.ttf",
+    "sha256": "3184b9b6a63e486adecec91f3e13308ca71436f5679f75808fef0091fa986f29",
+    "bytes": 341528,
+    "vietnameseGlyphs": true,
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+  },
+  {
+    "file": "Inter-Medium.ttf",
+    "sha256": "685b9728d2654acca245f305228dd79f10eefb799dc86183a1d415c3b8a10d9d",
+    "bytes": 342092,
+    "vietnameseGlyphs": true,
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+  },
+  {
+    "file": "Inter-SemiBold.ttf",
+    "sha256": "47548aa0652f98283f709cc067b0f290cbb39381831d31d88d14356f82537402",
+    "bytes": 342780,
+    "vietnameseGlyphs": true,
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+  },
+  {
+    "file": "Inter-Bold.ttf",
+    "sha256": "1a8ae93a07363ae5a6c497371c83fc83c3851537ffd37f96cca8078678d62677",
+    "bytes": 343200,
+    "vietnameseGlyphs": true,
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+  },
+  {
+    "file": "Manrope-SemiBold.ttf",
+    "sha256": "e537a6300c429c01e0c09e415e3b536f340d7a314ce468d79476f6cac8a905e8",
+    "bytes": 97692,
+    "vietnameseGlyphs": true,
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/Manrope%5Bwght%5D.ttf"
+  },
+  {
+    "file": "Manrope-Bold.ttf",
+    "sha256": "8ad336019ede8ea3a21cc7bfbcc00864f653df32588a9f61747a4a3cbad1cb11",
+    "bytes": 97568,
+    "vietnameseGlyphs": true,
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/Manrope%5Bwght%5D.ttf"
+  }
+]

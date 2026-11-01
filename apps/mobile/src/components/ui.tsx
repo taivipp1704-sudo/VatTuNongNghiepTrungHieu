@@ -5,7 +5,14 @@ import {
   Switch as NativeSwitch,
   Text as NativeText,
 } from "@expo/ui";
-import { ComponentProps, ComponentRef, PropsWithChildren, ReactNode, Ref, useState } from "react";
+import {
+  ComponentProps,
+  ComponentRef,
+  PropsWithChildren,
+  ReactNode,
+  Ref,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -35,14 +42,26 @@ export function Label({
   children,
   muted = false,
   big = false,
-}: PropsWithChildren<{ muted?: boolean; big?: boolean }>) {
+  tone,
+  numeric = false,
+}: PropsWithChildren<{
+  muted?: boolean;
+  big?: boolean;
+  tone?: "info" | "success" | "warning" | "danger";
+  numeric?: boolean;
+}>) {
   return (
     <Text
       selectable
+      variant={numeric ? "amount" : big ? "heading" : "body"}
       style={{
-        color: muted ? theme.colors.muted : theme.colors.text,
+        color: tone
+          ? theme.colors[tone]
+          : muted
+            ? theme.colors.muted
+            : theme.colors.text,
         fontSize: big ? theme.type.heading : theme.type.body,
-        fontWeight: big ? "700" : "500",
+        fontWeight: big || numeric ? "700" : "500",
         lineHeight: big ? 27 : 24,
       }}
     >
@@ -57,7 +76,7 @@ export function Caption({ children }: PropsWithChildren) {
       style={{
         fontSize: theme.type.caption,
         color: theme.colors.muted,
-        lineHeight: 20,
+        lineHeight: 21,
       }}
     >
       {children}
@@ -88,16 +107,27 @@ export function Section({
 export function Panel({
   children,
   testID,
-}: PropsWithChildren<{ testID?: string }>) {
+  tone,
+}: PropsWithChildren<{
+  testID?: string;
+  tone?: "info" | "success" | "warning";
+}>) {
   return (
     <View
       testID={testID}
       style={{
-        backgroundColor: theme.colors.paper,
+        backgroundColor:
+          tone === "info"
+            ? theme.colors.infoBg
+            : tone === "success"
+              ? theme.colors.successBg
+              : tone === "warning"
+                ? theme.colors.warningBg
+                : theme.colors.paper,
         borderRadius: theme.radius.lg,
         padding: theme.space.lg,
         borderWidth: 1,
-        borderColor: theme.colors.border,
+        borderColor: tone ? "transparent" : theme.colors.border,
         gap: theme.space.md,
       }}
     >
@@ -251,7 +281,7 @@ export function Field({
         style={{
           fontSize: theme.type.caption,
           color: theme.colors.text,
-          fontWeight: "500",
+          fontWeight: "600",
         }}
       >
         {label}
@@ -324,7 +354,7 @@ export function Select({
               width: "100%",
               minHeight: 46,
               fontSize: 16,
-              fontFamily: "inherit",
+              fontFamily: theme.font.regular,
               color: theme.colors.text,
               background: theme.colors.paper,
               border: 0,
@@ -417,7 +447,7 @@ export function Badge({
       : tone === "warning"
         ? theme.colors.warning
         : tone === "positive"
-          ? theme.colors.primary
+          ? theme.colors.success
           : theme.colors.muted;
   return (
     <Text
@@ -429,9 +459,10 @@ export function Badge({
             : tone === "warning"
               ? theme.colors.warningBg
               : tone === "positive"
-                ? theme.colors.soft
+                ? theme.colors.successBg
                 : theme.colors.neutral,
         fontSize: theme.type.small,
+        fontWeight: "600",
         paddingHorizontal: theme.space.sm,
         paddingVertical: theme.space.xs,
         borderRadius: theme.radius.sm,

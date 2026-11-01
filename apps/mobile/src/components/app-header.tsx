@@ -47,7 +47,7 @@ export function AppHeader({
     <View
       style={{
         paddingTop: session.offline ? 0 : insets.top,
-        backgroundColor: theme.colors.canvas,
+        backgroundColor: theme.colors.paper,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
       }}
@@ -91,7 +91,7 @@ export function AppHeader({
           <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
             <AppText
               numberOfLines={1}
-              style={{ fontSize: 13, fontWeight: "600", flexShrink: 1 }}
+              style={{ fontSize: 14, fontWeight: "700", flexShrink: 1 }}
             >
               {warehouse?.name || data.data?.store.name || "AgriStock"}
             </AppText>

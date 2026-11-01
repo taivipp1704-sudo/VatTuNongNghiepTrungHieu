@@ -25,10 +25,10 @@ export default function WebTabsLayout() {
           height: 68,
           paddingTop: 7,
           paddingBottom: 6,
-          backgroundColor: theme.colors.canvas,
+          backgroundColor: theme.colors.paper,
           borderTopColor: theme.colors.border,
         },
-        tabBarLabelStyle: { fontSize: 10, fontFamily: theme.font.semibold },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: theme.font.semibold },
       }}
     >
       <Tabs.Screen

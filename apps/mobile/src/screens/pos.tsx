@@ -400,6 +400,7 @@ export default function Pos() {
                 : "GHI NHẬN ĐƠN BÁN"}
           </AppText>
           <AppText
+            variant="amount"
             style={{
               fontSize: 21,
               fontWeight: "700",
@@ -835,7 +836,7 @@ export default function Pos() {
       <Panel>
         <Row>
           <Caption>Tạm tính ({value.lines.length} mã)</Caption>
-          <Label>{money(subtotal)}</Label>
+          <Label numeric>{money(subtotal)}</Label>
         </Row>
         {can("sales.discount") ? (
           <Field
@@ -848,7 +849,7 @@ export default function Pos() {
         ) : (
           <Row>
             <Caption>Chiết khấu hóa đơn</Caption>
-            <Label>{money(discount)}</Label>
+            <Label numeric>{money(discount)}</Label>
           </Row>
         )}
         <Row>
@@ -867,6 +868,7 @@ export default function Pos() {
           <Row>
             <Label>Khách phải trả</Label>
             <AppText
+              variant="amount"
               style={{
                 fontSize: 25,
                 fontWeight: "700",
@@ -902,7 +904,9 @@ export default function Pos() {
         ) : null}
         <Row>
           <Caption>Công nợ phát sinh</Caption>
-          <Label>{money(Math.max(debt, 0))}</Label>
+          <Label numeric tone="warning">
+            {money(Math.max(debt, 0))}
+          </Label>
         </Row>
         <Caption>
           Điểm cộng theo quy tắc admin đã chọn; đơn ghi nợ có thể có điểm đang

@@ -137,6 +137,7 @@ export default function Reports() {
                 DOANH THU THUẦN
               </AppText>
               <AppText
+                variant="amount"
                 style={{
                   color: theme.colors.onPrimary,
                   fontSize: 29,
@@ -159,16 +160,20 @@ export default function Reports() {
             </View>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Panel>
+                <Panel tone="info">
                   <Caption>Tiền thực thu</Caption>
-                  <Label>{money(data.totals.collected)}</Label>
+                  <Label numeric tone="info">
+                    {money(data.totals.collected)}
+                  </Label>
                   <Caption>Thu tiền − hoàn tiền trong kỳ</Caption>
                 </Panel>
               </View>
               <View style={{ flex: 1 }}>
-                <Panel>
+                <Panel tone="warning">
                   <Caption>Chưa thanh toán</Caption>
-                  <Label>{money(data.totals.outstanding)}</Label>
+                  <Label numeric tone="warning">
+                    {money(data.totals.outstanding)}
+                  </Label>
                   <Caption>Còn nợ trên đơn lập trong kỳ</Caption>
                 </Panel>
               </View>
@@ -187,7 +192,12 @@ export default function Reports() {
               {can("reports.profit") && data.grossProfit !== undefined ? (
                 <Row>
                   <Caption>Lãi gộp sau giảm giá và trả hàng</Caption>
-                  <Label>{money(data.grossProfit)}</Label>
+                  <Label
+                    numeric
+                    tone={data.grossProfit < 0 ? "danger" : "success"}
+                  >
+                    {money(data.grossProfit)}
+                  </Label>
                 </Row>
               ) : null}
               {can("reports.profit") && data.grossProfit !== undefined ? (

@@ -38,8 +38,9 @@ export function ProductFormCard({
             <Icon name={icon} color={theme.colors.muted} size={21} />
           ) : null}
           <AppText
+            variant="heading"
             accessibilityRole="header"
-            style={{ fontSize: 16, fontWeight: "600", flex: 1 }}
+            style={{ fontSize: 18, fontWeight: "700", flex: 1 }}
           >
             {title}
           </AppText>
@@ -107,7 +108,12 @@ export function ProductFormField({
   return (
     <View style={{ gap: 2, minWidth: 0 }}>
       <AppText
-        style={{ color: theme.colors.muted, fontSize: 12, lineHeight: 18 }}
+        style={{
+          color: theme.colors.text,
+          fontSize: 13,
+          lineHeight: 20,
+          fontWeight: "500",
+        }}
       >
         {label}
         {required ? (

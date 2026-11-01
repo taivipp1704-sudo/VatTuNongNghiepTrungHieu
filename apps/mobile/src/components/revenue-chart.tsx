@@ -70,7 +70,13 @@ export function RevenueChart({
         aria-valuemin={0}
         aria-valuemax={Math.max(0, points.length - 1)}
         aria-valuenow={selected}
-        aria-valuetext={current ? bucketLabel(current.bucket, period) + ": " + money(current[metric]) : "Chưa có dữ liệu"}
+        aria-valuetext={
+          current
+            ? bucketLabel(current.bucket, period) +
+              ": " +
+              money(current[metric])
+            : "Chưa có dữ liệu"
+        }
         accessibilityValue={{
           min: 0,
           max: Math.max(0, points.length - 1),
@@ -102,11 +108,21 @@ export function RevenueChart({
           chartRef.current?.measureInWindow((chartX) => {
             const localX = Number.isFinite(pageX) ? pageX - chartX : locationX;
             if (!Number.isFinite(localX)) return;
-            setSelected(Math.max(0, Math.min(points.length - 1, Math.floor((localX - left) / step))));
+            setSelected(
+              Math.max(
+                0,
+                Math.min(points.length - 1, Math.floor((localX - left) / step)),
+              ),
+            );
           });
         }}
       >
-        <Svg pointerEvents="none" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <Svg
+          pointerEvents="none"
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+        >
           {ticks.map((value, index) => (
             <Line
               key={"line" + index}
@@ -124,7 +140,7 @@ export function RevenueChart({
               x={left - 7}
               y={y(value) + 4}
               textAnchor="end"
-              fontSize={10}
+              fontSize={11}
               fill={theme.colors.muted}
             >
               {compact(value)}
@@ -163,7 +179,7 @@ export function RevenueChart({
                 x={left + (index + 0.5) * step}
                 y={height - 9}
                 textAnchor="middle"
-                fontSize={10}
+                fontSize={11}
                 fill={theme.colors.muted}
               >
                 {bucketLabel(point.bucket, period)}
@@ -184,6 +200,7 @@ export function RevenueChart({
             {current ? bucketLabel(current.bucket, period) : "Chưa có dữ liệu"}
           </Caption>
           <AppText
+            variant="amount"
             style={{
               fontSize: 19,
               fontWeight: "700",

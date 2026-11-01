@@ -10,7 +10,7 @@ export default function TabsLayout() {
     user.owner || user.permissions.includes(permission);
   return (
     <NativeTabs
-      backgroundColor={theme.colors.canvas}
+      backgroundColor={theme.colors.paper}
       tintColor={theme.colors.primary}
       indicatorColor={theme.colors.soft}
     >

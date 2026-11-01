@@ -2,7 +2,8 @@ import { Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ActivityIndicator, AppState, Text, View } from "react-native";
+import { ActivityIndicator, AppState, View } from "react-native";
+import { AppText as Text } from "@/components/text";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/theme";
 import { useFonts } from "expo-font";
@@ -38,10 +39,12 @@ const titles: Record<string, string> = {
 };
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    "BeVietnamPro-Regular": require("../../assets/fonts/BeVietnamPro-Regular.ttf"),
-    "BeVietnamPro-Medium": require("../../assets/fonts/BeVietnamPro-Medium.ttf"),
-    "BeVietnamPro-SemiBold": require("../../assets/fonts/BeVietnamPro-SemiBold.ttf"),
-    "BeVietnamPro-Bold": require("../../assets/fonts/BeVietnamPro-Bold.ttf"),
+    "Inter-Regular": require("../../assets/fonts/Inter-Regular.ttf"),
+    "Inter-Medium": require("../../assets/fonts/Inter-Medium.ttf"),
+    "Inter-SemiBold": require("../../assets/fonts/Inter-SemiBold.ttf"),
+    "Inter-Bold": require("../../assets/fonts/Inter-Bold.ttf"),
+    "Manrope-SemiBold": require("../../assets/fonts/Manrope-SemiBold.ttf"),
+    "Manrope-Bold": require("../../assets/fonts/Manrope-Bold.ttf"),
   });
   useEffect(() => {
     if (fontError) throw fontError;

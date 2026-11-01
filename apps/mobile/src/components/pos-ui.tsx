@@ -213,8 +213,8 @@ export function RateChip({
       />
       <AppText
         style={{
-          fontSize: 11,
-          lineHeight: 16,
+          fontSize: 12,
+          lineHeight: 18,
           color: rate ? theme.colors.success : theme.colors.muted,
           fontWeight: "600",
         }}
@@ -243,7 +243,10 @@ export function SectionHeading({
         gap: 8,
       }}
     >
-      <AppText style={{ fontSize: 15, fontWeight: "700", flex: 1 }}>
+      <AppText
+        variant="heading"
+        style={{ fontSize: 18, lineHeight: 26, fontWeight: "700", flex: 1 }}
+      >
         {title}
       </AppText>
       {action && onPress ? (
@@ -320,8 +323,8 @@ export function ChoiceList({
             {item.description ? (
               <AppText
                 style={{
-                  fontSize: 11,
-                  lineHeight: 18,
+                  fontSize: 12,
+                  lineHeight: 19,
                   color: theme.colors.muted,
                 }}
               >

@@ -116,9 +116,10 @@ export default function Home() {
           </Row>
           <AppText
             selectable
+            variant="amount"
             style={{
               color: theme.colors.onPrimary,
-              fontSize: 31,
+              fontSize: theme.type.display,
               lineHeight: 43,
               fontWeight: "700",
               fontVariant: ["tabular-nums"],
@@ -160,7 +161,7 @@ export default function Home() {
             accessibilityLabel="Bán tại quầy"
             onPress={() => router.push("/pos")}
             style={({ pressed }) => ({
-              backgroundColor: theme.colors.accent,
+              backgroundColor: theme.colors.primary,
               opacity: pressed ? 0.8 : 1,
               borderRadius: theme.radius.lg,
               padding: 18,
@@ -185,7 +186,7 @@ export default function Home() {
               >
                 Bán tại quầy
               </AppText>
-              <AppText style={{ color: theme.colors.onPrimary, fontSize: 12 }}>
+              <AppText style={{ color: theme.colors.onPrimary, fontSize: 13 }}>
                 Chọn hàng, chọn khách và thanh toán
               </AppText>
             </View>
@@ -239,7 +240,7 @@ export default function Home() {
                 >
                   {item.label}
                 </AppText>
-                <AppText style={{ fontSize: 11, color: item.color }}>
+                <AppText style={{ fontSize: 12, color: item.color }}>
                   Đơn trong 90 ngày
                 </AppText>
               </Pressable>
@@ -253,7 +254,7 @@ export default function Home() {
         />
         <Panel>
           <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 18 }}>
-            {actions.map((action, index) => (
+            {actions.map((action) => (
               <Pressable
                 key={action.name}
                 accessibilityRole="button"
@@ -273,9 +274,14 @@ export default function Home() {
                     height: 46,
                     borderRadius: 15,
                     backgroundColor:
-                      index % 3 === 0
-                        ? theme.colors.accentSoft
-                        : theme.colors.soft,
+                      action.route === "/reports" ||
+                      action.route === "/partners"
+                        ? theme.colors.infoBg
+                        : action.route === "/orders" ||
+                            action.route === "/loyalty" ||
+                            action.route === "/debts"
+                          ? theme.colors.accentSoft
+                          : theme.colors.soft,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -284,15 +290,20 @@ export default function Home() {
                     name={action.icon}
                     size={23}
                     color={
-                      index % 3 === 0
-                        ? theme.colors.accent
-                        : theme.colors.primary
+                      action.route === "/reports" ||
+                      action.route === "/partners"
+                        ? theme.colors.info
+                        : action.route === "/orders" ||
+                            action.route === "/loyalty" ||
+                            action.route === "/debts"
+                          ? theme.colors.accent
+                          : theme.colors.primary
                     }
                   />
                 </View>
                 <AppText
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: "600",
                     textAlign: "center",
                     lineHeight: 19,
@@ -348,11 +359,15 @@ export default function Home() {
             />
             <Row>
               <Caption>Phải thu khách hàng</Caption>
-              <Label>{hidden ? "•••" : money(data.debts.receivable)}</Label>
+              <Label numeric tone="warning">
+                {hidden ? "•••" : money(data.debts.receivable)}
+              </Label>
             </Row>
             <Row>
               <Caption>Phải trả nhà cung cấp</Caption>
-              <Label>{hidden ? "•••" : money(data.debts.payable)}</Label>
+              <Label numeric>
+                {hidden ? "•••" : money(data.debts.payable)}
+              </Label>
             </Row>
           </Panel>
         ) : null}

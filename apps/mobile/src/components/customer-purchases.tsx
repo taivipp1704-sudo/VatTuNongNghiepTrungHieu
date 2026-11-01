@@ -28,25 +28,31 @@ export function CustomerPurchases({ customerId }: { customerId: string }) {
           <>
             <View
               style={{
-                backgroundColor: theme.colors.soft,
+                backgroundColor: theme.colors.infoBg,
                 borderRadius: theme.radius.md,
                 padding: 16,
                 gap: 10,
               }}
             >
               <Caption>TỔNG TIỀN KHÁCH ĐÃ MUA</Caption>
-              <Label big>{money(data.summary.spent)}</Label>
+              <Label big numeric tone="info">
+                {money(data.summary.spent)}
+              </Label>
               <Caption>
                 {number(data.summary.orders)} đơn sau trả hàng · Trong phạm vi
                 tài khoản và kho đang chọn
               </Caption>
               <Row>
                 <Caption>Đã trả tiền</Caption>
-                <Label>{money(data.summary.paid)}</Label>
+                <Label numeric tone="success">
+                  {money(data.summary.paid)}
+                </Label>
               </Row>
               <Row>
                 <Caption>Còn phải thu</Caption>
-                <Label>{money(data.summary.outstanding)}</Label>
+                <Label numeric tone="warning">
+                  {money(data.summary.outstanding)}
+                </Label>
               </Row>
             </View>
             <Button
@@ -82,7 +88,7 @@ export function CustomerPurchases({ customerId }: { customerId: string }) {
                         minute: "2-digit",
                       })}
                     </Caption>
-                    <Label>{money(order.total)}</Label>
+                    <Label numeric>{money(order.total)}</Label>
                     <Caption>
                       Đã trả {money(order.paid)} · Còn{" "}
                       {money(
