@@ -405,7 +405,7 @@ export default function Admin() {
               </Section>
             </Panel>
           ) : null}
-          <QueryState query={users}>
+          {!showForm ? <QueryState query={users}>
             {users.data?.map((user) => (
               <Panel key={user.id}>
                 <Row>
@@ -494,7 +494,7 @@ export default function Admin() {
                 ) : null}
               </Panel>
             ))}
-          </QueryState>
+          </QueryState> : null}
         </>
       ) : null}
       {tab === "roles" && can("roles.manage") ? (
