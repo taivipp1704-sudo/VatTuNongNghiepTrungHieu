@@ -139,3 +139,11 @@ APK 5 build thành công 4 phút 7 giây, đã xác minh chữ ký cùng khóa p
 - Lưu trữ ảnh thử trong PostgreSQL chung, tối đa 350 KB/ảnh và 128 MB tổng ảnh. Không dùng ổ tạm của Render, không tạo tài nguyên trả phí. Database Free vẫn có hạn 30/11/2026.
 - Audit phụ thuộc API còn cảnh báo ở multer 2.4.0 kéo theo Nest platform-express; endpoint ảnh dùng JSON giới hạn 512 KB, không sử dụng multipart/Multer. Không tuyên bố đã kiểm toán bảo mật toàn app.
 
+# Sửa quyền nhân viên và lưu độc lập — APK 7
+
+- TypeScript API/mobile đạt. 28/28 kiểm thử API và 4/4 kiểm thử cấu hình release đạt.
+- Kiểm tra 8 tổ hợp trạng thái hoạt động, có/không vai trò, có/không kho. Tạo và cập nhật tài khoản chưa gán đều hợp lệ; quyền rỗng không thành toàn quyền, kho rỗng không thành tất cả kho, phiên cũ bị thu hồi. Chủ cửa hàng được bảo vệ. Admin nhân viên có thể tự giảm quyền hoặc tự khóa, không được tự cấp vai trò vượt quyền.
+- Web 390×844: bấm Sửa ở nhân viên cuối danh sách mở riêng biểu mẫu đúng người. Đầu biểu mẫu nằm trong viewport. Tắt vai trò, tắt kho, tắt cả hai và khóa tài khoản vẫn có nút Lưu được bật; không lỗi JavaScript. Thao tác Lưu sau hộp xác nhận web không tự động hóa trong IAB; đường ghi máy chủ được kiểm thử bằng API. Chưa nghiệm thu thao tác trên điện thoại thật.
+- Cloud: API commit `f3ccd0012f74aa3bb7319c6adc75fa30802dae5a`, deploy `dep-dbjbn45g1s2s73fqoii0` live. Tạo tài khoản QA mới không có vai trò, lưu có/không kho và bật/tắt hoạt động qua HTTPS thành công. Tài khoản QA kết thúc ở trạng thái khóa; không thay đổi quyền tài khoản owner/tester đang dùng.
+- APK 7 build thành công, cùng package/chứng chỉ APK 6, API cloud HTTPS; metadata lưu hash và source commit `70937ad4473da229bfd797d5e19c79397b8ba574`. Giữ chức năng ảnh, tích điểm và bố cục hàng hóa.
+
