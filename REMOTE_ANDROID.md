@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 12
+# Thử AgriStock Android từ xa — bản 13
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-landscape-v12/AgriStock-internal-signed-12.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 12. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-soft-v13/AgriStock-internal-signed-13.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 13. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 13 đồng bộ nút theo ảnh mẫu: Bán tại quầy là viên trong suốt cùng khối doanh thu; trạng thái dùng chung khung sáng, bỏ nền cam/xanh đặc. Nút lưu/thanh toán, bộ lọc và tab chọn dùng xanh nhạt cùng tông; nút biểu tượng tròn nhẹ. Giữ ảnh nền chìm và toàn bộ chức năng bản 12. Cài cập nhật lên bản trước bằng cùng khóa ký, giữ tài khoản hiện tại.
 
 Bản 12 thêm ảnh cánh đồng chìm sau toàn màn hình tổng quan theo ảnh mẫu người dùng làm rõ. Khối doanh thu dùng lớp xanh bán trong suốt, các nhóm trạng thái/lối tắt/báo cáo có nền sáng bán trong suốt. Ảnh nền được tạo riêng và nhúng trong app, không cần mạng để tải ảnh nền. Các màn nghiệp vụ, ảnh sản phẩm và chức năng bản 11 được giữ. Cài cập nhật lên bản trước, không cần gỡ app hoặc đổi tài khoản.
 
