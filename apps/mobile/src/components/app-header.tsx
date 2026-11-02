@@ -72,14 +72,13 @@ export function AppHeader({
               width: 34,
               height: 38,
               borderRadius: 9,
-              backgroundColor: theme.colors.accent,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             <Icon
               name="storefront-outline"
-              color={theme.colors.onPrimary}
+              color={theme.colors.highlight}
               size={24}
             />
           </View>

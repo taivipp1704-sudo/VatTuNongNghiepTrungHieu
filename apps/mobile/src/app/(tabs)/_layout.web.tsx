@@ -20,7 +20,7 @@ export default function WebTabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarActiveBackgroundColor: theme.colors.highlight,
+        tabBarActiveBackgroundColor: theme.colors.buttonFill,
         tabBarInactiveTintColor: theme.colors.text,
         tabBarStyle: {
           height: 68,

@@ -354,8 +354,8 @@ export default function Pos() {
         style={{
           width: 60,
           minHeight: 62,
-          borderRadius: 12,
-          backgroundColor: theme.colors.neutral,
+          borderRadius: theme.radius.pill,
+          backgroundColor: theme.colors.soft,
           alignItems: "center",
           justifyContent: "center",
           gap: 3,
@@ -370,19 +370,23 @@ export default function Pos() {
         accessibilityLabel="Ghi nhận đơn bán"
         disabled={disabled}
         onPress={() => void checkout()}
-        style={{
+        style={({ pressed }) => ({
           flex: 1,
           minHeight: 62,
-          borderRadius: 12,
+          borderRadius: theme.radius.pill,
+          borderWidth: 1,
+          borderColor: disabled ? theme.colors.border : theme.colors.control,
           backgroundColor: disabled
-            ? theme.colors.control
-            : theme.colors.primary,
+            ? theme.colors.neutral
+            : pressed
+              ? theme.colors.buttonPressed
+              : theme.colors.buttonFill,
           paddingHorizontal: 16,
           paddingVertical: 9,
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
-        }}
+        })}
       >
         <View style={{ flex: 1 }}>
           <AppText
@@ -390,7 +394,7 @@ export default function Pos() {
               fontSize: 11,
               fontWeight: "600",
               lineHeight: 18,
-              color: theme.colors.onPrimary,
+              color: disabled ? theme.colors.muted : theme.colors.primary,
             }}
           >
             {command.pending
@@ -405,7 +409,7 @@ export default function Pos() {
               fontSize: 21,
               fontWeight: "700",
               lineHeight: 28,
-              color: theme.colors.onPrimary,
+              color: disabled ? theme.colors.muted : theme.colors.primary,
             }}
           >
             {money(Math.max(total, 0))}
@@ -413,7 +417,7 @@ export default function Pos() {
         </View>
         <Icon
           name={autoPrint ? "printer-outline" : "arrow-right"}
-          color={theme.colors.onPrimary}
+          color={disabled ? theme.colors.muted : theme.colors.primary}
         />
       </Pressable>
     </View>

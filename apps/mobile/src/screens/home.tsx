@@ -23,7 +23,6 @@ type QuickAction = {
   icon: IconName;
   route: string;
   permission: string;
-  color: string;
 };
 export default function Home() {
   const [hidden, setHidden] = useState(false);
@@ -38,56 +37,48 @@ export default function Home() {
         icon: "package-variant-closed",
         route: "/inventory",
         permission: "inventory.view",
-        color: theme.colors.primary,
       },
       {
         name: "Nhập hàng",
         icon: "cart-arrow-down",
         route: "/stock-form?kind=RECEIPT",
         permission: "inventory.receipt.create",
-        color: theme.colors.successFill,
       },
       {
         name: "Khách hàng",
         icon: "account-group-outline",
         route: "/partners",
         permission: "partners.view",
-        color: theme.colors.primary,
       },
       {
         name: "Trả hàng",
         icon: "keyboard-return",
         route: "/orders",
         permission: "sales.return",
-        color: theme.colors.accent,
       },
       {
         name: "Công nợ",
         icon: "cash-clock",
         route: "/debts",
         permission: "debts.view",
-        color: theme.colors.accent,
       },
       {
         name: "Báo cáo",
         icon: "chart-bar",
         route: "/reports",
         permission: "reports.view",
-        color: theme.colors.primaryDark,
       },
       {
         name: "Tích điểm",
         icon: "star-circle-outline",
         route: "/loyalty",
         permission: "loyalty.manage",
-        color: theme.colors.primaryDark,
       },
       {
         name: "Thêm hàng",
         icon: "package-variant-plus",
         route: "/product-form",
         permission: "products.manage",
-        color: theme.colors.successFill,
       },
     ] satisfies QuickAction[]
   ).filter((item) => can(item.permission));
@@ -216,33 +207,43 @@ export default function Home() {
               accessibilityLabel="Bán tại quầy"
               onPress={() => router.push("/pos")}
               style={({ pressed }) => ({
-                backgroundColor: theme.colors.highlight,
+                backgroundColor: theme.colors.glassAction,
+                borderWidth: 1,
+                borderColor: theme.colors.glassBorder,
                 opacity: pressed ? 0.8 : 1,
-                borderRadius: theme.radius.md,
-                padding: 14,
+                borderRadius: theme.radius.pill,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
                 flexDirection: "row",
                 gap: 12,
                 alignItems: "center",
                 minHeight: 60,
               })}
             >
-              <Icon
-                name="cash-register"
-                size={26}
-                color={theme.colors.onHighlight}
-              />
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: theme.radius.pill,
+                  backgroundColor: theme.colors.buttonFill,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="cash-register" size={22} />
+              </View>
               <AppText
                 variant="heading"
                 style={{
                   flex: 1,
-                  color: theme.colors.onHighlight,
+                  color: theme.colors.onPrimary,
                   fontWeight: "700",
                   fontSize: 19,
                 }}
               >
                 Bán tại quầy
               </AppText>
-              <Icon name="arrow-right" color={theme.colors.onHighlight} />
+              <Icon name="arrow-right" color={theme.colors.onPrimary} />
             </Pressable>
           ) : null}
           <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 12 }}>
@@ -264,17 +265,17 @@ export default function Home() {
                   label: "Đang giao dịch",
                   count: data?.jobs?.unpaid || 0,
                   icon: "cash-clock" as IconName,
-                  background: theme.colors.warningFill,
+                  color: theme.colors.warning,
                   filter: "UNPAID",
                 },
                 {
                   label: "Hoàn thành",
                   count: data?.jobs?.completed || 0,
                   icon: "check-circle-outline" as IconName,
-                  background: theme.colors.successFill,
+                  color: theme.colors.success,
                   filter: "PAID",
                 },
-              ].map((item) => (
+              ].map((item, index) => (
                 <Pressable
                   key={item.label}
                   accessibilityRole="button"
@@ -284,12 +285,14 @@ export default function Home() {
                   }
                   style={({ pressed }) => ({
                     flex: 1,
-                    borderRadius: theme.radius.md,
-                    backgroundColor: item.background,
+                    borderLeftWidth: index ? 1 : 0,
+                    borderLeftColor: theme.colors.border,
+                    backgroundColor: pressed
+                      ? theme.colors.buttonFill
+                      : "transparent",
                     padding: 14,
                     gap: 8,
                     minHeight: 108,
-                    opacity: pressed ? 0.8 : 1,
                   })}
                 >
                   <View
@@ -304,21 +307,21 @@ export default function Home() {
                       style={{
                         fontSize: 28,
                         fontWeight: "700",
-                        color: theme.colors.onPrimary,
+                        color: theme.colors.text,
                       }}
                     >
                       {hidden ? "—" : number(item.count)}
                     </AppText>
                     <Icon
                       name={item.icon}
-                      color={theme.colors.onPrimary}
+                      color={item.color}
                       size={22}
                     />
                   </View>
                   <AppText
                     style={{
                       fontSize: 13,
-                      color: theme.colors.onPrimary,
+                      color: theme.colors.muted,
                       fontWeight: "600",
                     }}
                   >
@@ -350,10 +353,10 @@ export default function Home() {
                   alignItems: "center",
                   gap: 10,
                   padding: 10,
-                  backgroundColor: theme.colors.paper,
-                  borderRadius: theme.radius.md,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
+                  backgroundColor: pressed
+                    ? theme.colors.buttonFill
+                    : "transparent",
+                  borderRadius: theme.radius.pill,
                   opacity: pressed ? 0.7 : 1,
                 })}
               >
@@ -361,8 +364,8 @@ export default function Home() {
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
-                    backgroundColor: action.color,
+                    borderRadius: theme.radius.pill,
+                    backgroundColor: theme.colors.buttonFill,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -370,7 +373,7 @@ export default function Home() {
                   <Icon
                     name={action.icon}
                     size={21}
-                    color={theme.colors.onPrimary}
+                    color={theme.colors.primary}
                   />
                 </View>
                 <AppText

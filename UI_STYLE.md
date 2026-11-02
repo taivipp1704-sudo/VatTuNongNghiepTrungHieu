@@ -1,24 +1,29 @@
-# Bố cục và phối màu AgriStock — Android 12
+# Bố cục và phối màu AgriStock — Android 13
 
 AgriStock dùng xanh rừng đậm và lime, nền sáng ấm và chữ đậm, áp dụng hướng Smart Garden từ [video người dùng gửi](VIDEO_UI.md). Hệ thống màu và font nằm trong `apps/mobile/src/theme.ts`; các màn hình dùng chung AppText, Label, Panel và các nút hiện có.
 
 | Vai trò | Màu |
 | --- | --- |
 | Chữ chính / số liệu | Xanh đen `#1C2E23` |
-| Thẻ doanh thu / nút chính | Xanh rừng `#164B35`, chữ trắng |
+| Thẻ doanh thu | Xanh rừng bán trong suốt, chữ trắng |
 | Thanh đầu trang | Xanh đậm `#0B3224`, chữ trắng |
 | Giá bán / tiền thực thu | Xanh đậm `#224E3B` |
-| Đang giao dịch trên tổng quan | Cam đất `#98550A`, chữ trắng |
-| Hoàn thành trên tổng quan | Xanh lá `#1C6941`, chữ trắng |
+| Đang giao dịch trên tổng quan | Chữ xanh đen, biểu tượng cam `#8D4500` trên khung sáng |
+| Hoàn thành trên tổng quan | Chữ xanh đen, biểu tượng xanh `#08673E` trên khung sáng |
 | Lỗi / giá trị âm | Đỏ `#B51F3D` |
-| Bán tại quầy / tab được chọn | Lime `#C5ED68`, chữ `#203515` |
+| Nút lưu / thanh toán / tab được chọn | Xanh nhạt `#E6EDD9`, chữ xanh rừng `#164B35` |
+| Nút Bán tại quầy | Nền trắng 8% trong suốt, chữ trắng, biểu tượng trên vòng xanh nhạt |
 | Dữ liệu biểu đồ | Xanh `#22834C`, mốc chọn có viền đậm |
 
 Nhãn chữ, biểu tượng và số tiền đi kèm màu để tránh phải đoán trạng thái chỉ qua màu sắc. Các cặp chữ chính đo được từ 5,18:1 trở lên; chữ trên lime 9,92:1; đường viền ô nhập 3,91:1 trên nền trắng.
 
-Tổng quan có ảnh cánh đồng phủ phía sau toàn màn hình, cố định khi cuộn. Khối doanh thu/thực thu dùng lớp xanh bán trong suốt; các nhóm thông tin bên dưới dùng lớp sáng bán trong suốt, nút Bán tại quầy màu lime. Đây là ảnh nền được tạo riêng bằng image_gen, nhúng cục bộ trong APK, không phải ảnh sản phẩm hoặc vị trí thật của cửa hàng. Ảnh và prompt nằm trong `apps/mobile/assets/images/agri-landscape-v1.png` và tệp `.source.json` đi kèm. Không dùng blur native hoặc chụp màn hình mẫu làm nền.
+Tổng quan có ảnh cánh đồng phủ phía sau toàn màn hình, cố định khi cuộn. Khối doanh thu/thực thu dùng lớp xanh bán trong suốt; các nhóm thông tin bên dưới dùng lớp sáng bán trong suốt, nút Bán tại quầy dạng viên trong suốt cùng tông với thẻ. Đây là ảnh nền được tạo riêng bằng image_gen, nhúng cục bộ trong APK, không phải ảnh sản phẩm hoặc vị trí thật của cửa hàng. Ảnh và prompt nằm trong `apps/mobile/assets/images/agri-landscape-v1.png` và tệp `.source.json` đi kèm. Không dùng blur native hoặc chụp màn hình mẫu làm nền.
 
 Lớp phủ nền 26%, thẻ xanh 76% và thẻ sáng 95%. Đo bảo thủ cả hai cực ảnh đen/trắng: chữ trắng trên thẻ xanh đạt 8,24:1, chữ phụ 6,26:1; các cặp chữ trên thẻ sáng từ 5,65:1. Kết quả trong `artifacts/landscape-contrast.json`. Trạng thái đang tải ở tổng quan cũng có nền sáng để chữ không nằm trực tiếp trên ảnh.
+
+Android 13 đồng bộ nút với khung theo ảnh tham khảo: bỏ các mảng cam/xanh đặc của trạng thái, dùng hai vùng bấm trong cùng panel với đường chia mảnh. Lối tắt bỏ viền hộp lồng nhau và nền biểu tượng đậm; chuyển sang vòng xanh nhạt, nhãn rõ. Nút biểu tượng đầu trang dạng tròn trong suốt. Nút lưu/thanh toán dùng nền xanh nhạt; bộ lọc và điều hướng dùng cùng họ màu. Nút native dùng container trong suốt và màu nền từ theme, tránh lớp nền đặc mặc định của nền tảng phủ lên màu đã chọn.
+
+Tương phản mới: chữ trên nút xanh nhạt 8,36:1, trạng thái nhấn 7,38:1, chữ trắng trên nút trong suốt ở cực ảnh sáng nhất 6,63:1; viền nút trên xanh nhạt 3,26:1. Kết quả `artifacts/soft-controls-contrast.json`.
 
 Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng API đã giới hạn theo kho/quyền. Kho có thẻ ảnh hai cột hoặc danh sách; khi sửa điểm hàng loạt hoặc cỡ chữ hệ thống trên 1,3, dùng danh sách. Chi tiết sản phẩm hiển thị ảnh lớn; ảnh dùng chế độ contain để không cắt bao bì. Chưa có ảnh thì hiển thị biểu tượng và nhãn rõ. Biểu đồ một chỉ số dùng một màu; mốc đang chọn có viền và giá trị/ngày bên dưới.
 

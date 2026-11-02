@@ -245,32 +245,34 @@ export function Button({
   pending?: boolean;
   testID?: string;
 }) {
+  const unavailable = disabled || pending;
   return (
     <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
       <NativeButton
         testID={testID}
         onPress={onPress}
-        disabled={disabled || pending}
-        variant={secondary ? "outlined" : "filled"}
+        disabled={unavailable}
+        // Native text buttons have a transparent container; the shared style
+        // supplies the same pale surface on Android, iOS and web.
+        variant="text"
         style={{
           height: 50,
           width: "100%",
-          borderRadius: theme.radius.sm,
-          backgroundColor: disabled
+          borderRadius: theme.radius.pill,
+          borderWidth: secondary ? 1 : 0,
+          backgroundColor: unavailable
             ? theme.colors.neutral
             : secondary
-              ? theme.colors.paper
-              : theme.colors.primary,
+              ? "transparent"
+              : theme.colors.buttonFill,
           borderColor: theme.colors.control,
         }}
       >
         <NativeText
           textStyle={{
-            color: disabled
+            color: unavailable
               ? theme.colors.muted
-              : secondary
-                ? theme.colors.primary
-                : theme.colors.onPrimary,
+              : theme.colors.primary,
             fontSize: theme.type.body,
             fontWeight: "600",
             fontFamily: theme.font.semibold,

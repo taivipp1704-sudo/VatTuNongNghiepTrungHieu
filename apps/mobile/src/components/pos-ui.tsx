@@ -47,11 +47,13 @@ export function IconButton({
       style={({ pressed }) => ({
         minHeight: 44,
         minWidth: 44,
-        borderRadius: theme.radius.md,
+        borderRadius: theme.radius.pill,
+        borderWidth: inverse ? 1 : 0,
+        borderColor: inverse ? theme.colors.glassBorder : undefined,
         backgroundColor: selected
-          ? theme.colors.highlight
+          ? theme.colors.buttonFill
           : inverse
-            ? theme.colors.headerControl
+            ? theme.colors.glassAction
             : theme.colors.soft,
         alignItems: "center",
         justifyContent: "center",
@@ -86,7 +88,11 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: inverse ? theme.colors.paper : theme.colors.blueLight,
+        backgroundColor: inverse
+          ? theme.colors.glassAction
+          : theme.colors.blueLight,
+        borderWidth: inverse ? 1 : 0,
+        borderColor: inverse ? theme.colors.glassBorder : undefined,
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -95,7 +101,7 @@ export function Avatar({
         style={{
           fontSize: size / 3,
           fontWeight: "700",
-          color: theme.colors.primary,
+          color: inverse ? theme.colors.onPrimary : theme.colors.primary,
         }}
       >
         {name
@@ -196,7 +202,7 @@ export function ChipTabs({
             borderRadius: theme.radius.pill,
             backgroundColor:
               value === item.value
-                ? theme.colors.highlight
+                ? theme.colors.buttonFill
                 : theme.colors.paper,
             borderWidth: 1,
             borderColor:
