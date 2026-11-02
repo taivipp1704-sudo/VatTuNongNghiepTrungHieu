@@ -169,3 +169,12 @@ APK 5 build thành công 4 phút 7 giây, đã xác minh chữ ký cùng khóa p
 - Đối chiếu byte của sáu font trong APK theo hash (AAPT rút gọn tên tài nguyên), đủ ký tự tiếng Việt viết thường/hoa và ký hiệu đồng. Hai giấy phép OFL khớp nguồn. Config nhúng đúng API cloud, release=true, lanTest=false, versionCode=9; có bundle JavaScript, cleartext/backup/debuggable tắt, không kèm tệp khóa ký. Metadata và kết quả trong `artifacts/AgriStock-internal-signed-9.apk.json`, `android-signed-9-validation.json`.
 - Dừng Metro/API/PostgreSQL QA trên laptop; API cloud vẫn trả health ok. Không đổi backend hoặc tạo thêm tài nguyên cloud cho bản cập nhật giao diện.
 
+## Bố cục cobalt theo baoyu-design — Android 10, 02/11/2026
+
+- Mã nguồn app vẫn dùng theme.ts làm nguồn màu/font. Áp dụng hướng dẫn design-system/dashboard từ repo người dùng cung cấp, chạy validator palette và xuất bản tham chiếu cấu trúc files. Công cụ check design-system của repo báo 0 lỗi cấu trúc; không kiểm tra render của cover. Không đóng gói editor hoặc icon font của repo vào app.
+- Palette cobalt/cam đạt các kiểm tra lightness, chroma, CVD, normal-vision và tương phản với nền trắng của validator. 21 cặp chữ/nền chính đạt ít nhất 4,84:1; viền ô nhập 4,08:1. Kết quả `artifacts/baoyu-palette-validation.txt`, `ui-palette-contrast.json`, `baoyu-design-system-validation.json`.
+- TypeScript API/mobile và 4/4 kiểm thử cấu hình release đạt. Không sửa API/schema/quy tắc nghiệp vụ; 31 kiểm thử API đã đạt ở bản 8 không chạy lại cho bản bố cục/màu này.
+- UI qua CUA: tổng quan 390/320 px, kho 390/320 px, báo cáo 375/320 px, biểu mẫu 320×740, POS ngang 844×390. Đủ năm tab kỳ ở 320; không tràn ngang trong các màn kiểm tra. Nút Lưu ở đáy 728/740 px, nút ghi nhận ở đáy 378,4/390 px.
+- Ẩn/hiện số tiền vẫn che doanh thu, thực thu, số đơn, trạng thái, công nợ và biểu đồ; lối tắt vẫn hoạt động. Lọc PB001, mở/đóng sửa điểm, mở biểu mẫu, đổi kỳ báo cáo và về Hiện tại thành công. Giỏ PB001 hiển thị 480.000đ, nút ghi nhận sẵn sàng; đã bỏ hàng khỏi giỏ thử, không xác nhận bán hoặc ghi dữ liệu nghiệp vụ mới. Không thấy lỗi JavaScript trong các màn kiểm tra.
+- Ảnh: `artifacts/baoyu-home-390.jpg`, `baoyu-home-320.jpg`, `baoyu-inventory-390.jpg`, `baoyu-inventory-320.jpg`, `baoyu-report-375.jpg`, `baoyu-report-320.jpg`, `baoyu-form-320.jpg`, `baoyu-pos-landscape.jpg`. Chưa nghiệm thu trên thiết bị thật, cỡ chữ lớn hệ điều hành, camera/in; iOS chưa build.
+

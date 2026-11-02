@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 9
+# Thử AgriStock Android từ xa — bản 10
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-visual-v9/AgriStock-internal-signed-9.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 9. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-cobalt-v10/AgriStock-internal-signed-10.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 10. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 10 thiết kế lại theo repo baoyu-design người dùng gửi: xanh cobalt đậm và cam, thanh đầu trang màu đậm, doanh thu và nút Bán tại quầy chung một khối, trạng thái có màu đặc và lối tắt hai cột. Kho gom hai nút Thêm hàng/Sửa số chấm; báo cáo đặt nút Hiện tại cạnh tiêu đề. Xem [bố cục và màu mới](UI_STYLE.md). Cài cập nhật lên bản trước, dùng tài khoản hiện tại.
 
 Bản 9 đổi font sang Inter cho nội dung và số tiền, Manrope cho tiêu đề; phối navy, xanh ngọc, xanh dương và cam. Tiền thực thu, công nợ và trạng thái có màu/nhãn riêng. Tăng độ rõ chữ phụ, nhãn ô nhập, giá bán và nút chính. Xem [font và phối màu](UI_STYLE.md). Cài cập nhật lên bản trước, dùng tài khoản hiện tại.
 

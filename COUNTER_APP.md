@@ -1,6 +1,6 @@
 # Dùng AgriStock để bán tại quầy
 
-Bản Android hiện tại tập trung vào bán trực tiếp ở cửa hàng, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện. Bản 9 dùng [font Inter/Manrope và phối navy–xanh ngọc–cam](UI_STYLE.md) để làm rõ thông tin và số tiền.
+Bản Android hiện tại tập trung vào bán trực tiếp ở cửa hàng, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện. Bản 10 dùng [font Inter/Manrope, cobalt–cam và bố cục gọn](UI_STYLE.md) để làm rõ thông tin và thao tác.
 
 ## Nhập, bán, sửa và trả hàng
 
@@ -23,7 +23,7 @@ Các số liệu giới hạn theo kho và quyền của tài khoản. Nhân vi�
 
 ## Xem biểu đồ doanh thu
 
-Vào Báo cáo và chọn **Ngày, Tuần, Tháng, Quý hoặc Năm**. Dùng mũi tên để đổi kỳ hoặc nhấn Về kỳ hiện tại. Tuần bắt đầu vào thứ Hai; các mốc dùng giờ Việt Nam.
+Vào Báo cáo và chọn **Ngày, Tuần, Tháng, Quý hoặc Năm**. Dùng mũi tên để đổi kỳ hoặc nhấn Hiện tại cạnh tiêu đề. Tuần bắt đầu vào thứ Hai; các mốc dùng giờ Việt Nam.
 
 - **Doanh thu thuần:** tiền hàng sau giảm giá của đơn lập trong kỳ, trừ giá trị hàng trả trong kỳ. Trả hàng ở kỳ sau ghi giảm ở kỳ trả, không xóa doanh thu của kỳ bán trước đó.
 - **Thực thu:** tiền nhận từ bán hàng/thu nợ, trừ tiền hoàn trong kỳ, theo ngày nhận hoặc hoàn tiền. Không gộp chi trả nhà cung cấp vào doanh thu bán hàng.
