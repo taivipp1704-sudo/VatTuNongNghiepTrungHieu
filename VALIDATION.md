@@ -10,7 +10,9 @@ API chỉ thêm cột/bảng, giữ dữ liệu mới khi client cũ cập nhậ
 
 Dependency Zod của API được cập nhật lên nhánh vá 4.6.7 và toàn bộ bài API chạy lại đạt. Audit vẫn báo dependency Multer 2.4 của Nest 11; app chỉ dùng JSON với giới hạn 512 KB, không dùng multipart/fileFilter. Các cảnh báo công cụ Expo chưa được xử lý bằng cách hạ/nâng SDK tự động.
 
-APK, cấu hình ký và kiểm tra cloud sau triển khai được ghi thêm khi có kết quả. Chưa nghiệm thu APK trên điện thoại thật, lịch native, camera hay in giấy; chưa ký/phát hành iOS. Xem FUNCTION_PARITY.md và REMOTE_ANDROID.md về phạm vi bản thử.
+Gradle assembleRelease hoàn tất trong 3 phút 42 giây. APK 14 có 51.527.380 byte, SHA-256 `b7437cc4eeeba9b4056dda5b1fae87446e04d1a15e4ae944ab4d8f970e4e7024`; cùng package/chứng chỉ các bản trước, minSdk 24, targetSdk 36, arm64. Đối chiếu cấu hình API HTTPS, bundle JS, sáu font và đầy đủ dấu Việt, giấy phép Be Vietnam Pro/Inter/BwipJs, ảnh nền nhúng; debug/backup/HTTP tắt, không có tệp khóa ký trong APK. Native/API source commit `2a6956c7f06fe90d1e916f2e1d6b5c19b1e8b864`.
+
+Render deploy `dep-dbkbmhjbc2fs73ee5cog` đã live. Kiểm tra các route quản lý, danh mục quyền mới và phân trang qua HTTPS đạt; trạng thái nghiệp vụ API trước/sau đối chiếu giữ nguyên. Log ứng dụng trong khoảng triển khai được kiểm tra không có bản ghi mức error. Đã dừng đúng các tiến trình API/Metro QA và PostgreSQL cục bộ bằng clean shutdown; cloud health vẫn ok. Không tạo tài nguyên trả phí. Kết quả tại artifacts/android-signed-14-validation.json, cloud-store-validation.json và store-management-validation.json. Chưa nghiệm thu APK trên điện thoại thật, lịch native, camera hay in giấy; chưa ký/phát hành iOS. Xem FUNCTION_PARITY.md và REMOTE_ANDROID.md về phạm vi bản thử.
 
 ---
 
