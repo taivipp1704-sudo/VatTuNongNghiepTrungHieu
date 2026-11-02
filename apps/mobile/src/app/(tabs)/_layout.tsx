@@ -12,7 +12,7 @@ export default function TabsLayout() {
     <NativeTabs
       backgroundColor={theme.colors.paper}
       tintColor={theme.colors.primary}
-      indicatorColor={theme.colors.soft}
+      indicatorColor={theme.colors.highlight}
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Tổng quan</NativeTabs.Trigger.Label>

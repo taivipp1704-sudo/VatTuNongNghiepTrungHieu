@@ -164,10 +164,10 @@ export function RevenueChart({
               fill={
                 point[metric] < 0
                   ? theme.colors.danger
-                  : index === selected
-                    ? theme.colors.accent
-                    : theme.colors.primary
+                  : theme.colors.chartSeries
               }
+              stroke={index === selected ? theme.colors.text : "none"}
+              strokeWidth={index === selected ? 2 : 0}
               opacity={1}
             />
           ))}

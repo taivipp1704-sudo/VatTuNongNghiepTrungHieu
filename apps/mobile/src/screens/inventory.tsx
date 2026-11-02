@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { ProductCard, ProductCover } from "@/components/product-card";
 import {
   Badge,
   Button,
@@ -40,6 +48,10 @@ export default function Inventory() {
   const [category, setCategory] = useState("all");
   const [filter, setFilter] = useState(params.filter || "all");
   const [bulk, setBulk] = useState(false);
+  const [layout, setLayout] = useState<"tiles" | "list">("tiles");
+  const { width, fontScale } = useWindowDimensions();
+  const tiles = layout === "tiles" && !bulk && fontScale <= 1.3;
+  const tileWidth = (Math.min(width, 720) - 44) / 2;
   const [selected, setSelected] = useState<string[]>([]);
   const [rate, setRate] = useState("");
   const [notice, setNotice] = useState("");
@@ -113,6 +125,11 @@ export default function Inventory() {
   };
   return (
     <FlatList
+      key={tiles ? "tiles" : "list"}
+      numColumns={tiles ? 2 : 1}
+      columnWrapperStyle={
+        tiles ? { gap: 12, alignItems: "stretch" } : undefined
+      }
       style={{ backgroundColor: theme.colors.canvas }}
       contentContainerStyle={{
         padding: 16,
@@ -169,17 +186,36 @@ export default function Inventory() {
               })),
             ]}
           />
-          <Select
-            label="Lọc tồn kho"
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: "all", label: "Tất cả trạng thái" },
-              { value: "low", label: "Tồn thấp" },
-              { value: "soon", label: "Lô cận hạn" },
-              { value: "expired", label: "Lô hết hạn" },
-            ]}
-          />
+          <View
+            style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}
+          >
+            <View style={{ flex: 1 }}>
+              <Select
+                label="Lọc tồn kho"
+                value={filter}
+                onChange={setFilter}
+                options={[
+                  { value: "all", label: "Tất cả trạng thái" },
+                  { value: "low", label: "Tồn thấp" },
+                  { value: "soon", label: "Lô cận hạn" },
+                  { value: "expired", label: "Lô hết hạn" },
+                ]}
+              />
+            </View>
+            <IconButton
+              name="view-grid-outline"
+              label="Hiển thị thẻ ảnh"
+              selected={tiles}
+              disabled={bulk || fontScale > 1.3}
+              onPress={() => setLayout("tiles")}
+            />
+            <IconButton
+              name="format-list-bulleted"
+              label="Hiển thị danh sách"
+              selected={!tiles}
+              onPress={() => setLayout("list")}
+            />
+          </View>
           {can("loyalty.manage") || can("products.manage") ? (
             <View style={{ flexDirection: "row", gap: 10 }}>
               {can("products.manage") ? (
@@ -236,143 +272,169 @@ export default function Inventory() {
           <Empty message="Không có hàng hóa phù hợp với bộ lọc." />
         ) : undefined
       }
-      renderItem={({ item }) => (
-        <View>
-          <Panel>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                bulk ? "Chọn " + item.name : "Xem " + item.name
-              }
+      renderItem={({ item }) =>
+        tiles ? (
+          <View style={{ width: tileWidth }}>
+            <ProductCard
+              product={item}
               onPress={() =>
-                bulk
-                  ? toggle(item.id)
-                  : router.push({
-                      pathname: "/product",
-                      params: { id: item.id },
-                    })
+                router.push({ pathname: "/product", params: { id: item.id } })
               }
-            >
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                {bulk ? (
-                  <View style={{ justifyContent: "center" }}>
-                    <Icon
-                      name={
-                        selected.includes(item.id)
-                          ? "checkbox-marked"
-                          : "checkbox-blank-outline"
-                      }
-                    />
-                  </View>
-                ) : null}
-                <ProductPicture product={item} size={70} />
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Row>
-                    <Caption>{item.sku}</Caption>
-                    <Badge
-                      label={
-                        "Tồn: " +
-                        number(item.available / item.pack_factor) +
-                        " " +
-                        item.pack_unit
-                      }
-                      tone={
-                        item.available < item.min_stock ? "warning" : "positive"
-                      }
-                    />
-                  </Row>
-                  <AppText
-                    numberOfLines={2}
-                    style={{ fontWeight: "600", fontSize: 16 }}
-                  >
-                    {item.name}
-                  </AppText>
-                  <AppText
-                    variant="amount"
-                    style={{
-                      fontSize: 22,
-                      lineHeight: 31,
-                      fontWeight: "700",
-                      color: theme.colors.info,
-                    }}
-                  >
-                    {money(item.price_pack)}
-                  </AppText>
-                  <Caption>
-                    / {item.pack_unit} · {number(item.actual)} {item.base_unit}{" "}
-                    thực tế
-                  </Caption>
-                </View>
-              </View>
-            </Pressable>
-            <View
-              style={{
-                backgroundColor: theme.colors.soft,
-                padding: 12,
-                borderRadius: 12,
-                gap: 6,
-              }}
-            >
-              <View
-                style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
-              >
-                <Icon
-                  name={
-                    item.loyalty_rate
-                      ? "star-circle-outline"
-                      : "minus-circle-outline"
-                  }
-                  color={
-                    item.loyalty_rate
-                      ? theme.colors.success
-                      : theme.colors.muted
-                  }
-                />
-                <View style={{ flex: 1 }}>
-                  <AppText
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "600",
-                      color: item.loyalty_rate
-                        ? theme.colors.success
-                        : theme.colors.muted,
-                    }}
-                  >
-                    Tích điểm: {rateLabel(item.loyalty_rate)}
-                  </AppText>
-                  <Caption>
-                    {rules.data?.enabled
-                      ? "Mua 1 " +
-                        item.pack_unit +
-                        " dự kiến " +
-                        number(
-                          productPoints(
-                            item.price_pack,
-                            item.loyalty_rate,
-                            rules.data,
-                          ),
-                        ) +
-                        " điểm"
-                      : "Chương trình tích điểm đang tắt"}
-                  </Caption>
-                </View>
-                {can("loyalty.manage") && !bulk ? (
-                  <IconButton
-                    name="pencil-outline"
-                    label={"Sửa số chấm " + item.sku}
-                    onPress={() =>
+              onEditRate={
+                can("loyalty.manage")
+                  ? () =>
                       router.push({
                         pathname: "/product",
                         params: { id: item.id },
                       })
+                  : undefined
+              }
+            />
+          </View>
+        ) : (
+          <View>
+            <Panel>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  bulk ? "Chọn " + item.name : "Xem " + item.name
+                }
+                onPress={() =>
+                  bulk
+                    ? toggle(item.id)
+                    : router.push({
+                        pathname: "/product",
+                        params: { id: item.id },
+                      })
+                }
+              >
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  {bulk ? (
+                    <View style={{ justifyContent: "center" }}>
+                      <Icon
+                        name={
+                          selected.includes(item.id)
+                            ? "checkbox-marked"
+                            : "checkbox-blank-outline"
+                        }
+                      />
+                    </View>
+                  ) : null}
+                  <ProductPicture product={item} size={70} />
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Row>
+                      <Caption>{item.sku}</Caption>
+                      <Badge
+                        label={
+                          "Tồn: " +
+                          number(item.available / item.pack_factor) +
+                          " " +
+                          item.pack_unit
+                        }
+                        tone={
+                          item.available < item.min_stock
+                            ? "warning"
+                            : "positive"
+                        }
+                      />
+                    </Row>
+                    <AppText
+                      numberOfLines={2}
+                      style={{ fontWeight: "600", fontSize: 16 }}
+                    >
+                      {item.name}
+                    </AppText>
+                    <AppText
+                      variant="amount"
+                      style={{
+                        fontSize: 22,
+                        lineHeight: 31,
+                        fontWeight: "700",
+                        color: theme.colors.info,
+                      }}
+                    >
+                      {money(item.price_pack)}
+                    </AppText>
+                    <Caption>
+                      / {item.pack_unit} · {number(item.actual)}{" "}
+                      {item.base_unit} thực tế
+                    </Caption>
+                  </View>
+                </View>
+              </Pressable>
+              <View
+                style={{
+                  backgroundColor: theme.colors.soft,
+                  padding: 12,
+                  borderRadius: 12,
+                  gap: 6,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <Icon
+                    name={
+                      item.loyalty_rate
+                        ? "star-circle-outline"
+                        : "minus-circle-outline"
+                    }
+                    color={
+                      item.loyalty_rate
+                        ? theme.colors.success
+                        : theme.colors.muted
                     }
                   />
-                ) : null}
+                  <View style={{ flex: 1 }}>
+                    <AppText
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: item.loyalty_rate
+                          ? theme.colors.success
+                          : theme.colors.muted,
+                      }}
+                    >
+                      Tích điểm: {rateLabel(item.loyalty_rate)}
+                    </AppText>
+                    <Caption>
+                      {rules.data?.enabled
+                        ? "Mua 1 " +
+                          item.pack_unit +
+                          " dự kiến " +
+                          number(
+                            productPoints(
+                              item.price_pack,
+                              item.loyalty_rate,
+                              rules.data,
+                            ),
+                          ) +
+                          " điểm"
+                        : "Chương trình tích điểm đang tắt"}
+                    </Caption>
+                  </View>
+                  {can("loyalty.manage") && !bulk ? (
+                    <IconButton
+                      name="pencil-outline"
+                      label={"Sửa số chấm " + item.sku}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/product",
+                          params: { id: item.id },
+                        })
+                      }
+                    />
+                  ) : null}
+                </View>
               </View>
-            </View>
-          </Panel>
-        </View>
-      )}
+            </Panel>
+          </View>
+        )
+      }
     />
   );
 }
@@ -397,6 +459,7 @@ export function ProductDetail() {
         {product ? (
           <>
             <Panel>
+              <ProductCover product={product} height={210} />
               <Badge label={product.category} />
               <Label big>{product.name}</Label>
               <Caption>

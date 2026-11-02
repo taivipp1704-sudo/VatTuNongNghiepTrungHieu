@@ -1,23 +1,24 @@
-# Bố cục và phối màu AgriStock — Android 10
+# Bố cục và phối màu AgriStock — Android 11
 
-AgriStock dùng xanh cobalt đậm cho nhận diện và thao tác chính, cam cho điểm nhấn, nền sáng và chữ navy cho nội dung. Hệ thống màu và font nằm trong `apps/mobile/src/theme.ts`; các màn hình dùng chung AppText, Label, Panel và các nút hiện có.
+AgriStock dùng xanh rừng đậm và lime, nền sáng ấm và chữ đậm, áp dụng hướng Smart Garden từ [video người dùng gửi](VIDEO_UI.md). Hệ thống màu và font nằm trong `apps/mobile/src/theme.ts`; các màn hình dùng chung AppText, Label, Panel và các nút hiện có.
 
 | Vai trò | Màu |
 | --- | --- |
-| Chữ chính / số liệu | Navy `#102346` |
-| Thẻ doanh thu / nút chính | Cobalt `#1457E6`, chữ trắng |
-| Thanh đầu trang | Xanh đậm `#103DA8`, chữ trắng |
-| Giá bán / tiền thực thu | Xanh dương `#1648B6` |
-| Đang giao dịch trên tổng quan | Cam đậm `#A64E04`, chữ trắng |
-| Hoàn thành trên tổng quan | Xanh lá `#08764C`, chữ trắng |
+| Chữ chính / số liệu | Xanh đen `#1C2E23` |
+| Thẻ doanh thu / nút chính | Xanh rừng `#164B35`, chữ trắng |
+| Thanh đầu trang | Xanh đậm `#0B3224`, chữ trắng |
+| Giá bán / tiền thực thu | Xanh đậm `#224E3B` |
+| Đang giao dịch trên tổng quan | Cam đất `#98550A`, chữ trắng |
+| Hoàn thành trên tổng quan | Xanh lá `#1C6941`, chữ trắng |
 | Lỗi / giá trị âm | Đỏ `#B51F3D` |
-| Bán tại quầy / cột biểu đồ được chọn | Cam `#C7470D` |
+| Bán tại quầy / tab được chọn | Lime `#C5ED68`, chữ `#203515` |
+| Dữ liệu biểu đồ | Xanh `#22834C`, mốc chọn có viền đậm |
 
-Nhãn chữ, biểu tượng và số tiền đi kèm màu để tránh phải đoán trạng thái chỉ qua màu sắc. Chữ phụ dùng xám xanh đậm. Các cặp chữ chính đo được từ 4,84:1 trở lên; đường viền ô nhập 4,08:1 trên nền trắng.
+Nhãn chữ, biểu tượng và số tiền đi kèm màu để tránh phải đoán trạng thái chỉ qua màu sắc. Các cặp chữ chính đo được từ 5,18:1 trở lên; chữ trên lime 9,92:1; đường viền ô nhập 3,91:1 trên nền trắng.
 
-Tổng quan gom doanh thu, thực thu, số đơn trong ngày và nút Bán tại quầy vào một khối. Hai trạng thái đơn dùng thẻ màu đậm, ghi rõ phạm vi 90 ngày. Tám lối tắt theo quyền chia hai cột, biểu tượng có nền màu đặc và nhãn đầy đủ. Kho gom Thêm hàng và Sửa số chấm vào một hàng; báo cáo đặt nút Hiện tại cạnh tiêu đề để rút ngắn phần điều khiển. Không thêm số tăng trưởng hay dữ liệu minh họa vào API thật.
+Tổng quan có khối doanh thu/thực thu, nút Bán tại quầy màu lime và họa tiết luống cây dạng vector. Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng API đã giới hạn theo kho/quyền. Kho có thẻ ảnh hai cột hoặc danh sách; khi sửa điểm hàng loạt hoặc cỡ chữ hệ thống trên 1,3, dùng danh sách. Chi tiết sản phẩm hiển thị ảnh lớn; ảnh dùng chế độ contain để không cắt bao bì. Chưa có ảnh thì hiển thị biểu tượng và nhãn rõ. Biểu đồ một chỉ số dùng một màu; mốc đang chọn có viền và giá trị/ngày bên dưới.
 
-Áp dụng quy trình của repo người dùng cung cấp tại `D:/baoyu-design-main`: đọc hướng dẫn design-system/dashboard, kiểm tra palette bằng `skills/dataviz/scripts/validate_palette.js`, và xuất bản tham chiếu bằng `node scripts/export-design-system.mjs`. Thư mục `design-system/agristock/project` được sinh từ theme thật; kiểm tra bằng `skills/claude-design-system/scripts/artifact.mjs check` đạt 0 lỗi cấu trúc. Bản xuất này không thay nguồn theme của app. Không đưa mã editor hoặc icon font của repo tham khảo vào APK.
+Tiếp tục dùng công cụ của repo `D:/baoyu-design-main`: kiểm tra màu bằng `skills/dataviz/scripts/validate_palette.js` và xuất tham chiếu bằng `node scripts/export-design-system.mjs`. Thư mục `design-system/agristock/project` được sinh từ theme thật; công cụ check design-system đạt 0 lỗi cấu trúc, không kiểm tra render cover. Bản xuất này không thay nguồn theme của app. Không đưa mã editor, icon font hoặc ảnh mockup từ nguồn tham khảo vào APK.
 
 **Inter** dùng cho nội dung, ô nhập và số tiền; **Manrope** dùng cho tiêu đề. Cỡ nội dung 16, chú thích chung 14; số tiền quan trọng dùng chữ đậm và chữ số có độ rộng đều. Font được nhúng sẵn, không tải từ Google khi mở app. Không tắt cơ chế phóng to chữ của hệ điều hành.
 

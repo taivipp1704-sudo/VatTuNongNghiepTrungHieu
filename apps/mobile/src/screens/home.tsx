@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { router, Href } from "expo-router";
-import { Pressable, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
+import { ProductCard } from "@/components/product-card";
 import { Caption, Label, Page, Panel, QueryState, Row } from "@/components/ui";
 import { AppText } from "@/components/text";
 import {
@@ -13,7 +15,7 @@ import { RevenueChart } from "@/components/revenue-chart";
 import { useApi } from "@/lib/api";
 import { can } from "@/lib/session";
 import { money, number } from "@/lib/format";
-import { DataRow } from "@/types";
+import { DataRow, Product } from "@/types";
 import { theme } from "@/theme";
 
 type QuickAction = {
@@ -27,6 +29,7 @@ export default function Home() {
   const [hidden, setHidden] = useState(false);
   const query = useApi<DataRow>("/dashboard");
   const weekly = useApi<DataRow>("/reports?period=WEEK", can("reports.view"));
+  const inventory = useApi<Product[]>("/inventory", can("inventory.view"));
   const data = query.data;
   const actions = (
     [
@@ -93,18 +96,54 @@ export default function Home() {
       onRefresh={() => {
         void query.refetch();
         if (can("reports.view")) void weekly.refetch();
+        if (can("inventory.view")) void inventory.refetch();
       }}
       refreshing={query.isRefetching}
     >
       <QueryState query={query}>
+        <View style={{ gap: 4 }}>
+          <AppText
+            variant="heading"
+            style={{ fontSize: 24, lineHeight: 34, fontWeight: "700" }}
+          >
+            Hôm nay tại cửa hàng
+          </AppText>
+          <Caption>Kho hàng, khách hàng và bán tại quầy.</Caption>
+        </View>
         <View
           style={{
             backgroundColor: theme.colors.hero,
             borderRadius: theme.radius.lg,
             padding: 18,
             gap: 12,
+            overflow: "hidden",
           }}
         >
+          <Svg
+            pointerEvents="none"
+            aria-hidden={true}
+            width={150}
+            height={120}
+            style={{ position: "absolute", right: 0, top: 20, opacity: 0.14 }}
+            viewBox="0 0 150 120"
+          >
+            {[0, 20, 40, 60, 80].map((offset) => (
+              <Path
+                key={offset}
+                d={
+                  "M " +
+                  (offset - 50) +
+                  " 120 Q " +
+                  (offset + 10) +
+                  " 25 150 " +
+                  (offset - 20)
+                }
+                stroke={theme.colors.highlight}
+                strokeWidth={8}
+                fill="none"
+              />
+            ))}
+          </Svg>
           <Row>
             <AppText
               style={{
@@ -190,7 +229,7 @@ export default function Home() {
               accessibilityLabel="Bán tại quầy"
               onPress={() => router.push("/pos")}
               style={({ pressed }) => ({
-                backgroundColor: theme.colors.accent,
+                backgroundColor: theme.colors.highlight,
                 opacity: pressed ? 0.8 : 1,
                 borderRadius: theme.radius.md,
                 padding: 14,
@@ -203,20 +242,20 @@ export default function Home() {
               <Icon
                 name="cash-register"
                 size={26}
-                color={theme.colors.onPrimary}
+                color={theme.colors.onHighlight}
               />
               <AppText
                 variant="heading"
                 style={{
                   flex: 1,
-                  color: theme.colors.onPrimary,
+                  color: theme.colors.onHighlight,
                   fontWeight: "700",
                   fontSize: 19,
                 }}
               >
                 Bán tại quầy
               </AppText>
-              <Icon name="arrow-right" color={theme.colors.onPrimary} />
+              <Icon name="arrow-right" color={theme.colors.onHighlight} />
             </Pressable>
           ) : null}
           <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 12 }}>
@@ -361,6 +400,41 @@ export default function Home() {
             ))}
           </View>
         </View>
+        {can("inventory.view") ? (
+          <View style={{ gap: 10 }}>
+            <SectionHeading
+              title="Hàng trong kho"
+              action="Xem tất cả"
+              onPress={() => router.push("/inventory")}
+            />
+            <Caption>Ảnh, giá bán và số lượng khả dụng.</Caption>
+            <QueryState query={inventory}>
+              {inventory.data?.length ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 12, paddingBottom: 4 }}
+                >
+                  {inventory.data.slice(0, 4).map((product) => (
+                    <View key={product.id} style={{ width: 168 }}>
+                      <ProductCard
+                        product={product}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/product",
+                            params: { id: product.id },
+                          })
+                        }
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Caption>Chưa có hàng hóa trong kho đang chọn.</Caption>
+              )}
+            </QueryState>
+          </View>
+        ) : null}
         {can("reports.view") && !hidden ? (
           <Panel>
             <SectionHeading

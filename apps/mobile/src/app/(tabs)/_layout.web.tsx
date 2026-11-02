@@ -20,6 +20,7 @@ export default function WebTabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
+        tabBarActiveBackgroundColor: theme.colors.highlight,
         tabBarInactiveTintColor: theme.colors.text,
         tabBarStyle: {
           height: 68,
@@ -29,6 +30,11 @@ export default function WebTabsLayout() {
           borderTopColor: theme.colors.border,
         },
         tabBarLabelStyle: { fontSize: 11, fontFamily: theme.font.semibold },
+        tabBarItemStyle: {
+          borderRadius: theme.radius.pill,
+          marginHorizontal: 2,
+          marginVertical: 3,
+        },
       }}
     >
       <Tabs.Screen

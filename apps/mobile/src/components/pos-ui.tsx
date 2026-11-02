@@ -24,26 +24,35 @@ export function IconButton({
   onPress,
   disabled = false,
   inverse = false,
+  selected,
 }: {
   name: IconName;
   label: string;
   onPress: () => void;
   disabled?: boolean;
   inverse?: boolean;
+  selected?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{
+        ...(selected === undefined ? {} : { selected }),
+        disabled,
+      }}
+      aria-pressed={selected}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
         minHeight: 44,
         minWidth: 44,
         borderRadius: theme.radius.md,
-        backgroundColor: inverse
-          ? theme.colors.headerControl
-          : theme.colors.soft,
+        backgroundColor: selected
+          ? theme.colors.highlight
+          : inverse
+            ? theme.colors.headerControl
+            : theme.colors.soft,
         alignItems: "center",
         justifyContent: "center",
         opacity: disabled ? 0.45 : pressed ? 0.7 : 1,
@@ -51,7 +60,13 @@ export function IconButton({
     >
       <Icon
         name={name}
-        color={inverse ? theme.colors.onPrimary : theme.colors.primary}
+        color={
+          selected
+            ? theme.colors.onHighlight
+            : inverse
+              ? theme.colors.onPrimary
+              : theme.colors.primary
+        }
       />
     </Pressable>
   );
@@ -180,7 +195,9 @@ export function ChipTabs({
             paddingHorizontal: compact ? 4 : 16,
             borderRadius: theme.radius.pill,
             backgroundColor:
-              value === item.value ? theme.colors.primary : theme.colors.paper,
+              value === item.value
+                ? theme.colors.highlight
+                : theme.colors.paper,
             borderWidth: 1,
             borderColor:
               value === item.value ? theme.colors.primary : theme.colors.border,
@@ -194,7 +211,7 @@ export function ChipTabs({
               fontWeight: "600",
               color:
                 value === item.value
-                  ? theme.colors.onPrimary
+                  ? theme.colors.onHighlight
                   : theme.colors.text,
             }}
           >

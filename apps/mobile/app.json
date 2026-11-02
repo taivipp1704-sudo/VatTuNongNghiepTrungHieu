@@ -12,7 +12,7 @@
       "package": "vn.agristock.internal",
       "permissions": ["CAMERA", "POST_NOTIFICATIONS"],
       "adaptiveIcon": {
-        "backgroundColor": "#1457E6",
+        "backgroundColor": "#164B35",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -27,7 +27,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F3F6FB",
+          "backgroundColor": "#F3F5EE",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
