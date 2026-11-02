@@ -4,7 +4,7 @@ Ngày 03/11/2026: khôi phục ảnh cánh đồng toàn nền Tổng quan, gi�
 
 CUA web 390×844 và 320×740: nền toàn màn, cuộn nội dung trên ảnh cố định; nút ẩn/hiện doanh thu; tám lối tắt bốn cột; không tràn ngang và không có log error/warn trong phiên. Ảnh chỉ dùng dữ liệu QA riêng. Đo tương phản bảo thủ ảnh đen/trắng cho chữ trên lớp tối và sáng: mức thấp nhất 4,507:1, kết quả landscape-v16-contrast.json.
 
-TypeScript mobile và cấu hình phát hành được kiểm tra trước đóng gói. Kết quả APK 16 sẽ được ghi sau khi ký. Camera/in và thao tác native trên máy thật chưa nghiệm thu lại; iOS chưa đóng gói. API/test nghiệp vụ của bản trước được ghi bên dưới, không tính là chạy lại lần này.
+TypeScript mobile và cấu hình phát hành được kiểm tra trước đóng gói. APK 16: 51,526,068 byte, SHA-256 `ad99f6fd0a5475d7f2ba4441f8f9bf765824417c29d0464cc12c5d326fb2bc0c`; chữ ký giữ nguyên, package vn.agristock.internal, minSdk 24/targetSdk 36, arm64. Kiểm tra API HTTPS, bundle JS, sáu font, dấu Việt, giấy phép và ảnh nền trong APK đạt; debug/backup/HTTP tắt. Native source `fe4172e11f71ffa7e3b1bd51cec534eecd1eb9a7`; API giữ `2a6956c7f06fe90d1e916f2e1d6b5c19b1e8b864`. Đã dừng API/Metro và PostgreSQL QA bằng clean shutdown, cloud health vẫn ok. Camera/in và thao tác native trên máy thật chưa nghiệm thu lại; iOS chưa đóng gói. API/test nghiệp vụ của bản trước được ghi bên dưới, không tính là chạy lại lần này.
 
 ---
 
