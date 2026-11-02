@@ -32,6 +32,7 @@ export default function WebTabsLayout() {
         tabBarLabelStyle: { fontSize: 11, fontFamily: theme.font.semibold },
         tabBarItemStyle: {
           borderRadius: theme.radius.pill,
+          overflow: "hidden",
           marginHorizontal: 2,
           marginVertical: 3,
         },
