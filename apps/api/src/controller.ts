@@ -179,7 +179,23 @@ export class AppController {
     const warehouse = request.query.warehouseId
       ? parse(uuid, request.query.warehouseId)
       : undefined;
-    return this.operations.inventory(request.user, search, warehouse);
+    const options = parse(
+      z.object({
+        ids: z
+          .string()
+          .max(4000)
+          .optional()
+          .transform((v) =>
+            v ? parse(z.array(uuid).max(100), v.split(",")) : [],
+          ),
+        page: z.coerce.number().int().min(1).max(10000).default(1),
+        limit: z.coerce.number().int().min(1).max(500).default(500),
+        category: z.string().max(100).default("all"),
+        filter: z.enum(["all", "low", "soon", "expired"]).default("all"),
+      }),
+      request.query,
+    );
+    return this.operations.inventory(request.user, search, warehouse, options);
   }
 
   @Post("warehouses")
@@ -290,7 +306,7 @@ export class AppController {
       async (client) => {
         const id = randomUUID();
         await client.query(
-          "INSERT INTO products(id,sku,barcode,name,category,base_unit,pack_unit,pack_factor,price_base,price_pack,cost_base,min_stock,track_lots,technical_info,loyalty_rate,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
+          "INSERT INTO products(id,sku,barcode,name,category,base_unit,pack_unit,pack_factor,price_base,price_pack,cost_base,min_stock,track_lots,technical_info,loyalty_rate,image_url,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",
           [
             id,
             input.sku,
@@ -308,6 +324,7 @@ export class AppController {
             input.technicalInfo,
             input.loyaltyRate ?? 0,
             input.imageUrl ?? "",
+            JSON.stringify(input.details ?? {}),
           ],
         );
         await this.photos.bindProduct(client, request.user, id, input.imageUrl);
@@ -346,7 +363,7 @@ export class AppController {
           "Không đổi đơn vị/quy tắc lô của sản phẩm đã tạo. Tạo mã hàng mới để bảo toàn lịch sử.",
         );
       await client.query(
-        "UPDATE products SET sku=$2,barcode=$3,name=$4,category=$5,price_base=$6,price_pack=$7,cost_base=$8,min_stock=$9,technical_info=$10,loyalty_rate=$11,image_url=$12 WHERE id=$1",
+        "UPDATE products SET sku=$2,barcode=$3,name=$4,category=$5,price_base=$6,price_pack=$7,cost_base=$8,min_stock=$9,technical_info=$10,loyalty_rate=$11,image_url=$12,details=$13 WHERE id=$1",
         [
           id,
           input.sku,
@@ -360,6 +377,7 @@ export class AppController {
           input.technicalInfo,
           input.loyaltyRate ?? old.loyalty_rate,
           input.imageUrl ?? old.image_url,
+          JSON.stringify(input.details ?? old.details),
         ],
       );
       await this.photos.bindProduct(
@@ -785,6 +803,33 @@ export class AppController {
   @Get("orders")
   async orders(@Req() request: AuthRequest) {
     requirePermission(request.user, "sales.view");
+    const list = parse(
+      z.object({
+        search: z.string().max(100).default(""),
+        status: z.enum(["all", "PAID", "UNPAID", "RETURNED"]).default("all"),
+        page: z.coerce.number().int().min(1).max(10000).default(1),
+        limit: z.coerce.number().int().min(1).max(200).default(200),
+        from: z.iso.date().optional(),
+        through: z.iso.date().optional(),
+        sort: z.enum(["NEWEST", "OLDEST", "TOTAL"]).default("NEWEST"),
+      }),
+      request.query,
+    );
+    const dates =
+      list.from || list.through
+        ? reportRange(
+            "CUSTOM",
+            undefined,
+            list.from ?? list.through,
+            list.through ?? list.from,
+          )
+        : null;
+    const ordering =
+      list.sort === "OLDEST"
+        ? "o.created_at ASC,o.id ASC"
+        : list.sort === "TOTAL"
+          ? "o.total DESC,o.id DESC"
+          : "o.created_at DESC,o.id DESC";
     const own =
       has(request.user, "reports.view") ||
       has(request.user, "sales.fulfillment")
@@ -793,13 +838,23 @@ export class AppController {
     return sanitizeMoney(
       (
         await this.db.pool.query(
-          "SELECT o.*,(SELECT d.id FROM debts d WHERE d.order_id=o.id AND d.kind='RECEIVABLE' AND d.balance>0 LIMIT 1) debt_id,p.name customer_name,u.name actor FROM orders o LEFT JOIN partners p ON p.id=o.customer_id JOIN users u ON u.id=o.created_by WHERE ($1::uuid[] IS NULL OR o.warehouse_id=ANY($1)) AND ($2::uuid IS NULL OR o.created_by=$2) AND ($3::uuid IS NULL OR o.customer_id=$3) ORDER BY o.created_at DESC LIMIT 200",
+          `SELECT o.*,count(*) OVER()::int list_total,(SELECT d.id FROM debts d WHERE d.order_id=o.id AND d.kind='RECEIVABLE' AND d.balance>0 LIMIT 1) debt_id,p.name customer_name,p.phone customer_phone,u.name actor FROM orders o LEFT JOIN partners p ON p.id=o.customer_id JOIN users u ON u.id=o.created_by WHERE ($1::uuid[] IS NULL OR o.warehouse_id=ANY($1)) AND ($2::uuid IS NULL OR o.created_by=$2) AND ($3::uuid IS NULL OR o.customer_id=$3)
+            AND (o.code ILIKE $4 OR p.name ILIKE $4 OR p.phone ILIKE $4 OR (p.id IS NULL AND 'Khách lẻ' ILIKE $4))
+            AND ($5='all' OR ($5='RETURNED' AND o.returned) OR ($5='PAID' AND NOT o.returned AND o.paid>=o.total) OR ($5='UNPAID' AND NOT o.returned AND o.paid<o.total))
+            AND ($6::date IS NULL OR o.created_at>=($6::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')) AND ($7::date IS NULL OR o.created_at<($7::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh'))
+            ORDER BY ${ordering} LIMIT $8 OFFSET $9`,
           [
             scopeOf(request),
             own,
             request.query.customerId
               ? parse(uuid, request.query.customerId)
               : null,
+            "%" + list.search + "%",
+            list.status,
+            dates?.start ?? null,
+            dates?.end ?? null,
+            list.limit,
+            (list.page - 1) * list.limit,
           ],
         )
       ).rows,
@@ -878,17 +933,64 @@ export class AppController {
   @Get("partners")
   async partners(@Req() request: AuthRequest) {
     requirePermission(request.user, "partners.view");
+    const q = parse(
+      z.object({
+        includeId: uuid.optional(),
+        tier: z.string().max(80).default(""),
+        search: z.string().max(100).default(""),
+        kind: z.enum(["ALL", "CUSTOMER", "SUPPLIER"]).default("ALL"),
+        active: z.enum(["ALL", "ACTIVE", "INACTIVE"]).default("ALL"),
+        sort: z.enum(["NAME", "SPEND", "DEBT"]).default("NAME"),
+        page: z.coerce.number().int().min(1).max(10000).default(1),
+        limit: z.coerce.number().int().min(1).max(500).default(500),
+      }),
+      request.query,
+    );
+    const rules = await this.loyalty.settings();
+    const tiers = [...rules.tiers].sort(
+      (a, b) => b.minimumPoints - a.minimumPoints,
+    );
+    const tier =
+      rules.tiersEnabled && q.tier
+        ? tiers.find((t) => t.name === q.tier)
+        : undefined;
+    if (q.tier && !tier)
+      throw new BadRequestException("Nhóm hạng thành viên không tồn tại.");
+    const upper = tier
+      ? (tiers.filter((t) => t.minimumPoints > tier.minimumPoints).at(-1)
+          ?.minimumPoints ?? null)
+      : null;
+    const ordering =
+      q.sort === "SPEND"
+        ? "lifetime_spend DESC,p.id"
+        : q.sort === "DEBT"
+          ? "debt_balance DESC,p.id"
+          : "p.name,p.id";
     return (
       await this.db.pool.query(
-        `SELECT p.*,COALESCE(a.balance,0) loyalty_balance,COALESCE(s.spend,0) lifetime_spend,COALESCE(s.pending,0) pending_points,COALESCE(d.balance,0) debt_balance,GREATEST(COALESCE(l.earned,0),0) lifetime_earned
+        `SELECT p.*,count(*) OVER()::int list_total,COALESCE(a.balance,0) loyalty_balance,COALESCE(s.spend,0) lifetime_spend,COALESCE(s.pending,0) pending_points,COALESCE(d.balance,0)+COALESCE(adj.balance,0) debt_balance,GREATEST(COALESCE(l.earned,0),0) lifetime_earned
         FROM partners p LEFT JOIN loyalty_accounts a ON a.customer_id=p.id
         LEFT JOIN (SELECT customer_id,SUM(total) FILTER(WHERE NOT returned)::numeric spend,
           SUM(GREATEST(COALESCE((loyalty_snapshot->>'potentialPoints')::numeric,0)-loyalty_earned,0)) FILTER(WHERE NOT returned)::numeric pending
           FROM orders WHERE ($1::uuid[] IS NULL OR warehouse_id=ANY($1)) GROUP BY customer_id) s ON s.customer_id=p.id
         LEFT JOIN (SELECT partner_id,SUM(balance)::numeric balance FROM debts WHERE ($1::uuid[] IS NULL OR warehouse_id=ANY($1)) GROUP BY partner_id) d ON d.partner_id=p.id
+        LEFT JOIN (SELECT partner_id,SUM(delta)::numeric balance FROM partner_adjustments WHERE ($1::uuid[] IS NULL OR warehouse_id=ANY($1)) GROUP BY partner_id) adj ON adj.partner_id=p.id
         LEFT JOIN (SELECT customer_id,SUM(delta) FILTER(WHERE kind IN ('EARN','RETURN_EARN'))::numeric earned FROM loyalty_ledger GROUP BY customer_id) l ON l.customer_id=p.id
-        ORDER BY p.name LIMIT 500`,
-        [scopeOf(request)],
+        WHERE ($2='ALL' OR p.kind=$2) AND ($3='ALL' OR ($3='ACTIVE' AND p.profile->>'active' IS DISTINCT FROM 'false') OR ($3='INACTIVE' AND p.profile->>'active'='false'))
+          AND (p.name ILIKE $4 OR p.phone ILIKE $4 OR p.tax_code ILIKE $4 OR p.profile->>'code' ILIKE $4 OR p.profile->>'group' ILIKE $4 OR p.id::text ILIKE $4 OR ('KH'||left(p.id::text,6)) ILIKE $4 OR p.id=$9::uuid)
+        AND ($7::numeric IS NULL OR (p.kind='CUSTOMER' AND GREATEST(COALESCE(l.earned,0),0)>=$7 AND ($8::numeric IS NULL OR GREATEST(COALESCE(l.earned,0),0)<$8)))
+        ORDER BY ${ordering} LIMIT $5 OFFSET $6`,
+        [
+          scopeOf(request),
+          q.kind,
+          q.active,
+          "%" + q.search + "%",
+          q.limit,
+          (q.page - 1) * q.limit,
+          tier?.minimumPoints ?? null,
+          upper,
+          q.includeId ?? null,
+        ],
       )
     ).rows;
   }
@@ -964,7 +1066,7 @@ export class AppController {
       async (client) => {
         const id = randomUUID();
         await client.query(
-          "INSERT INTO partners(id,name,kind,phone,address,tax_code,credit_limit) VALUES($1,$2,$3,$4,$5,$6,$7)",
+          "INSERT INTO partners(id,name,kind,phone,address,tax_code,credit_limit,profile) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
           [
             id,
             input.name,
@@ -973,6 +1075,7 @@ export class AppController {
             input.address,
             input.taxCode,
             input.creditLimit,
+            JSON.stringify(input.profile ?? {}),
           ],
         );
         await audit(client, request.user.id, "PARTNER_CREATED", id, input);
@@ -1004,7 +1107,7 @@ export class AppController {
       if (old.credit_limit !== input.creditLimit)
         requirePermission(request.user, "partners.credit.manage");
       await client.query(
-        "UPDATE partners SET name=$2,phone=$3,address=$4,tax_code=$5,credit_limit=$6 WHERE id=$1",
+        "UPDATE partners SET name=$2,phone=$3,address=$4,tax_code=$5,credit_limit=$6,profile=$7 WHERE id=$1",
         [
           id,
           input.name,
@@ -1012,6 +1115,7 @@ export class AppController {
           input.address,
           input.taxCode,
           input.creditLimit,
+          JSON.stringify(input.profile ?? old.profile),
         ],
       );
       await audit(client, request.user.id, "PARTNER_UPDATED", id, {
@@ -1177,9 +1281,20 @@ export class AppController {
       z
         .object({
           period: z
-            .enum(["DAY", "WEEK", "MONTH", "QUARTER", "YEAR"])
+            .enum([
+              "DAY",
+              "WEEK",
+              "MONTH",
+              "QUARTER",
+              "YEAR",
+              "ROLLING_7",
+              "ROLLING_30",
+              "CUSTOM",
+            ])
             .optional(),
           anchor: z.iso.date().optional(),
+          from: z.iso.date().optional(),
+          through: z.iso.date().optional(),
           warehouseId: uuid.optional(),
         })
         .strict(),
@@ -1190,6 +1305,8 @@ export class AppController {
       scopeOf(request),
       query.period,
       query.anchor,
+      query.from,
+      query.through,
     );
   }
 

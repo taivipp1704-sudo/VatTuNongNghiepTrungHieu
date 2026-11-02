@@ -1,5 +1,5 @@
 import { ComponentRef, useEffect, useRef, useState } from "react";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { FlatList, Pressable, RefreshControl, View } from "react-native";
 import {
   Badge,
@@ -30,7 +30,8 @@ import { Partner, LoyaltySettings } from "@/types";
 import { fold, money, number } from "@/lib/format";
 import { memberTier } from "@/lib/loyalty";
 import { theme } from "@/theme";
-import { CustomerPurchases } from "@/components/customer-purchases";
+import { ListPager } from "@/components/list-pager";
+import { CustomerProfile } from "@/components/customer-profile";
 const blank = {
   name: "",
   kind: "CUSTOMER",
@@ -40,12 +41,33 @@ const blank = {
   creditLimit: "0",
 };
 export default function Partners() {
-  const query = useApi<Partner[]>("/partners", can("partners.view"));
   const rules = useApi<LoyaltySettings>("/loyalty/settings");
   const command = useCommand();
   const offline = useSession((state) => state.offline);
   const [search, setSearch] = useState("");
-  const [tier, setTier] = useState("all");
+  const params = useLocalSearchParams<{ kind?: string }>();
+  const [tier, setTier] = useState(
+    params.kind === "SUPPLIER" ? "SUPPLIER" : "all",
+  );
+  const [activeFilter, setActiveFilter] = useState("ALL"),
+    [sort, setSort] = useState("NAME"),
+    [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [search, tier, sort, activeFilter]);
+  const query = useApi<Partner[]>(
+    "/partners?limit=50&page=" +
+      page +
+      "&search=" +
+      encodeURIComponent(search) +
+      "&kind=" +
+      (tier === "SUPPLIER" ? "SUPPLIER" : tier === "all" ? "ALL" : "CUSTOMER") +
+      "&active=" +
+      activeFilter +
+      "&sort=" +
+      sort +
+      "&tier=" +
+      encodeURIComponent(tier === "SUPPLIER" || tier === "all" ? "" : tier),
+    can("partners.view"),
+  );
   const [selected, setSelected] = useState("");
   const listRef = useRef<ComponentRef<typeof FlatList<Partner>>>(null);
   useEffect(() => {
@@ -68,6 +90,10 @@ export default function Partners() {
           item.phone +
           " " +
           item.tax_code +
+          " " +
+          (item.profile?.code || "") +
+          " " +
+          (item.profile?.group || "") +
           " KH" +
           item.id.slice(0, 6),
       ).includes(fold(search)),
@@ -78,6 +104,20 @@ export default function Partners() {
         (tier === "SUPPLIER"
           ? item.kind === "SUPPLIER"
           : item.kind === "CUSTOMER" && memberTier(item, rules.data) === tier),
+    )
+    .filter(
+      (item) =>
+        activeFilter === "ALL" ||
+        (activeFilter === "ACTIVE"
+          ? item.profile?.active !== false
+          : item.profile?.active === false),
+    )
+    .sort((a, b) =>
+      sort === "SPEND"
+        ? (b.lifetime_spend ?? 0) - (a.lifetime_spend ?? 0)
+        : sort === "DEBT"
+          ? (b.debt_balance ?? 0) - (a.debt_balance ?? 0)
+          : a.name.localeCompare(b.name, "vi"),
     );
   const featured = rows.find(
     (item) => item.id === selected && item.kind === "CUSTOMER",
@@ -160,54 +200,88 @@ export default function Partners() {
       }
       ListHeaderComponent={
         <View style={{ gap: 16, paddingBottom: 8 }}>
-          <View
-            style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}
-          >
-            <View style={{ flex: 1 }}>
-              <Field
-                label="Tìm đối tác"
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Tên, SĐT, MST hoặc mã thẻ"
-              />
-            </View>
-            {can("partners.manage") ? (
-              <IconButton
-                name="account-plus-outline"
-                label="Thêm khách hàng hoặc nhà cung cấp"
-                onPress={() => {
-                  setEditId("");
-                  setForm(blank);
-                  setCreating(!creating);
+          {!featured ? (
+            <>
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 10,
+                  alignItems: "flex-end",
                 }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Field
+                    label="Tìm đối tác"
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder="Tên, SĐT, MST hoặc mã thẻ"
+                  />
+                </View>
+                {can("partners.manage") ? (
+                  <IconButton
+                    name="account-plus-outline"
+                    label="Thêm khách hàng hoặc nhà cung cấp"
+                    onPress={() => {
+                      setEditId("");
+                      setForm(blank);
+                      setCreating(!creating);
+                    }}
+                  />
+                ) : null}
+              </View>
+              <ChipTabs
+                value={tier}
+                onChange={setTier}
+                items={[
+                  {
+                    value: "all",
+                    label: "Tất cả (" + (query.data?.length || 0) + ")",
+                  },
+                  ...(rules.data?.tiersEnabled
+                    ? rules.data.tiers.map((entry) => ({
+                        value: entry.name,
+                        label:
+                          entry.name +
+                          " (" +
+                          (query.data || []).filter(
+                            (p) =>
+                              p.kind === "CUSTOMER" &&
+                              memberTier(p, rules.data) === entry.name,
+                          ).length +
+                          ")",
+                      }))
+                    : []),
+                  { value: "SUPPLIER", label: "Nhà cung cấp" },
+                ]}
               />
-            ) : null}
-          </View>
-          <ChipTabs
-            value={tier}
-            onChange={setTier}
-            items={[
-              {
-                value: "all",
-                label: "Tất cả (" + (query.data?.length || 0) + ")",
-              },
-              ...(rules.data?.tiersEnabled
-                ? rules.data.tiers.map((entry) => ({
-                    value: entry.name,
-                    label:
-                      entry.name +
-                      " (" +
-                      (query.data || []).filter(
-                        (p) =>
-                          p.kind === "CUSTOMER" &&
-                          memberTier(p, rules.data) === entry.name,
-                      ).length +
-                      ")",
-                  }))
-                : []),
-              { value: "SUPPLIER", label: "Nhà cung cấp" },
-            ]}
-          />
+              <Row>
+                <View style={{ flex: 1 }}>
+                  <Select
+                    label="Trạng thái khách"
+                    value={activeFilter}
+                    onChange={setActiveFilter}
+                    options={[
+                      { value: "ALL", label: "Tất cả" },
+                      { value: "ACTIVE", label: "Đang giao dịch" },
+                      { value: "INACTIVE", label: "Ngừng giao dịch" },
+                    ]}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Select
+                    label="Sắp xếp"
+                    value={sort}
+                    onChange={setSort}
+                    options={[
+                      { value: "NAME", label: "Tên A–Z" },
+                      { value: "SPEND", label: "Mua nhiều nhất" },
+                      { value: "DEBT", label: "Dư nợ cao nhất" },
+                    ]}
+                  />
+                </View>
+              </Row>
+            </>
+          ) : null}
           <Notice>{notice}</Notice>
           {featured ? (
             <Button
@@ -292,7 +366,8 @@ export default function Partners() {
                     <Row>
                       <Badge label={memberTier(featured, rules.data)} />
                       <Caption>
-                        KH{featured.id.slice(0, 6).toUpperCase()}
+                        {featured.profile?.code ||
+                          "KH" + featured.id.slice(0, 6).toUpperCase()}
                       </Caption>
                     </Row>
                     <Caption>
@@ -300,9 +375,7 @@ export default function Partners() {
                     </Caption>
                   </View>
                 </View>
-                {can("sales.view") ? (
-                  <CustomerPurchases customerId={featured.id} />
-                ) : null}
+                <CustomerProfile partner={featured} />
                 <View
                   style={{
                     padding: 14,
@@ -420,7 +493,7 @@ export default function Partners() {
                             : theme.colors.success,
                       }}
                     >
-                      DƯ NỢ ĐƠN HÀNG: {money(featured.debt_balance || 0)}
+                      DƯ NỢ TRÊN SỔ: {money(featured.debt_balance || 0)}
                     </AppText>
                     <Caption>
                       Điểm chờ thu tiền: {number(featured.pending_points || 0)}{" "}
@@ -503,8 +576,19 @@ export default function Partners() {
               </Panel>
             ) : null}
           </QueryState>
-          <SectionHeading title={"Danh sách đối tác · " + rows.length} />
+          {!featured ? (
+            <SectionHeading title={"Danh sách đối tác · " + rows.length} />
+          ) : null}
         </View>
+      }
+      ListFooterComponent={
+        !featured ? (
+          <ListPager
+            page={page}
+            total={query.data?.[0]?.list_total ?? 0}
+            onChange={setPage}
+          />
+        ) : undefined
       }
       ListEmptyComponent={
         query.data && !featured ? (
@@ -556,9 +640,17 @@ export default function Partners() {
                     color: theme.colors.primary,
                   }}
                 >
-                  {money(item.kind === "SUPPLIER" ? item.debt_balance || 0 : item.lifetime_spend || 0)}
+                  {money(
+                    item.kind === "SUPPLIER"
+                      ? item.debt_balance || 0
+                      : item.lifetime_spend || 0,
+                  )}
                 </AppText>
-                <Caption>{item.kind === "SUPPLIER" ? "Phải trả" : "Đã mua · " + number(item.loyalty_balance || 0) + " điểm"}</Caption>
+                <Caption>
+                  {item.kind === "SUPPLIER"
+                    ? "Phải trả"
+                    : "Đã mua · " + number(item.loyalty_balance || 0) + " điểm"}
+                </Caption>
               </View>
             </View>
           </Panel>

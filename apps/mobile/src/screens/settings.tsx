@@ -35,9 +35,9 @@ export function More() {
     },
     {
       permission: "inventory.view",
-      title: "Kho hàng",
-      description: "Tồn, số lô, hạn sử dụng",
-      route: "/inventory" as const,
+      title: "Sản phẩm & kho hàng",
+      description: "Tồn, nhập/kiểm kho, nhà cung cấp và tem mã vạch",
+      route: "/products" as const,
     },
     {
       permission: "inventory.view",

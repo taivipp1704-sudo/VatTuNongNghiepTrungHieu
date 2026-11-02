@@ -131,3 +131,20 @@ CREATE INDEX IF NOT EXISTS ledger_lot ON stock_ledger(lot_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS debts_balance ON debts(warehouse_id,balance);
 CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS audit_created ON audit_log(created_at DESC);
+
+-- Additive store-management fields; legacy clients omit these and preserve them.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}' CHECK(jsonb_typeof(details)='object');
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS profile jsonb NOT NULL DEFAULT '{}' CHECK(jsonb_typeof(profile)='object');
+CREATE TABLE IF NOT EXISTS product_warehouse_preferences (
+  product_id uuid NOT NULL REFERENCES products(id), warehouse_id uuid NOT NULL REFERENCES warehouses(id),
+  location text NOT NULL DEFAULT '', min_stock numeric(18,3) NOT NULL DEFAULT 0 CHECK(min_stock>=0),
+  max_stock numeric(18,3) CHECK(max_stock IS NULL OR max_stock>=min_stock),
+  PRIMARY KEY(product_id,warehouse_id)
+);
+CREATE TABLE IF NOT EXISTS partner_adjustments (
+  id uuid PRIMARY KEY, partner_id uuid NOT NULL REFERENCES partners(id), warehouse_id uuid NOT NULL REFERENCES warehouses(id),
+  delta numeric(18,0) NOT NULL CHECK(delta<>0 AND abs(delta)<=1000000000000),
+  reason text NOT NULL CHECK(length(reason) BETWEEN 3 AND 500), created_by uuid NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS partner_adjustments_scope ON partner_adjustments(partner_id,warehouse_id,created_at);

@@ -40,6 +40,8 @@ import {
   ProductPicture,
 } from "@/components/pos-ui";
 import { parseRate, rateLabel, productPoints } from "@/lib/loyalty";
+import { ListPager } from "@/components/list-pager";
+import { ProductStock } from "@/components/product-stock";
 import { ProductLoyalty } from "@/components/product-loyalty";
 
 export default function Inventory() {
@@ -55,7 +57,22 @@ export default function Inventory() {
   const [selected, setSelected] = useState<string[]>([]);
   const [rate, setRate] = useState("");
   const [notice, setNotice] = useState("");
-  const query = useApi<Product[]>("/inventory", can("inventory.view"));
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+    setSelected([]);
+  }, [search, category, filter]);
+  const query = useApi<Product[]>(
+    "/inventory?limit=50&page=" +
+      page +
+      "&search=" +
+      encodeURIComponent(search) +
+      "&category=" +
+      encodeURIComponent(category) +
+      "&filter=" +
+      filter,
+    can("inventory.view"),
+  );
   const rules = useApi<LoyaltySettings>("/loyalty/settings");
   const command = useCommand();
   const scan = useScan();
@@ -146,6 +163,13 @@ export default function Inventory() {
         <RefreshControl
           refreshing={query.isRefetching}
           onRefresh={() => void query.refetch()}
+        />
+      }
+      ListFooterComponent={
+        <ListPager
+          page={page}
+          total={query.data?.[0]?.list_total ?? 0}
+          onChange={setPage}
         />
       }
       ListHeaderComponent={
@@ -444,7 +468,10 @@ export function ProductDetail() {
   const offline = useSession((state) => state.offline);
   const [releaseReason, setReleaseReason] = useState("");
   const { id } = useLocalSearchParams<{ id: string }>();
-  const query = useApi<Product[]>("/inventory", can("inventory.view"));
+  const query = useApi<Product[]>(
+    "/inventory?search=" + encodeURIComponent(id ?? ""),
+    can("inventory.view"),
+  );
   const [lotId, setLotId] = useState("");
   const ledger = useApi<DataRow[]>(
     "/ledger/" + lotId,
@@ -528,6 +555,36 @@ export function ProductDetail() {
                 }
               />
             ) : null}
+            <Panel>
+              <Label>Thuộc tính và bảng giá</Label>
+              <Caption>
+                {product.details?.sellable === false
+                  ? "Tạm ngừng bán"
+                  : "Đang bán tại quầy"}{" "}
+                · Khối lượng {number(product.details?.weightGrams ?? 0)} g ·{" "}
+                {product.details?.dimensions || "Chưa có kích thước"}
+              </Caption>
+              {can("sales.wholesale") || can("products.manage") ? (
+                <Caption>
+                  Giá sỉ:{" "}
+                  {money(product.details?.wholesalePack ?? product.price_pack)}{" "}
+                  / {product.pack_unit} ·{" "}
+                  {money(product.details?.wholesaleBase ?? product.price_base)}{" "}
+                  / {product.base_unit}
+                </Caption>
+              ) : null}
+              <Button
+                secondary
+                title="In tem mã vạch"
+                onPress={() =>
+                  router.push({
+                    pathname: "/barcode-labels",
+                    params: { id: product.id, sku: product.sku },
+                  })
+                }
+              />
+            </Panel>
+            <ProductStock product={product} />
             <ProductLoyalty key={product.id} product={product} />
             <Section title="Lô & hạn sử dụng">
               {product.lots.map((lot) => (

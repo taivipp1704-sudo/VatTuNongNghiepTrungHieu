@@ -1,5 +1,8 @@
 # Dùng AgriStock để bán tại quầy
 
+Bản Android 14 bổ sung chức năng quản lý cửa hàng theo ảnh mẫu: bảng giá lẻ/sỉ theo quyền, giỏ tạm giữ, chiết khấu tiền/%, tem mã vạch, thuộc tính/vị trí/tồn tối thiểu–tối đa, hồ sơ khách và sổ nợ, báo cáo kho và thu chi. Xem [chi tiết phạm vi và quy tắc](FUNCTION_PARITY.md).
+
+
 Bản Android hiện tại tập trung vào bán trực tiếp ở cửa hàng, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện. Bản 13 dùng [font Inter/Manrope, xanh rừng–lime, ảnh nền chìm và thẻ ảnh](UI_STYLE.md) để làm rõ thông tin và thao tác.
 
 ## Nhập, bán, sửa và trả hàng

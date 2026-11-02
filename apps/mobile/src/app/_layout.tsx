@@ -16,6 +16,8 @@ import { SessionUser } from "@/types";
 const titles: Record<string, string> = {
   "/": "AgriStock",
   "/inventory": "Kho hàng",
+  "/products": "Sản phẩm & kho hàng",
+  "/barcode-labels": "In tem mã vạch",
   "/pos": "Bán hàng nhanh",
   "/debts": "Công nợ",
   "/more": "Cá nhân & công việc",
@@ -39,12 +41,12 @@ const titles: Record<string, string> = {
 };
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
+    "BeVietnamPro-Regular": require("../../assets/fonts/BeVietnamPro-Regular.ttf"),
+    "BeVietnamPro-Medium": require("../../assets/fonts/BeVietnamPro-Medium.ttf"),
+    "BeVietnamPro-SemiBold": require("../../assets/fonts/BeVietnamPro-SemiBold.ttf"),
+    "BeVietnamPro-Bold": require("../../assets/fonts/BeVietnamPro-Bold.ttf"),
     "Inter-Regular": require("../../assets/fonts/Inter-Regular.ttf"),
-    "Inter-Medium": require("../../assets/fonts/Inter-Medium.ttf"),
-    "Inter-SemiBold": require("../../assets/fonts/Inter-SemiBold.ttf"),
     "Inter-Bold": require("../../assets/fonts/Inter-Bold.ttf"),
-    "Manrope-SemiBold": require("../../assets/fonts/Manrope-SemiBold.ttf"),
-    "Manrope-Bold": require("../../assets/fonts/Manrope-Bold.ttf"),
   });
   useEffect(() => {
     if (fontError) throw fontError;
@@ -180,6 +182,8 @@ export default function RootLayout() {
               "stock-form",
               "product",
               "product-form",
+              "products",
+              "barcode-labels",
               "loyalty",
               "customer-loyalty",
               "warehouse-picker",

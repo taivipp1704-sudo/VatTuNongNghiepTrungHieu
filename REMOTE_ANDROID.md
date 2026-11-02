@@ -1,6 +1,11 @@
-# Thử AgriStock Android từ xa — bản 13
+# Thử AgriStock Android từ xa — bản 14
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-soft-v13/AgriStock-internal-signed-13.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 13. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-store-v14/AgriStock-internal-signed-14.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 14. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 14 đổi chữ sang **Be Vietnam Pro**, giữ Inter cho số tiền; thêm trung tâm Sản phẩm, giá sỉ, thuộc tính hàng, thiết lập tồn theo kho, tem mã vạch/QR, hồ sơ khách bổ sung, sổ công nợ, chiết khấu %, giỏ tạm giữ và báo cáo Kho/Tài chính. Giữ bán tại quầy, ảnh nền chìm và nút cùng tông. Xem [phạm vi chức năng và cách đối chiếu mẫu](FUNCTION_PARITY.md). Cài cập nhật trực tiếp, không cần gỡ bản trước.
+
+Quyền mới: **Bán theo bảng giá sỉ**, **Điều chỉnh số dư sổ nợ khách**, **Xem báo cáo thu chi**. Chủ cửa hàng có đầy đủ quyền; admin bật từng quyền cho role phù hợp trong Quản trị nội bộ. Quyền mới không tự thêm vào các role nhân viên đang có.
+
 
 Bản 13 đồng bộ nút theo ảnh mẫu: Bán tại quầy là viên trong suốt cùng khối doanh thu; trạng thái dùng chung khung sáng, bỏ nền cam/xanh đặc. Nút lưu/thanh toán, bộ lọc và tab chọn dùng xanh nhạt cùng tông; nút biểu tượng tròn nhẹ. Giữ ảnh nền chìm và toàn bộ chức năng bản 12. Cài cập nhật lên bản trước bằng cùng khóa ký, giữ tài khoản hiện tại.
 

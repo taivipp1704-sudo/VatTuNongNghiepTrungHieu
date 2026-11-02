@@ -1,3 +1,19 @@
+# Kiểm tra mới nhất · Android 14
+
+Ngày 02/11/2026: TypeScript API/mobile đạt; 34/34 bài API và 4/4 bài cấu hình phát hành đạt. Sao lưu–khôi phục database QA giữ đúng ảnh, dữ liệu cũ, thuộc tính hàng/hồ sơ khách, thiết lập kho và điều chỉnh nợ. Mã vạch Code 128, QR Unicode đã giải mã lại bằng ZXing độc lập; kiểm tra giới hạn số tem và escape HTML đạt.
+
+CUA web 390×844 và 320×740: mở trung tâm Sản phẩm; lưu vị trí/ngưỡng tồn theo kho; xem trước mã QR; giữ và mở lại giỏ; giảm 10% từ 480.000đ còn 432.000đ; lưu mã/nhóm khách; đối chiếu sổ nợ 36.000đ; báo cáo nhập–xuất–tồn và thu–chi với khoảng 01/10–02/11. Không ghi nhận đơn bán trong phiên UI. Hồ sơ khách 320 px có ba tab hiển thị đủ (mép tab cuối 272/320); trang không tràn ngang và không ghi lỗi/cảnh báo trình duyệt.
+
+Ảnh kiểm tra: artifacts/store-products-390.png, store-labels-390.png, store-finance-320.png, store-customer-320.png; ảnh chỉ chứa dữ liệu QA riêng. Kiểm tra font gồm Be Vietnam Pro cho chữ và Inter cho tiền/số, đủ dấu tiếng Việt. Giữ nền cánh đồng đã nhúng và nút nhạt bản trước.
+
+API chỉ thêm cột/bảng, giữ dữ liệu mới khi client cũ cập nhật và giữ khóa giao dịch cũ. Đã chụp riêng trạng thái nghiệp vụ API cloud trước triển khai để so sánh sau triển khai. Đây không phải bản sao lưu toàn database cloud: kết nối database từ bên ngoài đang bị chặn; không đổi quy tắc mạng. Kiểm tra backup/restore nói trên chạy với database QA cục bộ.
+
+Dependency Zod của API được cập nhật lên nhánh vá 4.6.7 và toàn bộ bài API chạy lại đạt. Audit vẫn báo dependency Multer 2.4 của Nest 11; app chỉ dùng JSON với giới hạn 512 KB, không dùng multipart/fileFilter. Các cảnh báo công cụ Expo chưa được xử lý bằng cách hạ/nâng SDK tự động.
+
+APK, cấu hình ký và kiểm tra cloud sau triển khai được ghi thêm khi có kết quả. Chưa nghiệm thu APK trên điện thoại thật, lịch native, camera hay in giấy; chưa ký/phát hành iOS. Xem FUNCTION_PARITY.md và REMOTE_ANDROID.md về phạm vi bản thử.
+
+---
+
 # Kết quả kiểm tra AgriStock
 
 Kiểm tra ngày 27–31/10/2026 trên Windows, Node 24, Java 21 (thêm toolchain Java 17), PostgreSQL 18. Dữ liệu kiểm thử là dữ liệu riêng của dự án; các kiểm thử UI chạy trên React Native Web, chưa nghiệm thu điện thoại thật.

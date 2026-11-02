@@ -31,6 +31,8 @@ import {
   SectionHeading,
 } from "@/components/pos-ui";
 import { exportCsv, exportTablePdf } from "@/lib/export";
+import { ListPager } from "@/components/list-pager";
+import { CalendarField } from "@/components/report-range";
 import { counterStatus } from "@/lib/counter";
 import { useScan } from "@/lib/scanner";
 
@@ -287,13 +289,6 @@ export function Orders() {
     filter?: string;
     customerId?: string;
   }>();
-  const query = useApi<DataRow[]>(
-    "/orders" +
-      (params.customerId
-        ? "?customerId=" + encodeURIComponent(params.customerId)
-        : ""),
-    can("sales.view"),
-  );
   const dashboard = useApi<DataRow>("/dashboard");
   const bootstrap = useApi<Bootstrap>("/bootstrap");
   const command = useCommand();
@@ -302,6 +297,30 @@ export function Orders() {
   const [expanded, setExpanded] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState(params.filter || "all");
+  const [page, setPage] = useState(1),
+    [sort, setSort] = useState("NEWEST"),
+    [from, setFrom] = useState(""),
+    [through, setThrough] = useState(""),
+    [dates, setDates] = useState(""),
+    [dateOpen, setDateOpen] = useState(false);
+  useEffect(() => {
+    setPage(1);
+    setExpanded("");
+  }, [search, filter, params.customerId, sort, dates]);
+  const query = useApi<DataRow[]>(
+    "/orders?limit=50&page=" +
+      page +
+      "&status=" +
+      filter +
+      "&search=" +
+      encodeURIComponent(search) +
+      "&sort=" +
+      sort +
+      (params.customerId ? "&customerId=" + params.customerId : "") +
+      dates,
+    can("sales.view"),
+  );
+
   const [reason, setReason] = useState("");
   const [refundMethod, setRefundMethod] = useState("CASH");
   const [collectionAmount, setCollectionAmount] = useState("");
@@ -319,7 +338,13 @@ export function Orders() {
   if (!can("sales.view")) return <Denied />;
   const rows = (query.data || [])
     .filter((item) =>
-      fold(item.code + " " + (item.customer_name || "")).includes(fold(search)),
+      fold(
+        item.code +
+          " " +
+          (item.customer_name || "") +
+          " " +
+          (item.customer_phone || ""),
+      ).includes(fold(search)),
     )
     .filter(
       (item) =>
@@ -393,6 +418,11 @@ export function Orders() {
   };
   const footer = (
     <>
+      <ListPager
+        page={page}
+        total={query.data?.[0]?.list_total ?? 0}
+        onChange={setPage}
+      />
       <Panel>
         <Label>Công cụ POS & báo cáo nhanh</Label>
         <Button
@@ -410,8 +440,8 @@ export function Orders() {
           disabled={!rows.length}
         />
         <Caption>
-          Xuất danh sách đang lọc, tối đa 200 đơn. Phiếu PDF có thể chia sẻ hoặc
-          in qua Android. Lịch sử điểm nằm trong hồ sơ khách hàng.
+          Xuất trang đang lọc, tối đa 50 đơn. Phiếu PDF có thể chia sẻ hoặc in
+          qua Android. Lịch sử điểm nằm trong hồ sơ khách hàng.
         </Caption>
       </Panel>
     </>
@@ -427,7 +457,7 @@ export function Orders() {
           >
             <View style={{ flex: 1 }}>
               <Field
-                label="Tìm mã đơn hoặc khách hàng"
+                label="Tìm mã đơn, tên hoặc SĐT khách"
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Mã đơn (#DH...), tên khách"
@@ -442,6 +472,53 @@ export function Orders() {
             />
           </View>
           <ChipTabs value={filter} onChange={setFilter} items={filters} />
+          <Select
+            label="Sắp xếp đơn hàng"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { value: "NEWEST", label: "Mới nhất" },
+              { value: "OLDEST", label: "Cũ nhất" },
+              { value: "TOTAL", label: "Giá trị cao nhất" },
+            ]}
+          />
+          <Button
+            secondary
+            title={dateOpen ? "Đóng bộ lọc ngày" : "Lọc theo ngày bán"}
+            onPress={() => setDateOpen(!dateOpen)}
+          />
+          {dateOpen ? (
+            <Panel>
+              <CalendarField label="Từ ngày" value={from} onChange={setFrom} />
+              <CalendarField
+                label="Đến ngày"
+                value={through}
+                onChange={setThrough}
+              />
+              <Caption>Tối đa 366 ngày, gồm cả ngày kết thúc.</Caption>
+              <Button
+                title="Áp dụng ngày"
+                disabled={!from || !through}
+                onPress={() =>
+                  setDates(
+                    "&from=" +
+                      encodeURIComponent(from) +
+                      "&through=" +
+                      encodeURIComponent(through),
+                  )
+                }
+              />
+              <Button
+                secondary
+                title="Bỏ lọc ngày"
+                onPress={() => {
+                  setDates("");
+                  setFrom("");
+                  setThrough("");
+                }}
+              />
+            </Panel>
+          ) : null}
           {dashboard.data?.sales ? (
             <Panel>
               <Row>

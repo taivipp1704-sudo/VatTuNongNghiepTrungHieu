@@ -1,5 +1,16 @@
-export type ReportPeriod = "DAY" | "WEEK" | "MONTH" | "QUARTER" | "YEAR";
-export const periodNames: Record<ReportPeriod, string> = {
+export type CalendarPeriod = "DAY" | "WEEK" | "MONTH" | "QUARTER" | "YEAR";
+export type ReportPeriod =
+  | CalendarPeriod
+  | "ROLLING_7"
+  | "ROLLING_30"
+  | "CUSTOM";
+export type ReportSelection = {
+  period: ReportPeriod;
+  anchor: string;
+  from?: string;
+  through?: string;
+};
+export const periodNames: Record<CalendarPeriod, string> = {
   DAY: "Ngày",
   WEEK: "Tuần",
   MONTH: "Tháng",
@@ -19,9 +30,15 @@ export function shiftPeriod(
   direction: number,
 ) {
   const date = new Date(anchor + "T00:00:00Z");
-  if (period === "DAY" || period === "WEEK")
+  if (["DAY", "WEEK", "ROLLING_7", "ROLLING_30"].includes(period))
     date.setUTCDate(
-      date.getUTCDate() + direction * (period === "WEEK" ? 7 : 1),
+      date.getUTCDate() +
+        direction *
+          (["WEEK", "ROLLING_7"].includes(period)
+            ? 7
+            : period === "ROLLING_30"
+              ? 30
+              : 1),
     );
   else if (period === "YEAR") {
     date.setUTCMonth(0, 1);
@@ -33,6 +50,22 @@ export function shiftPeriod(
     );
   }
   return date.toISOString().slice(0, 10);
+}
+export function reportQuery(value: ReportSelection) {
+  return Object.entries(value)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v!))
+    .join("&");
+}
+export function validCalendarDay(value: string) {
+  const d = new Date(value + "T00:00:00Z");
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    Number.isFinite(d.getTime()) &&
+    d.toISOString().slice(0, 10) === value &&
+    value >= "2000-01-01" &&
+    value <= "2100-12-31"
+  );
 }
 export function counterStatus(order: {
   returned?: boolean;

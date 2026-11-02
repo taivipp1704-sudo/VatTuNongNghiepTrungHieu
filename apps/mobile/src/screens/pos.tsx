@@ -33,7 +33,7 @@ import {
   Partner,
   Product,
 } from "@/types";
-import { rateLabel, productPoints, memberTier } from "@/lib/loyalty";
+import { parseRate, rateLabel, productPoints, memberTier } from "@/lib/loyalty";
 import { AppText } from "@/components/text";
 import {
   Avatar,
@@ -58,12 +58,16 @@ export default function Pos() {
   const [showCustomer, setShowCustomer] = useState(false);
   const [editLine, setEditLine] = useState("");
   const [autoPrint, setAutoPrint] = useState(false);
+  const [discountMode, setDiscountMode] = useState("AMOUNT"),
+    [percent, setPercent] = useState("");
+  const [showHeld, setShowHeld] = useState(false);
   const [printBusy, setPrintBusy] = useState(false);
   const rules = useApi<LoyaltySettings>("/loyalty/settings");
   const draft = useDraft("sale", () => ({
     warehouseId: "",
     customerId: "",
     lines: [] as CartLine[],
+    priceBook: "RETAIL",
     discount: "",
     redeemPoints: "",
     paid: "",
@@ -73,14 +77,72 @@ export default function Pos() {
     requestKey: newKey(),
   }));
   const { value, setValue } = draft;
+  const held = useDraft("held-sales", () => ({
+    items: [] as { id: string; label: string; cart: typeof value }[],
+  }));
+  const book = value.priceBook || "RETAIL";
+  const priceOf = (product: Product | undefined, unit: string, fallback = 0) =>
+    !product
+      ? fallback
+      : book === "WHOLESALE"
+        ? unit === "PACK"
+          ? (product.details?.wholesalePack ?? product.price_pack)
+          : (product.details?.wholesaleBase ?? product.price_base)
+        : unit === "PACK"
+          ? product.price_pack
+          : product.price_base;
+  const changeBook = async (priceBook: string) => {
+    if (
+      value.lines.length &&
+      !(await confirmAction(
+        "Đổi bảng giá",
+        "Áp dụng lại giá của bảng vừa chọn cho các mặt hàng đang có trong giỏ?",
+      ))
+    )
+      return;
+    const missing = value.lines.some(
+      (l) => !inventory.data?.some((p) => p.id === l.productId),
+    );
+    if (missing) {
+      command.setError("Tải lại danh sách hàng trước khi đổi bảng giá.");
+      return;
+    }
+    update({
+      priceBook,
+      lines: value.lines.map((l) => {
+        const p = inventory.data!.find((p) => p.id === l.productId)!;
+        return {
+          ...l,
+          unitPrice:
+            priceBook === "WHOLESALE"
+              ? l.unit === "PACK"
+                ? (p.details?.wholesalePack ?? p.price_pack)
+                : (p.details?.wholesaleBase ?? p.price_base)
+              : l.unit === "PACK"
+                ? p.price_pack
+                : p.price_base,
+        };
+      }),
+    });
+  };
   const bootstrap = useApi<Bootstrap>("/bootstrap");
+  const [search, setSearch] = useState(""),
+    [customerSearch, setCustomerSearch] = useState("");
   const inventory = useApi<Product[]>(
-    "/inventory" +
-      (value.warehouseId ? "?warehouseId=" + value.warehouseId : ""),
+    "/inventory?search=" +
+      encodeURIComponent(search) +
+      "&ids=" +
+      value.lines.map((l) => l.productId).join(",") +
+      (value.warehouseId ? "&warehouseId=" + value.warehouseId : ""),
     can("sales.create"),
   );
-  const partners = useApi<Partner[]>("/partners", can("partners.view"));
-  const [search, setSearch] = useState("");
+  const partners = useApi<Partner[]>(
+    "/partners?kind=CUSTOMER&search=" +
+      encodeURIComponent(customerSearch) +
+      (value.customerId ? "&includeId=" + value.customerId : ""),
+    can("partners.view"),
+  );
+
   const [result, setResult] = useState<DataRow | null>(null);
   const command = useCommand();
   const scan = useScan();
@@ -134,8 +196,21 @@ export default function Pos() {
     (total, line) => total + Math.round(line.quantity * line.unitPrice),
     0,
   );
-  const discount = Number(value.discount || 0);
+  const discount =
+    discountMode === "PERCENT"
+      ? Math.round((subtotal * (parseRate(percent || "0") ?? NaN)) / 100)
+      : Number(value.discount || 0);
+  useEffect(() => {
+    if (
+      discountMode === "PERCENT" &&
+      Number.isFinite(discount) &&
+      discount >= 0 &&
+      discount <= subtotal
+    )
+      setValue((v) => ({ ...v, discount: String(discount) }));
+  }, [discountMode, discount, subtotal]);
   const quoteInput = {
+    priceBook: book,
     warehouseId: value.warehouseId,
     ...(value.customerId ? { customerId: value.customerId } : {}),
     lines: value.lines.map((line) => ({
@@ -180,6 +255,7 @@ export default function Pos() {
         : Number(value.paid);
   const debt = total - paid;
   const filtered = (inventory.data || [])
+    .filter((item) => item.details?.sellable !== false)
     .filter((item) =>
       fold(item.name + " " + item.sku + " " + item.barcode).includes(
         fold(search),
@@ -207,7 +283,7 @@ export default function Pos() {
             quantity: 1,
             unit: "PACK" as const,
             unitLabel: product.pack_unit,
-            unitPrice: product.price_pack,
+            unitPrice: priceOf(product, "PACK"),
           },
         ];
     update({ lines });
@@ -257,6 +333,7 @@ export default function Pos() {
       return;
     }
     const input = {
+      priceBook: book,
       warehouseId: value.warehouseId,
       ...(value.customerId ? { customerId: value.customerId } : {}),
       lines: value.lines.map((line) => ({
@@ -281,7 +358,10 @@ export default function Pos() {
     );
     if (response) {
       setResult(response);
+      setDiscountMode("AMOUNT");
+      setPercent("");
       setValue({
+        priceBook: book,
         warehouseId: value.warehouseId,
         customerId: "",
         lines: [],
@@ -430,6 +510,8 @@ export default function Pos() {
       ))
     )
       return;
+    setDiscountMode("AMOUNT");
+    setPercent("");
     update({
       lines: [],
       discount: "",
@@ -572,24 +654,178 @@ export default function Pos() {
           </View>
           <Icon name="swap-horizontal" />
         </Pressable>
-        {showCustomer ? (
+        <Panel>
           <Select
-            label="Khách hàng"
-            value={value.customerId}
-            onChange={(customerId) => {
-              update({ customerId, redeemPoints: "" });
-              setShowCustomer(false);
-            }}
+            label="Bảng giá bán"
+            value={book}
+            onChange={(v) => void changeBook(v)}
             options={[
-              { value: "", label: "Khách lẻ — thanh toán đủ" },
-              ...(partners.data || [])
-                .filter((item) => item.kind === "CUSTOMER")
-                .map((item) => ({
-                  value: item.id,
-                  label: item.name + " · " + item.phone,
-                })),
+              { value: "RETAIL", label: "Giá bán lẻ" },
+              ...(can("sales.wholesale")
+                ? [{ value: "WHOLESALE", label: "Giá bán sỉ" }]
+                : []),
             ]}
           />
+          {customer?.profile?.priceBook === "WHOLESALE" &&
+          book !== "WHOLESALE" &&
+          can("sales.wholesale") ? (
+            <Button
+              secondary
+              title="Dùng bảng giá sỉ theo hồ sơ khách"
+              onPress={() => void changeBook("WHOLESALE")}
+            />
+          ) : null}
+          <Button
+            secondary
+            title={
+              showHeld
+                ? "Đóng giỏ tạm giữ"
+                : "Giỏ tạm giữ (" +
+                  (held.value.items ?? []).filter(
+                    (x) => x.cart.warehouseId === value.warehouseId,
+                  ).length +
+                  ")"
+            }
+            onPress={() => setShowHeld(!showHeld)}
+          />
+          {showHeld ? (
+            <>
+              <Button
+                secondary
+                title="Tạm giữ giỏ này, tạo giỏ mới"
+                disabled={
+                  !draft.ready ||
+                  !held.ready ||
+                  !value.lines.length ||
+                  command.pending ||
+                  (held.value.items ?? []).length >= 10
+                }
+                onPress={async () => {
+                  const snapshot = { ...value, discount: String(discount) };
+                  held.setValue((v) => ({
+                    items: [
+                      ...v.items,
+                      {
+                        id: snapshot.requestKey,
+                        label:
+                          partners.data?.find(
+                            (p) => p.id === snapshot.customerId,
+                          )?.name || "Khách lẻ",
+                        cart: snapshot,
+                      },
+                    ].filter(
+                      (x, i, a) => a.findIndex((y) => y.id === x.id) === i,
+                    ),
+                  }));
+                  if (!(await held.save())) {
+                    command.setError("Không lưu được giỏ tạm giữ.");
+                    return;
+                  }
+                  setDiscountMode("AMOUNT");
+                  setPercent("");
+                  setValue({
+                    ...value,
+                    lines: [],
+                    customerId: "",
+                    discount: "",
+                    redeemPoints: "",
+                    paid: "",
+                    note: "",
+                    requestKey: newKey(),
+                  });
+                  await draft.save();
+                  setShowHeld(true);
+                }}
+              />
+              <Caption>
+                Giữ tối đa 10 giỏ trên thiết bị này. Giỏ tạm chưa trừ kho, chưa
+                ghi doanh thu.
+              </Caption>
+              <Notice error>{held.storageError}</Notice>
+              {(held.value.items ?? [])
+                .filter((x) => x.cart.warehouseId === value.warehouseId)
+                .map((item) => (
+                  <Panel key={item.id}>
+                    <Label>
+                      {item.label} · {item.cart.lines.length} mặt hàng
+                    </Label>
+                    <Button
+                      secondary
+                      title="Mở giỏ tạm"
+                      disabled={command.pending || !draft.ready}
+                      onPress={async () => {
+                        if (
+                          value.lines.length &&
+                          !(await confirmAction(
+                            "Mở giỏ tạm",
+                            "Thay giỏ đang nhập bằng giỏ đã giữ? Lưu tạm giữ giỏ hiện tại trước nếu cần.",
+                          ))
+                        )
+                          return;
+                        setDiscountMode("AMOUNT");
+                        setPercent("");
+                        setValue(item.cart);
+                        if (await draft.save()) {
+                          held.setValue((v) => ({
+                            items: v.items.filter((x) => x.id !== item.id),
+                          }));
+                          await held.save();
+                          setShowHeld(false);
+                        }
+                      }}
+                    />
+                    <Button
+                      secondary
+                      title="Xóa giỏ tạm"
+                      disabled={command.pending}
+                      onPress={async () => {
+                        if (
+                          await confirmAction(
+                            "Xóa giỏ tạm",
+                            "Chỉ xóa bản nháp trên thiết bị. Nếu đã gửi đơn mà chưa nhận kết quả, kiểm tra Đơn hàng trước.",
+                          )
+                        ) {
+                          held.setValue((v) => ({
+                            items: v.items.filter((x) => x.id !== item.id),
+                          }));
+                          await held.save();
+                        }
+                      }}
+                    />
+                  </Panel>
+                ))}
+            </>
+          ) : null}
+        </Panel>
+        {showCustomer ? (
+          <View style={{ gap: 10 }}>
+            <Field
+              label="Tìm tên, SĐT hoặc mã khách"
+              value={customerSearch}
+              onChangeText={setCustomerSearch}
+            />
+            <Select
+              label="Khách hàng"
+              value={value.customerId}
+              onChange={(customerId) => {
+                update({ customerId, redeemPoints: "" });
+                setShowCustomer(false);
+              }}
+              options={[
+                { value: "", label: "Khách lẻ — thanh toán đủ" },
+                ...(partners.data || [])
+                  .filter(
+                    (item) =>
+                      item.kind === "CUSTOMER" &&
+                      item.profile?.active !== false,
+                  )
+                  .map((item) => ({
+                    value: item.id,
+                    label: item.name + " · " + item.phone,
+                  })),
+              ]}
+            />
+          </View>
         ) : null}
         {customer ? (
           <View
@@ -742,10 +978,7 @@ export default function Pos() {
                         unit === "PACK"
                           ? product?.pack_unit
                           : product?.base_unit,
-                      unitPrice:
-                        (unit === "PACK"
-                          ? product?.price_pack
-                          : product?.price_base) || line.unitPrice,
+                      unitPrice: priceOf(product, unit, line.unitPrice),
                       quantity: 1,
                     })
                   }
@@ -843,13 +1076,51 @@ export default function Pos() {
           <Label numeric>{money(subtotal)}</Label>
         </Row>
         {can("sales.discount") ? (
-          <Field
-            label="Chiết khấu toàn đơn (đồng)"
-            value={value.discount}
-            onChangeText={(discount) => update({ discount })}
-            keyboardType="numeric"
-            placeholder="0"
-          />
+          <View style={{ gap: 10 }}>
+            <Select
+              label="Chiết khấu / Ưu đãi"
+              value={discountMode}
+              onChange={(mode) => {
+                setDiscountMode(mode);
+                setPercent("");
+                update({ discount: "" });
+              }}
+              options={[
+                { value: "AMOUNT", label: "Số tiền (đồng)" },
+                { value: "PERCENT", label: "Phần trăm (%)" },
+              ]}
+            />
+            <Field
+              label={
+                discountMode === "PERCENT"
+                  ? "Chiết khấu toàn đơn (%)"
+                  : "Chiết khấu toàn đơn (đồng)"
+              }
+              value={discountMode === "PERCENT" ? percent : value.discount}
+              onChangeText={(v) =>
+                discountMode === "PERCENT"
+                  ? setPercent(v)
+                  : update({ discount: v })
+              }
+              keyboardType="decimal-pad"
+              placeholder="0"
+            />
+            {customer?.profile?.discountPercent &&
+            customer.profile.discountPercent > 0 ? (
+              <Button
+                secondary
+                title={
+                  "Áp dụng đề xuất khách: " +
+                  customer.profile.discountPercent +
+                  "%"
+                }
+                onPress={() => {
+                  setDiscountMode("PERCENT");
+                  setPercent(String(customer.profile!.discountPercent));
+                }}
+              />
+            ) : null}
+          </View>
         ) : (
           <Row>
             <Caption>Chiết khấu hóa đơn</Caption>

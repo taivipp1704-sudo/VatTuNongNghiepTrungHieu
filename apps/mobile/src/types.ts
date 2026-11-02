@@ -27,6 +27,7 @@ export interface Lot {
   costBase?: number;
 }
 export interface Product {
+  list_total?: number;
   id: string;
   sku: string;
   barcode: string;
@@ -46,8 +47,18 @@ export interface Product {
   lots: Lot[];
   available: number;
   actual: number;
+  details?: {
+    wholesaleBase?: number | null;
+    wholesalePack?: number | null;
+    weightGrams?: number;
+    dimensions?: string;
+    sellable?: boolean;
+  };
+  max_stock?: number | null;
+  storage_location?: string;
 }
 export interface Partner {
+  list_total?: number;
   id: string;
   name: string;
   kind: "CUSTOMER" | "SUPPLIER";
@@ -60,6 +71,19 @@ export interface Partner {
   lifetime_earned?: number;
   pending_points?: number;
   debt_balance?: number;
+  profile?: {
+    code?: string;
+    email?: string;
+    group?: string;
+    birthday?: string | null;
+    gender?: "MALE" | "FEMALE" | "OTHER";
+    discountPercent?: number;
+    priceBook?: "RETAIL" | "WHOLESALE";
+    assignedStaff?: string;
+    active?: boolean;
+    addresses?: { label: string; address: string }[];
+    contacts?: { name: string; phone: string; email: string }[];
+  };
 }
 export interface CartLine {
   productId: string;

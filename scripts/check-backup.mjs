@@ -31,6 +31,10 @@ try{
     'SELECT customer_id,balance::text FROM loyalty_accounts ORDER BY customer_id',
     'SELECT id,delta::text,balance::text,source_key FROM loyalty_ledger ORDER BY id',
     'SELECT id,loyalty_snapshot,loyalty_earned::text,loyalty_spent::text,loyalty_discount::text FROM orders ORDER BY id',
+    'SELECT id,details FROM products ORDER BY id',
+    'SELECT id,profile FROM partners ORDER BY id',
+    'SELECT * FROM product_warehouse_preferences ORDER BY product_id,warehouse_id',
+    'SELECT * FROM partner_adjustments ORDER BY id',
   ]) assert.deepEqual((await source.query(sql)).rows,(await target.query(sql)).rows);
   await assert.rejects(()=>restore(target,file),/trống/);
   assert.equal((await target.query('SELECT COUNT(*)::int count FROM sessions')).rows[0].count,0);

@@ -13,6 +13,10 @@ export default function TabsLayout() {
       backgroundColor={theme.colors.paper}
       tintColor={theme.colors.primary}
       indicatorColor={theme.colors.buttonFill}
+      labelStyle={{
+        default: { fontFamily: theme.font.medium, fontSize: 11, fontWeight: "normal" },
+        selected: { fontFamily: theme.font.semibold, fontSize: 11, fontWeight: "normal" },
+      }}
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Tổng quan</NativeTabs.Trigger.Label>

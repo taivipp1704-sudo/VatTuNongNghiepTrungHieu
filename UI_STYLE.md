@@ -1,4 +1,4 @@
-# Bố cục và phối màu AgriStock — Android 13
+# Bố cục và phối màu AgriStock — Android 14
 
 AgriStock dùng xanh rừng đậm và lime, nền sáng ấm và chữ đậm, áp dụng hướng Smart Garden từ [video người dùng gửi](VIDEO_UI.md). Hệ thống màu và font nằm trong `apps/mobile/src/theme.ts`; các màn hình dùng chung AppText, Label, Panel và các nút hiện có.
 
@@ -29,9 +29,9 @@ Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng 
 
 Tiếp tục dùng công cụ của repo `D:/baoyu-design-main`: kiểm tra màu bằng `skills/dataviz/scripts/validate_palette.js` và xuất tham chiếu bằng `node scripts/export-design-system.mjs`. Thư mục `design-system/agristock/project` được sinh từ theme thật; công cụ check design-system đạt 0 lỗi cấu trúc, không kiểm tra render cover. Bản xuất này không thay nguồn theme của app. Không đưa mã editor, icon font hoặc ảnh mockup từ nguồn tham khảo vào APK.
 
-**Inter** dùng cho nội dung, ô nhập và số tiền; **Manrope** dùng cho tiêu đề. Cỡ nội dung 16, chú thích chung 14; số tiền quan trọng dùng chữ đậm và chữ số có độ rộng đều. Font được nhúng sẵn, không tải từ Google khi mở app. Không tắt cơ chế phóng to chữ của hệ điều hành.
+**Be Vietnam Pro** dùng cho tiêu đề, nội dung, nút, ô nhập và nhãn điều hướng, với bốn độ đậm 400/500/600/700. Số tiền dùng Inter 400/700 và chữ số đều độ rộng để giữ khả năng so sánh số liệu; bộ Be Vietnam Pro có sẵn trong dự án dùng chữ số tỷ lệ. Các font nhúng sẵn, không tải qua mạng khi mở app. Giữ khả năng phóng to chữ của hệ điều hành.
 
-Nguồn font: [Inter](https://github.com/google/fonts/tree/main/ofl/inter), [Manrope](https://github.com/google/fonts/tree/main/ofl/manrope). Tạo các bản TTF tĩnh từ variable font bằng fontTools 4.60.1: Inter 400/500/600/700 với optical size 14, Manrope 600/700. Đối chiếu đủ chữ tiếng Việt và ký hiệu đồng; thông tin tệp và SHA-256 trong `apps/mobile/assets/fonts/ui-sources.json`. Giấy phép OFL đi kèm mã nguồn và APK tại thư mục licenses.
+Nguồn: [Be Vietnam Pro](https://github.com/google/fonts/tree/main/ofl/bevietnampro), [Inter](https://github.com/google/fonts/tree/main/ofl/inter). Bốn tệp Be Vietnam Pro được đối chiếu với hash nguồn trong assets/fonts/sources.json; Inter giữ tệp tĩnh đã xác minh trước đó. Sáu font được kiểm tra đủ dấu Việt viết thường/hoa, ký hiệu đồng và tính năng chữ số; thông tin tệp/hash trong assets/fonts/ui-sources.json. Giấy phép OFL đi kèm mã nguồn và APK.
 
 Theo hướng tham khảo người dùng đề xuất: giữ bố cục POS cho bán hàng/sản phẩm/chứng từ, hàng hóa có ảnh–SKU–barcode, số liệu tài chính có phân cấp rõ, trạng thái công việc có nhãn, thao tác chính xuất hiện trực tiếp. Đây là hệ thống giao diện AgriStock, không đưa logo hay tài sản của Shopify POS, Sortly, Revolut, Linear hoặc Things 3 vào app.
 

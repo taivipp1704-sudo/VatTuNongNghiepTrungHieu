@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import {
@@ -34,7 +34,11 @@ interface Line {
   costBase?: number;
 }
 export default function StockForm() {
-  const params = useLocalSearchParams<{ kind?: string }>();
+  const params = useLocalSearchParams<{
+    kind?: string;
+    productId?: string;
+    warehouseId?: string;
+  }>();
   const draft = useDraft("stock", () => ({
     kind: params.kind || "RECEIPT",
     warehouseId: "",
@@ -45,6 +49,34 @@ export default function StockForm() {
     requestKey: newKey(),
   }));
   const { value, setValue } = draft;
+  const contextApplied = useRef("");
+  useEffect(() => {
+    const context = [params.kind, params.productId, params.warehouseId].join(
+      ":",
+    );
+    if (!draft.ready || !params.productId || contextApplied.current === context)
+      return;
+    contextApplied.current = context;
+    void (async () => {
+      if (
+        value.lines.length &&
+        !(await confirmAction(
+          "Đổi phiếu đang nhập",
+          "Bỏ các dòng nháp để tạo phiếu cho mặt hàng vừa chọn?",
+        ))
+      )
+        return;
+      setValue((v) => ({
+        ...v,
+        kind: params.kind || v.kind,
+        warehouseId: params.warehouseId || v.warehouseId,
+        lines: [],
+        requestKey: newKey(),
+      }));
+      setProductId(params.productId!);
+      setLotId("");
+    })();
+  }, [draft.ready, params.kind, params.productId, params.warehouseId]);
   const [step, setStep] = useState(1);
   const [productId, setProductId] = useState("");
   const [lotId, setLotId] = useState("");
@@ -56,9 +88,18 @@ export default function StockForm() {
   const [cost, setCost] = useState("");
   const [message, setMessage] = useState("");
   const bootstrap = useApi<Bootstrap>("/bootstrap");
+  const [productSearch, setProductSearch] = useState("");
   const products = useApi<Product[]>(
-    "/inventory" +
-      (value.warehouseId ? "?warehouseId=" + value.warehouseId : ""),
+    "/inventory?search=" +
+      encodeURIComponent(productSearch) +
+      "&ids=" +
+      [
+        ...new Set([
+          ...value.lines.map((l) => l.productId),
+          ...(productId ? [productId] : []),
+        ]),
+      ].join(",") +
+      (value.warehouseId ? "&warehouseId=" + value.warehouseId : ""),
     can("inventory.view"),
   );
   const partners = useApi<Partner[]>("/partners", can("partners.view"));
@@ -91,7 +132,16 @@ export default function StockForm() {
       }));
   }, [draft.ready, bootstrap.data, value.warehouseId]);
   useEffect(() => {
-    if (scan.target === "stock" && scan.code && products.data) {
+    if (scan.target === "stock" && scan.code && productSearch !== scan.code) {
+      setProductSearch(scan.code);
+      return;
+    }
+    if (
+      scan.target === "stock" &&
+      scan.code &&
+      products.data &&
+      !products.isFetching
+    ) {
       const product = products.data.find(
         (item) => item.barcode === scan.code || item.sku === scan.code,
       );
@@ -102,7 +152,13 @@ export default function StockForm() {
       } else setMessage("Không tìm thấy mã " + scan.code);
       scan.clear();
     }
-  }, [scan.code, scan.target, products.data]);
+  }, [
+    scan.code,
+    scan.target,
+    products.data,
+    products.isFetching,
+    productSearch,
+  ]);
   if (!kinds.length) return <Denied />;
   const product = products.data?.find((item) => item.id === productId);
   const incoming = ["RECEIPT", "RETURN"].includes(value.kind);
@@ -271,6 +327,11 @@ export default function StockForm() {
       {step === 2 ? (
         <>
           <Panel>
+            <Field
+              label="Tìm sản phẩm trong danh mục"
+              value={productSearch}
+              onChangeText={setProductSearch}
+            />
             <Select
               label="Hàng hóa"
               value={productId}

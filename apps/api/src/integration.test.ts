@@ -2184,3 +2184,96 @@ test("warehouse administration and image URLs are validated without changing his
     "https://example.com/a.jpg",
   );
 });
+
+test("custom and rolling reports validate ranges and preserve partial-month events", async () => {
+  assert.equal(reportRange("ROLLING_7","2026-11-02").start,"2026-10-27");
+  assert.equal(reportRange("ROLLING_30","2026-11-02").start,"2026-10-04");
+  assert.throws(()=>reportRange("CUSTOM",undefined,"2026-02-30","2026-03-01"));
+  assert.throws(()=>reportRange("CUSTOM",undefined,"2026-02-02","2026-02-01"));
+  assert.throws(()=>reportRange("CUSTOM",undefined,"2024-01-01","2026-01-01"));
+  const range=reportRange("CUSTOM",undefined,"2024-02-29","2024-03-01");
+  assert.equal(range.start,"2024-02-29"); assert.equal(range.end,"2024-03-02");
+  const result=await request("/reports?period=CUSTOM&from=2024-01-15&through=2024-05-20&warehouseId="+main);
+  assert.equal(result.status,200); assert.equal(result.data.series.length,5);
+  assert.equal(result.data.series[0].bucket,"2024-01-01T00:00:00");
+});
+
+test("store-management profiles, wholesale, warehouse preferences and debt adjustments are protected and replay-safe",async()=>{
+  const viewerRole=await request("/admin/roles",{name:"[TEST] Quyền đối chiếu "+randomUUID().slice(0,8),permissions:["inventory.view","partners.view","debts.view","reports.view","sales.create"]});
+  assert.equal(viewerRole.status,201);
+  const viewerUsername="parity_"+randomUUID().slice(0,8),viewerPassword="Parity-Test-Only-2026!";
+  const viewerUser=await request("/admin/users",{username:viewerUsername,name:"[TEST] Người xem đối chiếu",password:viewerPassword,roleIds:[viewerRole.data.id],warehouseIds:[main]});
+  assert.equal(viewerUser.status,201);
+  await db.pool.query("UPDATE users SET must_change_password=false WHERE id=$1",[viewerUser.data.id]);
+  tokens.parity=(await request("/auth/login",{username:viewerUsername,password:viewerPassword})).data.token;
+  const body={sku:"PARITY-"+randomUUID().slice(0,8),name:"[TEST] Hàng đối chiếu chức năng",category:"Vật tư",baseUnit:"cái",packUnit:"hộp",packFactor:10,priceBase:1000,pricePack:9000,costBase:500,minStock:1,trackLots:false,details:{wholesaleBase:800,wholesalePack:7000,weightGrams:100,dimensions:"10 × 10",sellable:true}};
+  const made=await request("/products",body); assert.equal(made.status,201);
+  const id=made.data.id;
+  const person=await request("/partners",{name:"[TEST] Hồ sơ đối chiếu",kind:"CUSTOMER",creditLimit:100000,profile:{code:"TEST-KH",email:"test@example.invalid",group:"Bán sỉ",birthday:"2000-02-29",gender:"OTHER",discountPercent:5,priceBook:"WHOLESALE",assignedStaff:"QA",active:true,addresses:[{label:"Cửa hàng",address:"Địa chỉ thử"}],contacts:[{name:"Liên hệ thử",phone:"0900000000",email:""}]}});
+  assert.equal(person.status,201); const customerId=person.data.id;
+  const receipt=await request("/documents",{kind:"RECEIPT",warehouseId:main,lines:[{productId:id,quantity:3,unit:"PACK",costBase:500}],reason:"Nhập kho kiểm thử chức năng"});
+  assert.equal(receipt.status,201); assert.equal((await request("/documents/"+receipt.data.id+"/post",{})).status,201);
+  const wholesale={warehouseId:main,customerId,priceBook:"WHOLESALE",lines:[{productId:id,quantity:1,unit:"PACK"}],discount:0,redeemPoints:0};
+  assert.equal((await request("/loyalty/quote",{...wholesale,priceBook:"RETAIL"},"parity")).status,201);
+  assert.equal((await request("/loyalty/quote",wholesale,"parity")).status,403);
+  assert.equal((await request("/loyalty/quote",wholesale)).data.total,7000);
+  const saleKey=randomUUID(),sale={...wholesale,paid:7000,method:"CASH"};
+  const sold=await request("/sales",sale,"owner",saleKey); assert.equal(sold.status,201);
+  assert.equal((await request("/sales",sale,"owner",saleKey)).data.id,sold.data.id);
+  const prefs={warehouseId:main,location:"Kệ TEST",minStock:2,maxStock:50};
+  assert.equal((await request("/management/products/"+id+"/warehouse",prefs,"parity",randomUUID(),"PATCH")).status,403);
+  assert.equal((await request("/management/products/"+id+"/warehouse",{...prefs,maxStock:1},"owner",randomUUID(),"PATCH")).status,400);
+  assert.equal((await request("/management/products/"+id+"/warehouse",prefs,"owner",randomUUID(),"PATCH")).status,200);
+  const stock=await request("/management/products/"+id+"/stock?warehouseId="+main,undefined,"parity");
+  assert.equal(stock.status,200); assert.equal(stock.data.warehouses[0].actual,20); assert.equal(stock.data.warehouses[0].min_stock,2); assert.equal(stock.data.warehouses[0].costBase,undefined);
+  assert.equal((await request("/management/products/"+id+"/stock?warehouseId="+secondary,undefined,"parity")).status,403);
+  const adjust={warehouseId:main,newBalance:-1000,reason:"Số dư đầu kỳ kiểm thử"},key=randomUUID();
+  assert.equal((await request("/management/partners/"+customerId+"/balance",adjust,"parity")).status,403);
+  const corrected=await request("/management/partners/"+customerId+"/balance",adjust,"owner",key); assert.equal(corrected.status,201);
+  assert.equal((await request("/management/partners/"+customerId+"/balance",adjust,"owner",key)).data.id,corrected.data.id);
+  const ledger=await request("/management/partners/"+customerId+"/ledger?warehouseId="+main); assert.equal(ledger.status,200); assert.equal(ledger.data.balance,-1000);
+  assert.equal((await request("/management/reports/finance",undefined,"parity")).status,403);
+  const finance=await request("/management/reports/finance?period=DAY&warehouseId="+main); assert.equal(finance.status,200);
+  assert.ok(finance.data.items.some((r:any)=>r.order_id===sold.data.id&&r.amount===7000));
+  const inventory=await request("/management/reports/inventory?period=DAY&warehouseId="+main); assert.equal(inventory.status,200);
+  const entry=inventory.data.items.find((r:any)=>r.id===id); assert.equal(entry.incoming,30); assert.equal(entry.outgoing,10); assert.equal(entry.closing,20);
+  assert.equal((await request("/management/products/"+id+"/history?warehouseId="+main)).data.total,2);
+  const {details,...legacy}=body;
+  assert.equal((await request("/products/"+id,legacy,"owner",randomUUID(),"PATCH")).status,200);
+  assert.equal((await db.pool.query("SELECT details FROM products WHERE id=$1",[id])).rows[0].details.wholesalePack,7000);
+  assert.equal((await request("/partners/"+customerId,{name:"[TEST] Đổi tên",kind:"CUSTOMER",creditLimit:100000},"owner",randomUUID(),"PATCH")).status,200);
+  assert.equal((await db.pool.query("SELECT profile FROM partners WHERE id=$1",[customerId])).rows[0].profile.email,"test@example.invalid");
+  assert.equal((await request("/products/"+id,{...body,details:{...details,sellable:false}},"owner",randomUUID(),"PATCH")).status,200);
+  assert.equal((await request("/loyalty/quote",wholesale)).status,400);
+});
+
+test("store lists search all records, paginate consistently and preserve scope; returned sales reconcile the customer ledger",async()=>{
+  const prefix="LIST-"+randomUUID().slice(0,8);
+  const people=[];
+  for(let i=0;i<3;i++){
+    const created=await request("/partners",{name:prefix+" "+i,kind:"CUSTOMER",phone:"09001234"+i,profile:{code:prefix+"-"+i,group:prefix,active:i!==2}});
+    assert.equal(created.status,201);people.push(created.data.id);
+  }
+  const first=await request("/partners?search="+prefix+"&limit=1&page=1");
+  const second=await request("/partners?search="+prefix+"&limit=1&page=2");
+  assert.equal(first.status,200);assert.equal(first.data.length,1);assert.equal(first.data[0].list_total,3);assert.notEqual(first.data[0].id,second.data[0].id);
+  assert.equal((await request("/partners?search="+prefix+"&active=INACTIVE")).data[0].id,people[2]);
+  assert.equal((await request("/partners?search=no-match&includeId="+people[0])).data[0].id,people[0]);
+  assert.equal((await request("/partners?page=0")).status,400);
+  assert.equal((await request("/inventory?page=-1")).status,400);
+  assert.equal((await request("/inventory?ids=bad-id")).status,400);
+  const product=(await db.pool.query("SELECT id FROM products WHERE sku LIKE 'PARITY-%' LIMIT 1")).rows[0];
+  const inventory=await request("/inventory?search=no-match&ids="+product.id+"&warehouseId="+main);
+  assert.equal(inventory.status,200);assert.equal(inventory.data[0].id,product.id);assert.equal(inventory.data[0].min_stock,2);
+  assert.equal((await request("/inventory?warehouseId="+secondary,undefined,"parity")).status,403);
+  const existing=(await db.pool.query("SELECT id FROM partners WHERE profile->>'code'='TEST-KH' LIMIT 1")).rows[0];
+  await db.pool.query("UPDATE partners SET phone='0900999888' WHERE id=$1",[existing.id]);
+  const orders=await request("/orders?search=0900999888&limit=1");assert.equal(orders.status,200);assert.equal(orders.data.length,1);assert.equal(orders.data[0].customer_id,existing.id);
+  assert.equal((await request("/orders?search=0900999888&status=UNPAID")).data.length,0);
+  const returned=await request("/orders/"+orders.data[0].id+"/return",{reason:"Trả hàng kiểm tra đối chiếu sổ",refundMethod:"CASH"});
+  assert.equal(returned.status,201);
+  const ledger=await request("/management/partners/"+existing.id+"/ledger?warehouseId="+main);
+  assert.equal(ledger.status,200);assert.equal(ledger.data.balance,-1000);assert.equal(ledger.data.items.reduce((sum:number,r:any)=>sum+r.delta,0),-1000);
+  assert.equal((await request("/orders?search=0900999888&status=RETURNED")).data.length,1);
+  assert.equal((await request("/orders?from=2026-02-30&through=2026-03-01")).status,400);
+});

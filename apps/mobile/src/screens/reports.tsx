@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import {
   Button,
@@ -26,17 +27,62 @@ import {
   shiftPeriod,
 } from "@/lib/counter";
 import { DataRow } from "@/types";
+import { ReportRangePicker } from "@/components/report-range";
+import { ManagementReport } from "@/components/management-reports";
+import { reportQuery, ReportSelection } from "@/lib/counter";
 import { exportCsv, exportTablePdf } from "@/lib/export";
 import { theme } from "@/theme";
 
 export default function Reports() {
-  const [period, setPeriod] = useState<ReportPeriod>("MONTH");
-  const [anchor, setAnchor] = useState(localToday());
+  const params = useLocalSearchParams<{ section?: string }>();
+  const [section, setSection] = useState(
+    params.section === "inventory" && can("inventory.view")
+      ? "inventory"
+      : params.section === "finance" && can("reports.finance")
+        ? "finance"
+        : "sales",
+  );
+  const [selection, setSelection] = useState<ReportSelection>({
+    period: "MONTH",
+    anchor: localToday(),
+  });
+  if (!can("reports.view")) return <Denied />;
+  return (
+    <Page>
+      <Label big>Báo cáo cửa hàng</Label>
+      <ChipTabs
+        value={section}
+        onChange={setSection}
+        items={[
+          { value: "sales", label: "Bán hàng" },
+          ...(can("inventory.view")
+            ? [{ value: "inventory", label: "Kho" }]
+            : []),
+          ...(can("reports.finance")
+            ? [{ value: "finance", label: "Tài chính" }]
+            : []),
+        ]}
+      />
+      <ReportRangePicker value={selection} onChange={setSelection} />
+      {section === "sales" ? (
+        <SalesReport selection={selection} />
+      ) : (
+        <ManagementReport
+          section={section as "inventory" | "finance"}
+          selection={selection}
+        />
+      )}
+    </Page>
+  );
+}
+
+function SalesReport({ selection }: { selection: ReportSelection }) {
+  const period = selection.period;
   const [metric, setMetric] = useState("revenue");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const query = useApi<DataRow>(
-    "/reports?period=" + period + "&anchor=" + anchor,
+    "/reports?" + reportQuery(selection),
     can("reports.view"),
   );
   if (!can("reports.view")) return <Denied />;
@@ -44,6 +90,7 @@ export default function Reports() {
   const title = data
     ? day(data.range.start) + " – " + day(data.range.through)
     : "Đang tải kỳ báo cáo";
+  const chartPeriod = data?.range.bucket === "month" ? "YEAR" : period;
   const exportData = async (pdf: boolean) => {
     if (!data) return;
     setBusy(true);
@@ -58,7 +105,7 @@ export default function Reports() {
         "Thực thu",
       ];
       const rows = data.series.map((item: DataRow) => [
-        bucketLabel(item.bucket, period),
+        bucketLabel(item.bucket, chartPeriod),
         item.orders,
         item.gross,
         item.returned,
@@ -79,214 +126,187 @@ export default function Reports() {
     }
   };
   return (
-    <Page
-      onRefresh={() => void query.refetch()}
-      refreshing={query.isRefetching}
-    >
-      <View style={{ gap: 6 }}>
-        <SectionHeading
-          title="Doanh thu cửa hàng"
-          action="Hiện tại"
-          onPress={() => setAnchor(localToday())}
-        />
-        <Caption>Theo ngày, tuần, tháng, quý hoặc năm · giờ Việt Nam</Caption>
-      </View>
-      <ChipTabs
-        compact
-        items={Object.entries(periodNames).map(([value, label]) => ({
-          value,
-          label,
-        }))}
-        value={period}
-        onChange={(v) => setPeriod(v as ReportPeriod)}
-      />
-      <Panel>
-        <Row>
-          <IconButton
-            name="chevron-left"
-            label="Kỳ báo cáo trước"
-            onPress={() => setAnchor(shiftPeriod(anchor, period, -1))}
-          />
-          <View style={{ flex: 1, alignItems: "center" }}>
-            <AppText style={{ fontWeight: "600", textAlign: "center" }}>
-              {title}
+    <QueryState query={query}>
+      {data ? <Caption>{title}</Caption> : null}
+      {data ? (
+        <>
+          <View
+            style={{
+              backgroundColor: theme.colors.hero,
+              borderRadius: theme.radius.lg,
+              padding: 20,
+              gap: 10,
+            }}
+          >
+            <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}>
+              DOANH THU THUẦN
             </AppText>
-          </View>
-          <IconButton
-            name="chevron-right"
-            label="Kỳ báo cáo tiếp theo"
-            onPress={() => setAnchor(shiftPeriod(anchor, period, 1))}
-          />
-        </Row>
-      </Panel>
-      <QueryState query={query}>
-        {data ? (
-          <>
-            <View
+            <AppText
+              variant="amount"
               style={{
-                backgroundColor: theme.colors.hero,
-                borderRadius: theme.radius.lg,
-                padding: 20,
-                gap: 10,
+                color: theme.colors.onPrimary,
+                fontSize: 29,
+                lineHeight: 40,
+                fontWeight: "700",
               }}
             >
-              <AppText
-                style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
-              >
-                DOANH THU THUẦN
-              </AppText>
-              <AppText
-                variant="amount"
-                style={{
-                  color: theme.colors.onPrimary,
-                  fontSize: 29,
-                  lineHeight: 40,
-                  fontWeight: "700",
-                }}
-              >
-                {money(data.totals.revenue)}
-              </AppText>
-              <AppText
-                style={{
-                  color: theme.colors.onHeroMuted,
-                  fontSize: 12,
-                  lineHeight: 19,
-                }}
-              >
-                Doanh số {money(data.totals.gross)} − trả hàng{" "}
-                {money(data.totals.returned)}
-              </AppText>
+              {money(data.totals.revenue)}
+            </AppText>
+            <AppText
+              style={{
+                color: theme.colors.onHeroMuted,
+                fontSize: 12,
+                lineHeight: 19,
+              }}
+            >
+              Doanh số {money(data.totals.gross)} − trả hàng{" "}
+              {money(data.totals.returned)}
+            </AppText>
+          </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Panel tone="info">
+                <Caption>Tiền thực thu</Caption>
+                <Label numeric tone="info">
+                  {money(data.totals.collected)}
+                </Label>
+                <Caption>Thu tiền − hoàn tiền trong kỳ</Caption>
+              </Panel>
             </View>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Panel tone="info">
-                  <Caption>Tiền thực thu</Caption>
-                  <Label numeric tone="info">
-                    {money(data.totals.collected)}
-                  </Label>
-                  <Caption>Thu tiền − hoàn tiền trong kỳ</Caption>
-                </Panel>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Panel tone="warning">
-                  <Caption>Chưa thanh toán</Caption>
-                  <Label numeric tone="warning">
-                    {money(data.totals.outstanding)}
-                  </Label>
-                  <Caption>Còn nợ trên đơn lập trong kỳ</Caption>
-                </Panel>
-              </View>
+            <View style={{ flex: 1 }}>
+              <Panel tone="warning">
+                <Caption>Chưa thanh toán</Caption>
+                <Label numeric tone="warning">
+                  {money(data.totals.outstanding)}
+                </Label>
+                <Caption>Còn nợ trên đơn lập trong kỳ</Caption>
+              </Panel>
             </View>
-            <Panel>
-              <Row>
-                <Caption>{number(data.totals.orders)} đơn bán</Caption>
-                <Caption>{number(data.totals.returns)} đơn trả</Caption>
-              </Row>
-              <Row>
-                <Caption>
-                  Đang giao dịch: {number(data.totals.in_progress)}
-                </Caption>
-                <Caption>Hoàn thành: {number(data.totals.completed)}</Caption>
-              </Row>
-              {can("reports.profit") && data.grossProfit !== undefined ? (
-                <Row>
-                  <Caption>Lãi gộp sau giảm giá và trả hàng</Caption>
-                  <Label
-                    numeric
-                    tone={data.grossProfit < 0 ? "danger" : "success"}
-                  >
-                    {money(data.grossProfit)}
-                  </Label>
-                </Row>
-              ) : null}
-              {can("reports.profit") && data.grossProfit !== undefined ? (
-                <Row>
-                  <Caption>Giá vốn hàng đã bán sau trả hàng</Caption>
-                  <Label>{money(data.totals.revenue - data.grossProfit)}</Label>
-                </Row>
-              ) : null}
-            </Panel>
-            <Panel>
-              <Label big>Biểu đồ {periodNames[period].toLowerCase()}</Label>
-              <ChipTabs
-                items={[
-                  { value: "revenue", label: "Doanh thu" },
-                  { value: "collected", label: "Thực thu" },
-                ]}
-                value={metric}
-                onChange={setMetric}
-              />
-              <RevenueChart
-                points={data.series}
-                metric={metric as "revenue" | "collected"}
-                period={period}
-              />
+          </View>
+          <Panel>
+            <Row>
+              <Caption>{number(data.totals.orders)} đơn bán</Caption>
+              <Caption>{number(data.totals.returns)} đơn trả</Caption>
+            </Row>
+            <Row>
               <Caption>
-                Doanh thu ghi ngày bán, trả hàng ghi ngày trả. Thực thu ghi ngày
-                nhận hoặc hoàn tiền; có thể gồm thu nợ đơn cũ.
+                Đang giao dịch: {number(data.totals.in_progress)}
               </Caption>
-            </Panel>
-            <Section title="Chi tiết theo mốc">
-              {data.series.filter(
-                (item: DataRow) =>
-                  item.gross || item.returned || item.collected,
-              ).length ? (
-                data.series
-                  .filter(
-                    (item: DataRow) =>
-                      item.gross || item.returned || item.collected,
-                  )
-                  .map((item: DataRow) => (
-                    <Panel key={item.bucket}>
-                      <Row>
-                        <Label>{bucketLabel(item.bucket, period)}</Label>
-                        <Label>{money(item.revenue)}</Label>
-                      </Row>
-                      <Caption>
-                        {item.orders} đơn · Thực thu {money(item.collected)} ·
-                        Trả {money(item.returned)}
-                      </Caption>
-                    </Panel>
-                  ))
-              ) : (
-                <Caption>Chưa có giao dịch trong kỳ này.</Caption>
-              )}
-            </Section>
-            <Section title="Mặt hàng theo doanh thu thuần">
-              {data.top.length ? (
-                data.top.map((item: DataRow) => (
-                  <Panel key={item.id || item.name}>
+              <Caption>Hoàn thành: {number(data.totals.completed)}</Caption>
+            </Row>
+            {can("reports.profit") && data.grossProfit !== undefined ? (
+              <Row>
+                <Caption>Lãi gộp sau giảm giá và trả hàng</Caption>
+                <Label
+                  numeric
+                  tone={data.grossProfit < 0 ? "danger" : "success"}
+                >
+                  {money(data.grossProfit)}
+                </Label>
+              </Row>
+            ) : null}
+            {can("reports.profit") && data.grossProfit !== undefined ? (
+              <Row>
+                <Caption>Giá vốn hàng đã bán sau trả hàng</Caption>
+                <Label numeric>
+                  {money(data.totals.revenue - data.grossProfit)}
+                </Label>
+              </Row>
+            ) : null}
+          </Panel>
+          {can("reports.profit") && data.grossMargin !== undefined ? (
+            <Caption>
+              Biên lãi gộp:{" "}
+              {data.grossMargin === null
+                ? "Không tính khi doanh thu bằng 0"
+                : number(data.grossMargin) + "%"}
+              . Giá vốn theo lô thực tế đã xuất.
+            </Caption>
+          ) : null}
+          <Panel>
+            <Label big>
+              Biểu đồ{" "}
+              {(
+                periodNames[period as keyof typeof periodNames] || "tùy chỉnh"
+              ).toLowerCase()}
+            </Label>
+            <ChipTabs
+              items={[
+                { value: "revenue", label: "Doanh thu" },
+                { value: "collected", label: "Thực thu" },
+              ]}
+              value={metric}
+              onChange={setMetric}
+            />
+            <RevenueChart
+              points={data.series}
+              metric={metric as "revenue" | "collected"}
+              period={chartPeriod}
+            />
+            <Caption>
+              Doanh thu ghi ngày bán, trả hàng ghi ngày trả. Thực thu ghi ngày
+              nhận hoặc hoàn tiền; có thể gồm thu nợ đơn cũ.
+            </Caption>
+          </Panel>
+          <Section title="Chi tiết theo mốc">
+            {data.series.filter(
+              (item: DataRow) => item.gross || item.returned || item.collected,
+            ).length ? (
+              data.series
+                .filter(
+                  (item: DataRow) =>
+                    item.gross || item.returned || item.collected,
+                )
+                .map((item: DataRow) => (
+                  <Panel key={item.bucket}>
                     <Row>
-                      <View style={{ flex: 1 }}>
-                        <Label>{item.name}</Label>
-                        <Caption>
-                          {number(item.quantity)} đơn vị cơ sở sau trả hàng
-                        </Caption>
-                      </View>
+                      <Label>{bucketLabel(item.bucket, chartPeriod)}</Label>
                       <Label>{money(item.revenue)}</Label>
                     </Row>
+                    <Caption>
+                      {item.orders} đơn · Thực thu {money(item.collected)} · Trả{" "}
+                      {money(item.returned)}
+                    </Caption>
                   </Panel>
                 ))
-              ) : (
-                <Caption>Chưa có mặt hàng trong kỳ.</Caption>
-              )}
-            </Section>
-            <Notice error>{error}</Notice>
-            <Button
-              title="Xuất báo cáo Excel (CSV)"
-              secondary
-              pending={busy}
-              onPress={() => void exportData(false)}
-            />
-            <Button
-              title="Xuất báo cáo PDF"
-              secondary
-              pending={busy}
-              onPress={() => void exportData(true)}
-            />
-          </>
-        ) : null}
-      </QueryState>
-    </Page>
+            ) : (
+              <Caption>Chưa có giao dịch trong kỳ này.</Caption>
+            )}
+          </Section>
+          <Section title="Mặt hàng theo doanh thu thuần">
+            {data.top.length ? (
+              data.top.map((item: DataRow) => (
+                <Panel key={item.id || item.name}>
+                  <Row>
+                    <View style={{ flex: 1 }}>
+                      <Label>{item.name}</Label>
+                      <Caption>
+                        {number(item.quantity)} đơn vị cơ sở sau trả hàng
+                      </Caption>
+                    </View>
+                    <Label>{money(item.revenue)}</Label>
+                  </Row>
+                </Panel>
+              ))
+            ) : (
+              <Caption>Chưa có mặt hàng trong kỳ.</Caption>
+            )}
+          </Section>
+          <Notice error>{error}</Notice>
+          <Button
+            title="Xuất báo cáo Excel (CSV)"
+            secondary
+            pending={busy}
+            onPress={() => void exportData(false)}
+          />
+          <Button
+            title="Xuất báo cáo PDF"
+            secondary
+            pending={busy}
+            onPress={() => void exportData(true)}
+          />
+        </>
+      ) : null}
+    </QueryState>
   );
 }

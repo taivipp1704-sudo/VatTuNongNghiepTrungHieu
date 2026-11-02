@@ -40,6 +40,51 @@ export const loyaltyRate = z
     (value) => Math.abs(value * 10000 - Math.round(value * 10000)) < 0.000001,
     "Tỷ lệ tích điểm có tối đa 4 chữ số thập phân.",
   );
+export const productDetailsSchema = z
+  .object({
+    wholesaleBase: amount.nullable().optional(),
+    wholesalePack: amount.nullable().optional(),
+    weightGrams: z.number().min(0).max(100000000).default(0),
+    dimensions: z.string().trim().max(100).default(""),
+    sellable: z.boolean().default(true),
+  })
+  .strict();
+export const partnerProfileSchema = z
+  .object({
+    code: z.string().trim().max(40).default(""),
+    email: z.union([z.email(), z.literal("")]).default(""),
+    group: z.string().trim().max(80).default("Bán lẻ"),
+    birthday: date.nullable().default(null),
+    gender: z.enum(["MALE", "FEMALE", "OTHER"]).default("OTHER"),
+    discountPercent: loyaltyRate.default(0),
+    priceBook: z.enum(["RETAIL", "WHOLESALE"]).default("RETAIL"),
+    assignedStaff: z.string().trim().max(120).default(""),
+    active: z.boolean().default(true),
+    addresses: z
+      .array(
+        z
+          .object({
+            label: z.string().trim().min(1).max(80),
+            address: z.string().trim().min(1).max(300),
+          })
+          .strict(),
+      )
+      .max(10)
+      .default([]),
+    contacts: z
+      .array(
+        z
+          .object({
+            name: z.string().trim().min(1).max(100),
+            phone: z.string().trim().max(30),
+            email: z.union([z.email(), z.literal("")]).default(""),
+          })
+          .strict(),
+      )
+      .max(10)
+      .default([]),
+  })
+  .strict();
 export const productSchema = z
   .object({
     sku: text,
@@ -55,12 +100,19 @@ export const productSchema = z
     minStock: z.number().min(0).max(1_000_000),
     trackLots: z.boolean(),
     technicalInfo: z.string().max(3000).default(""),
+    details: productDetailsSchema.optional(),
     loyaltyRate: loyaltyRate.optional(),
     imageUrl: z
       .string()
       .max(2000)
       .refine((value) => {
-        if (!value || /^\/api\/photos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value)) return true;
+        if (
+          !value ||
+          /^\/api\/photos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+            value,
+          )
+        )
+          return true;
         try {
           const url = new URL(value);
           return (
@@ -83,6 +135,7 @@ export const partnerSchema = z
     address: z.string().max(300).default(""),
     taxCode: z.string().max(30).default(""),
     creditLimit: amount.default(0),
+    profile: partnerProfileSchema.optional(),
   })
   .strict();
 export const stockLineSchema = z.object({
@@ -117,6 +170,7 @@ export const saleSchema = z
   .object({
     warehouseId: uuid,
     customerId: uuid.optional(),
+    priceBook: z.enum(["RETAIL", "WHOLESALE"]).optional(),
     lines: z
       .array(
         z

@@ -17,6 +17,7 @@ import { Loyalty } from "./loyalty";
 import { AppController, PublicController } from "./controller";
 import { PhotoController, Photos } from "./photos";
 import { Reports } from "./reports";
+import { ManagementController } from "./management";
 
 @Catch()
 class ApiExceptionFilter implements ExceptionFilter {
@@ -51,7 +52,7 @@ class ApiExceptionFilter implements ExceptionFilter {
 }
 
 @Module({
-  controllers: [PublicController, AppController, PhotoController],
+  controllers: [PublicController, AppController, PhotoController, ManagementController],
   providers: [
     Database,
     AuthService,

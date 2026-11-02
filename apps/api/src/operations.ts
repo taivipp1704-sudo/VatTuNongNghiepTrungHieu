@@ -11,6 +11,7 @@ import { Database, audit } from "./db";
 import { User, requirePermission, requireWarehouse } from "./auth";
 import { documentSchema, saleSchema } from "./validation";
 import { Loyalty, loyaltyAmounts } from "./loyalty";
+import { listPrice } from "./pricing";
 
 type StockInput = z.infer<typeof documentSchema>;
 type SaleInput = z.infer<typeof saleSchema>;
@@ -90,7 +91,18 @@ export class Operations {
       );
   }
 
-  async inventory(user: User, search = "", warehouseId?: string) {
+  async inventory(
+    user: User,
+    search = "",
+    warehouseId?: string,
+    options: {
+      page?: number;
+      limit?: number;
+      category?: string;
+      filter?: string;
+      ids?: string[];
+    } = {},
+  ) {
     requirePermission(user, "inventory.view");
     if (warehouseId) requireWarehouse(user, warehouseId);
     const scope = warehouseId
@@ -101,21 +113,42 @@ export class Operations {
     const rows = (
       await this.db.pool.query(
         `
-      SELECT p.*,COALESCE(jsonb_agg(jsonb_build_object(
+      SELECT p.*,count(*) OVER()::int list_total,COALESCE(pref.min_stock,p.min_stock) min_stock,pref.max_stock,COALESCE(pref.location,'') storage_location,COALESCE(jsonb_agg(jsonb_build_object(
         'id',l.id,'code',l.code,'warehouseId',l.warehouse_id,'warehouseName',w.name,'location',l.location,
         'expiresOn',l.expires_on,'state',l.state,'quantity',l.quantity,'reserved',l.reserved,'costBase',l.cost_base,
         'available',CASE WHEN l.state='AVAILABLE' AND (l.expires_on IS NULL OR l.expires_on>=CURRENT_DATE) THEN l.quantity-l.reserved ELSE 0 END
       ) ORDER BY l.expires_on NULLS LAST) FILTER(WHERE l.id IS NOT NULL),'[]') lots
       FROM products p LEFT JOIN lots l ON l.product_id=p.id AND ($1::uuid[] IS NULL OR l.warehouse_id=ANY($1))
       LEFT JOIN warehouses w ON w.id=l.warehouse_id
-      WHERE p.active AND (p.name ILIKE $2 OR p.sku ILIKE $2 OR p.barcode ILIKE $2)
-      GROUP BY p.id ORDER BY p.name LIMIT 500`,
-        [scope, "%" + search.slice(0, 100) + "%"],
+      LEFT JOIN product_warehouse_preferences pref ON pref.product_id=p.id AND pref.warehouse_id=$3
+      WHERE p.active AND (p.name ILIKE $2 OR p.sku ILIKE $2 OR p.barcode ILIKE $2 OR p.id::text ILIKE $2 OR p.id=ANY($8::uuid[])) AND ($4='all' OR p.category=$4)
+      GROUP BY p.id,pref.product_id,pref.warehouse_id
+      HAVING $5='all' OR ($5='low' AND COALESCE(sum(CASE WHEN l.state='AVAILABLE' AND (l.expires_on IS NULL OR l.expires_on>=CURRENT_DATE) THEN l.quantity-l.reserved ELSE 0 END),0)<COALESCE(pref.min_stock,p.min_stock))
+       OR ($5='soon' AND bool_or(l.quantity>0 AND l.expires_on BETWEEN CURRENT_DATE AND CURRENT_DATE+90)) OR ($5='expired' AND bool_or(l.quantity>0 AND l.expires_on<CURRENT_DATE))
+      ORDER BY (p.id=ANY($8::uuid[])) DESC,p.name,p.id LIMIT $6 OFFSET $7`,
+        [
+          scope,
+          "%" + search.slice(0, 100) + "%",
+          warehouseId ?? null,
+          options.category ?? "all",
+          options.filter ?? "all",
+          options.limit ?? 500,
+          ((options.page ?? 1) - 1) * (options.limit ?? 500),
+          options.ids ?? [],
+        ],
       )
     ).rows;
     return sanitizeMoney(
       rows.map((product) => ({
         ...product,
+        details:
+          has(user, "sales.wholesale") || has(user, "products.manage")
+            ? product.details
+            : {
+                ...product.details,
+                wholesaleBase: undefined,
+                wholesalePack: undefined,
+              },
         available: product.lots.reduce(
           (total: number, lot: Data) => total + lot.available,
           0,
@@ -492,6 +525,8 @@ export class Operations {
           ).rows[0];
           if (!partner)
             throw new BadRequestException("Khách hàng không tồn tại.");
+          if (partner.profile?.active === false)
+            throw new BadRequestException("Khách hàng đang ngừng giao dịch.");
         }
         await this.locks(
           client,
@@ -507,8 +542,9 @@ export class Operations {
             line.quantity,
             line.unit,
           );
-          const defaultPrice =
-            line.unit === "PACK" ? product.price_pack : product.price_base;
+          if (input.priceBook === "WHOLESALE")
+            requirePermission(user, "sales.wholesale");
+          const defaultPrice = listPrice(product, line.unit, input.priceBook);
           const unitPrice = line.unitPrice ?? defaultPrice;
           if (unitPrice !== defaultPrice)
             requirePermission(user, "sales.price.edit");
@@ -604,7 +640,7 @@ export class Operations {
           ).rows[0];
           const debt = (
             await client.query(
-              "SELECT COALESCE(sum(balance),0)::numeric total FROM debts WHERE partner_id=$1 AND kind='RECEIVABLE'",
+              "SELECT COALESCE((SELECT sum(balance) FROM debts WHERE partner_id=$1 AND kind='RECEIVABLE'),0)+COALESCE((SELECT sum(delta) FROM partner_adjustments WHERE partner_id=$1),0) total",
               [input.customerId],
             )
           ).rows[0].total;

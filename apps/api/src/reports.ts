@@ -3,10 +3,23 @@ import { Database } from "./db";
 import { User, requirePermission } from "./auth";
 import { has } from "./operations";
 
-export type ReportPeriod = "DAY" | "WEEK" | "MONTH" | "QUARTER" | "YEAR";
+export type ReportPeriod =
+  | "DAY"
+  | "WEEK"
+  | "MONTH"
+  | "QUARTER"
+  | "YEAR"
+  | "ROLLING_7"
+  | "ROLLING_30"
+  | "CUSTOM";
 const dayMs = 86400000;
 const iso = (date: Date) => date.toISOString().slice(0, 10);
-export function reportRange(period?: ReportPeriod, anchor?: string) {
+export function reportRange(
+  period?: ReportPeriod,
+  anchor?: string,
+  from?: string,
+  through?: string,
+) {
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
     year: "numeric",
@@ -26,8 +39,31 @@ export function reportRange(period?: ReportPeriod, anchor?: string) {
   let start = new Date(date),
     end = new Date(date),
     bucket = "day";
-  if (!period) {
-    start = new Date(date.getTime() - 29 * dayMs);
+  if (period === "CUSTOM") {
+    const valid = (value?: string) => {
+      if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const d = new Date(value + "T00:00:00Z");
+      return (
+        Number.isFinite(d.getTime()) &&
+        iso(d) === value &&
+        d.getUTCFullYear() >= 2000 &&
+        d.getUTCFullYear() <= 2100
+      );
+    };
+    if (!valid(from) || !valid(through))
+      throw new BadRequestException(
+        "Nhập ngày bắt đầu/kết thúc hợp lệ (YYYY-MM-DD).",
+      );
+    start = new Date(from! + "T00:00:00Z");
+    end = new Date(new Date(through! + "T00:00:00Z").getTime() + dayMs);
+    const days = (end.getTime() - start.getTime()) / dayMs;
+    if (days < 1 || days > 366)
+      throw new BadRequestException("Khoảng báo cáo từ 1 đến 366 ngày.");
+    bucket = days > 92 ? "month" : "day";
+  } else if (!period || period === "ROLLING_30" || period === "ROLLING_7") {
+    start = new Date(
+      date.getTime() - (period === "ROLLING_7" ? 6 : 29) * dayMs,
+    );
     end = new Date(date.getTime() + dayMs);
   } else if (period === "DAY") {
     end = new Date(date.getTime() + dayMs);
@@ -87,7 +123,7 @@ export class Reports {
           FROM payments p JOIN scoped o ON o.id=p.order_id CROSS JOIN bounds
           WHERE p.created_at>=lo AT TIME ZONE 'Asia/Ho_Chi_Minh' AND p.created_at<hi AT TIME ZONE 'Asia/Ho_Chi_Minh'
       ), bins AS (
-        SELECT generate_series(lo,hi-interval '1 second',('1 '||$5)::interval) t FROM bounds
+        SELECT generate_series(date_trunc($5,lo),hi-interval '1 second',('1 '||$5)::interval) t FROM bounds
       ) SELECT to_char(b.t,'YYYY-MM-DD"T"HH24:MI:SS') bucket,
         COALESCE(sum(e.revenue),0)::numeric revenue,COALESCE(sum(e.gross),0)::numeric gross,
         COALESCE(sum(e.returned),0)::numeric returned,COALESCE(sum(e.collected),0)::numeric collected,
@@ -103,9 +139,11 @@ export class Reports {
     scope: string[] | null,
     period?: ReportPeriod,
     anchor?: string,
+    from?: string,
+    through?: string,
   ) {
     requirePermission(user, "reports.view");
-    const range = reportRange(period, anchor);
+    const range = reportRange(period, anchor, from, through);
     const [rows, topResult, statusResult] = await Promise.all([
       this.financialSeries(scope, range),
       this.db.pool.query(
@@ -157,7 +195,13 @@ export class Reports {
       })),
       top: topResult.rows.map((row) => ({ ...row, revenue: row.revenue ?? 0 })),
       ...(has(user, "reports.profit")
-        ? { grossProfit: totals.revenue - cost }
+        ? {
+            grossProfit: totals.revenue - cost,
+            cost,
+            grossMargin: totals.revenue
+              ? ((totals.revenue - cost) / totals.revenue) * 100
+              : null,
+          }
         : {}),
     };
   }

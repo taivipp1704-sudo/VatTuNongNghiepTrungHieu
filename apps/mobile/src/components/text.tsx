@@ -13,7 +13,11 @@ export function AppText({
     (!variant && size >= theme.type.heading && weight >= 600);
   const family =
     current.fontFamily ||
-    (isHeading
+    (variant === "amount"
+      ? weight >= 600
+        ? theme.font.numericBold
+        : theme.font.numeric
+      : isHeading
       ? weight >= 700
         ? theme.font.headingBold
         : theme.font.heading

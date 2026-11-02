@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 import { Pool, PoolClient } from "pg";
 import { z } from "zod";
 import { Database } from "./db";
+import { listPrice } from "./pricing";
 import { User, requirePermission, requireWarehouse } from "./auth";
 import { loyaltySettingsSchema, loyaltyQuoteSchema } from "./validation";
 
@@ -145,6 +146,8 @@ export class Loyalty {
 
   async quote(user: User, input: z.infer<typeof loyaltyQuoteSchema>) {
     requirePermission(user, "sales.create");
+    if (input.priceBook === "WHOLESALE")
+      requirePermission(user, "sales.wholesale");
     requireWarehouse(user, input.warehouseId);
     if (input.discount > 0) requirePermission(user, "sales.discount");
     if (input.redeemPoints > 0) requirePermission(user, "loyalty.redeem");
@@ -152,7 +155,7 @@ export class Loyalty {
       input.customerId &&
       !(
         await this.db.pool.query(
-          "SELECT id FROM partners WHERE id=$1 AND kind='CUSTOMER'",
+          "SELECT id FROM partners WHERE id=$1 AND kind='CUSTOMER' AND profile->>'active' IS DISTINCT FROM 'false'",
           [input.customerId],
         )
       ).rowCount
@@ -168,8 +171,7 @@ export class Loyalty {
         )
       ).rows[0];
       if (!product) throw new NotFoundException("Không tìm thấy hàng hóa.");
-      const defaultPrice =
-        item.unit === "PACK" ? product.price_pack : product.price_base;
+      const defaultPrice = listPrice(product, item.unit, input.priceBook);
       const unitPrice = item.unitPrice ?? defaultPrice;
       if (unitPrice !== defaultPrice)
         requirePermission(user, "sales.price.edit");

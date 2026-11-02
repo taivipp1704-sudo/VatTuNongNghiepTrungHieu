@@ -31,7 +31,7 @@ import { parseRate } from "@/lib/loyalty";
 export function ProductForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const query = useApi<Product[]>(
-    "/inventory",
+    "/inventory?search=" + encodeURIComponent(id ?? ""),
     Boolean(id) && can("products.manage"),
   );
   const [form, setForm] = useState({
@@ -52,6 +52,13 @@ export function ProductForm() {
     imageUrl: "",
   });
   const [loadedId, setLoadedId] = useState("");
+  const [extra, setExtra] = useState({
+    wholesaleBase: "",
+    wholesalePack: "",
+    weightGrams: "0",
+    dimensions: "",
+    sellable: true,
+  });
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const bootstrap = useApi<Bootstrap>("/bootstrap");
@@ -69,6 +76,19 @@ export function ProductForm() {
     const item = query.data?.find((item) => item.id === id);
     if (item && loadedId !== id) {
       setLoadedId(id || "");
+      setExtra({
+        wholesaleBase:
+          item.details?.wholesaleBase == null
+            ? ""
+            : String(item.details.wholesaleBase),
+        wholesalePack:
+          item.details?.wholesalePack == null
+            ? ""
+            : String(item.details.wholesalePack),
+        weightGrams: String(item.details?.weightGrams ?? 0),
+        dimensions: item.details?.dimensions ?? "",
+        sellable: item.details?.sellable !== false,
+      });
       setForm({
         sku: item.sku,
         barcode: item.barcode || "",
@@ -117,6 +137,19 @@ export function ProductForm() {
       pricePack: Number(form.pricePack),
       costBase: Number(form.costBase),
       minStock: Number(form.minStock || 0),
+      details: {
+        wholesaleBase:
+          extra.wholesaleBase.trim() === ""
+            ? null
+            : Number(extra.wholesaleBase),
+        wholesalePack:
+          extra.wholesalePack.trim() === ""
+            ? null
+            : Number(extra.wholesalePack),
+        weightGrams: Number(extra.weightGrams || 0),
+        dimensions: extra.dimensions,
+        sellable: extra.sellable,
+      },
     };
     if (
       !form.sku.trim() ||
@@ -371,7 +404,30 @@ export function ProductForm() {
               placeholder="0"
             />
           </ProductFormColumns>
-          <Caption>Đơn vị giá: đồng (VNĐ)</Caption>
+          <ProductFormColumns>
+            <Field
+              label={"Giá sỉ / " + (form.baseUnit || "cơ sở")}
+              value={extra.wholesaleBase}
+              onChangeText={(wholesaleBase) =>
+                setExtra({ ...extra, wholesaleBase })
+              }
+              keyboardType="numeric"
+              placeholder="Dùng giá lẻ"
+            />
+            <Field
+              label={"Giá sỉ / " + (form.packUnit || "đóng gói")}
+              value={extra.wholesalePack}
+              onChangeText={(wholesalePack) =>
+                setExtra({ ...extra, wholesalePack })
+              }
+              keyboardType="numeric"
+              placeholder="Dùng giá lẻ"
+            />
+          </ProductFormColumns>
+          <Caption>
+            Đơn vị giá: đồng (VNĐ). Để trống giá sỉ để dùng giá lẻ; nhập 0 nghĩa
+            là miễn phí.
+          </Caption>
         </ProductFormCard>
         <ProductFormCard title="Kho hàng" icon="warehouse">
           <Pressable
@@ -432,6 +488,31 @@ export function ProductForm() {
             <Caption>0,1 là 0,1% · 0,5 là 0,5% · 0 để không tích điểm.</Caption>
           </ProductFormCard>
         ) : null}
+        <ProductFormCard
+          title="Thuộc tính sản phẩm"
+          icon="package-variant-closed"
+        >
+          <ProductFormColumns>
+            <Field
+              label="Khối lượng (g)"
+              value={extra.weightGrams}
+              keyboardType="decimal-pad"
+              onChangeText={(weightGrams) =>
+                setExtra({ ...extra, weightGrams })
+              }
+            />
+            <Field
+              label="Kích thước / Quy cách"
+              value={extra.dimensions}
+              onChangeText={(dimensions) => setExtra({ ...extra, dimensions })}
+            />
+          </ProductFormColumns>
+          <Toggle
+            label="Cho phép bán tại quầy"
+            value={extra.sellable}
+            onChange={(sellable) => setExtra({ ...extra, sellable })}
+          />
+        </ProductFormCard>
         <ProductFormCard title="Thông tin kỹ thuật" icon="text-box-outline">
           <Field
             label="Thông tin đã kiểm chứng"

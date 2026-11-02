@@ -3,7 +3,17 @@ import { router, Href } from "expo-router";
 import { Pressable, ScrollView, View } from "react-native";
 import { LandscapeBackground } from "@/components/landscape-background";
 import { ProductCard } from "@/components/product-card";
-import { Caption, Label, Page, Panel, QueryState, Row } from "@/components/ui";
+import {
+  Button,
+  Caption,
+  Label,
+  Notice,
+  Page,
+  Panel,
+  QueryState,
+  Row,
+  Toggle,
+} from "@/components/ui";
 import { AppText } from "@/components/text";
 import {
   Icon,
@@ -16,6 +26,7 @@ import { useApi } from "@/lib/api";
 import { can } from "@/lib/session";
 import { money, number } from "@/lib/format";
 import { DataRow, Product } from "@/types";
+import { useDraft } from "@/lib/drafts";
 import { theme } from "@/theme";
 
 type QuickAction = {
@@ -26,6 +37,10 @@ type QuickAction = {
 };
 export default function Home() {
   const [hidden, setHidden] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
+  const shortcuts = useDraft("home-shortcuts", () => ({
+    hidden: [] as string[],
+  }));
   const query = useApi<DataRow>("/dashboard");
   const weekly = useApi<DataRow>("/reports?period=WEEK", can("reports.view"));
   const inventory = useApi<Product[]>("/inventory", can("inventory.view"));
@@ -35,7 +50,7 @@ export default function Home() {
       {
         name: "Hàng hóa",
         icon: "package-variant-closed",
-        route: "/inventory",
+        route: "/products",
         permission: "inventory.view",
       },
       {
@@ -117,7 +132,11 @@ export default function Home() {
               Hôm nay tại cửa hàng
             </AppText>
             <AppText
-              style={{ color: theme.colors.onHeroMuted, fontSize: 14, lineHeight: 21 }}
+              style={{
+                color: theme.colors.onHeroMuted,
+                fontSize: 14,
+                lineHeight: 21,
+              }}
             >
               Kho hàng, khách hàng và bán tại quầy.
             </AppText>
@@ -312,11 +331,7 @@ export default function Home() {
                     >
                       {hidden ? "—" : number(item.count)}
                     </AppText>
-                    <Icon
-                      name={item.icon}
-                      color={item.color}
-                      size={22}
-                    />
+                    <Icon name={item.icon} color={item.color} size={22} />
                   </View>
                   <AppText
                     style={{
@@ -335,59 +350,93 @@ export default function Home() {
         <Panel glass>
           <SectionHeading
             title="Thao tác nhanh"
-            action="Tất cả"
-            onPress={() => router.push("/more")}
+            action={customizing ? "Đóng" : "Tùy chỉnh"}
+            onPress={() => setCustomizing(!customizing)}
           />
+          {customizing ? (
+            <View style={{ gap: 10 }}>
+              {actions.map((a) => (
+                <Toggle
+                  key={a.route}
+                  label={a.name}
+                  disabled={!shortcuts.ready}
+                  value={!(shortcuts.value.hidden ?? []).includes(a.route)}
+                  onChange={(on) =>
+                    shortcuts.setValue((v) => ({
+                      hidden: on
+                        ? v.hidden.filter((x) => x !== a.route)
+                        : [...v.hidden, a.route],
+                    }))
+                  }
+                />
+              ))}
+              <Notice error>{shortcuts.storageError}</Notice>
+              <Button
+                secondary
+                title="Khôi phục tất cả thao tác"
+                onPress={() => shortcuts.setValue({ hidden: [] })}
+              />
+              <Button
+                title="Lưu bố cục trên thiết bị"
+                disabled={!shortcuts.ready}
+                onPress={async () => {
+                  if (await shortcuts.save()) setCustomizing(false);
+                }}
+              />
+            </View>
+          ) : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {actions.map((action) => (
-              <Pressable
-                key={action.name}
-                accessibilityRole="button"
-                accessibilityLabel={action.name}
-                onPress={() => router.push(action.route as Href)}
-                style={({ pressed }) => ({
-                  flexBasis: "46%",
-                  flexGrow: 1,
-                  minHeight: 64,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: 10,
-                  backgroundColor: pressed
-                    ? theme.colors.buttonFill
-                    : "transparent",
-                  borderRadius: theme.radius.pill,
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: theme.radius.pill,
-                    backgroundColor: theme.colors.buttonFill,
+            {actions
+              .filter((a) => !(shortcuts.value.hidden ?? []).includes(a.route))
+              .map((action) => (
+                <Pressable
+                  key={action.name}
+                  accessibilityRole="button"
+                  accessibilityLabel={action.name}
+                  onPress={() => router.push(action.route as Href)}
+                  style={({ pressed }) => ({
+                    flexBasis: "46%",
+                    flexGrow: 1,
+                    minHeight: 64,
+                    flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                    gap: 10,
+                    padding: 10,
+                    backgroundColor: pressed
+                      ? theme.colors.buttonFill
+                      : "transparent",
+                    borderRadius: theme.radius.pill,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
                 >
-                  <Icon
-                    name={action.icon}
-                    size={21}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <AppText
-                  style={{
-                    flex: 1,
-                    fontSize: 13,
-                    fontWeight: "600",
-                    lineHeight: 19,
-                  }}
-                >
-                  {action.name}
-                </AppText>
-              </Pressable>
-            ))}
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: theme.radius.pill,
+                      backgroundColor: theme.colors.buttonFill,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Icon
+                      name={action.icon}
+                      size={21}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <AppText
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      fontWeight: "600",
+                      lineHeight: 19,
+                    }}
+                  >
+                    {action.name}
+                  </AppText>
+                </Pressable>
+              ))}
           </View>
         </Panel>
         {can("inventory.view") ? (

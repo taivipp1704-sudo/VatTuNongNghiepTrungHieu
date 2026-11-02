@@ -74,7 +74,7 @@ export async function api<Result>(
 function cacheSafe(value: unknown) {
   return JSON.parse(
     JSON.stringify(value, (key, item) =>
-      /^(cost_base|costBase|profit|grossProfit|margin)$/.test(key)
+      /^(cost_base|costBase|cost|costTotal|profit|grossProfit|grossMargin|margin)$/.test(key)
         ? undefined
         : item,
     ),
@@ -96,6 +96,7 @@ export function useApi<Result>(path: string, enabled = true) {
       "/partners",
       "/invoices",
     ].includes(path.split("?")[0]) ||
+    path.startsWith("/management/") ||
     path.startsWith("/loyalty/customers/") ||
     (path.startsWith("/partners/") && path.includes("/purchases")) ||
     path === "/loyalty/ledger";

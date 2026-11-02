@@ -13,6 +13,8 @@ const tables = [
   "products",
   "lots",
   "partners",
+  "product_warehouse_preferences",
+  "partner_adjustments",
   "stock_documents",
   "orders",
   "photos",
@@ -33,6 +35,8 @@ const jsonFields = new Set([
   "audit_log.detail",
   "idempotency.response",
   "settings.value",
+  "products.details",
+  "partners.profile",
 ]);
 types.setTypeParser(1082, (value) => value);
 export async function backup(pool, destination) {
@@ -43,6 +47,11 @@ export async function backup(pool, destination) {
       .name;
     const data = {};
     for (const table of tables) {
+      if (["product_warehouse_preferences", "partner_adjustments"].includes(table) &&
+          !(await client.query("SELECT to_regclass($1) existing", ["public." + table])).rows[0].existing) {
+        data[table] = [];
+        continue;
+      }
       const rows = (await client.query("SELECT * FROM " + table)).rows;
       data[table] = table === "photos" ? rows.map(row => ({ ...row, data: row.data.toString("base64") })) : rows;
     }
