@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { router, Href } from "expo-router";
 import { Pressable, ScrollView, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { LandscapeBackground } from "@/components/landscape-background";
 import { ProductCard } from "@/components/product-card";
 import { Caption, Label, Page, Panel, QueryState, Row } from "@/components/ui";
 import { AppText } from "@/components/text";
@@ -93,6 +93,7 @@ export default function Home() {
   ).filter((item) => can(item.permission));
   return (
     <Page
+      background={<LandscapeBackground />}
       onRefresh={() => {
         void query.refetch();
         if (can("reports.view")) void weekly.refetch();
@@ -100,50 +101,36 @@ export default function Home() {
       }}
       refreshing={query.isRefetching}
     >
-      <QueryState query={query}>
-        <View style={{ gap: 4 }}>
-          <AppText
-            variant="heading"
-            style={{ fontSize: 24, lineHeight: 34, fontWeight: "700" }}
-          >
-            Hôm nay tại cửa hàng
-          </AppText>
-          <Caption>Kho hàng, khách hàng và bán tại quầy.</Caption>
-        </View>
+      <QueryState query={query} loadingSurface>
         <View
           style={{
-            backgroundColor: theme.colors.hero,
+            backgroundColor: theme.colors.glassDark,
+            borderWidth: 1,
+            borderColor: theme.colors.glassBorder,
             borderRadius: theme.radius.lg,
             padding: 18,
             gap: 12,
             overflow: "hidden",
           }}
         >
-          <Svg
-            pointerEvents="none"
-            aria-hidden={true}
-            width={150}
-            height={120}
-            style={{ position: "absolute", right: 0, top: 20, opacity: 0.14 }}
-            viewBox="0 0 150 120"
-          >
-            {[0, 20, 40, 60, 80].map((offset) => (
-              <Path
-                key={offset}
-                d={
-                  "M " +
-                  (offset - 50) +
-                  " 120 Q " +
-                  (offset + 10) +
-                  " 25 150 " +
-                  (offset - 20)
-                }
-                stroke={theme.colors.highlight}
-                strokeWidth={8}
-                fill="none"
-              />
-            ))}
-          </Svg>
+          <View style={{ gap: 4, paddingBottom: 4 }}>
+            <AppText
+              variant="heading"
+              style={{
+                color: theme.colors.onPrimary,
+                fontSize: 24,
+                lineHeight: 34,
+                fontWeight: "700",
+              }}
+            >
+              Hôm nay tại cửa hàng
+            </AppText>
+            <AppText
+              style={{ color: theme.colors.onHeroMuted, fontSize: 14, lineHeight: 21 }}
+            >
+              Kho hàng, khách hàng và bán tại quầy.
+            </AppText>
+          </View>
           <Row>
             <AppText
               style={{
@@ -269,7 +256,7 @@ export default function Home() {
           </AppText>
         </View>
         {can("sales.view") ? (
-          <View style={{ gap: 8 }}>
+          <Panel glass>
             <Caption>Đơn hàng trong 90 ngày</Caption>
             <View style={{ flexDirection: "row", gap: 12 }}>
               {[
@@ -340,9 +327,9 @@ export default function Home() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </Panel>
         ) : null}
-        <View style={{ gap: 10 }}>
+        <Panel glass>
           <SectionHeading
             title="Thao tác nhanh"
             action="Tất cả"
@@ -399,9 +386,9 @@ export default function Home() {
               </Pressable>
             ))}
           </View>
-        </View>
+        </Panel>
         {can("inventory.view") ? (
-          <View style={{ gap: 10 }}>
+          <Panel glass>
             <SectionHeading
               title="Hàng trong kho"
               action="Xem tất cả"
@@ -433,10 +420,10 @@ export default function Home() {
                 <Caption>Chưa có hàng hóa trong kho đang chọn.</Caption>
               )}
             </QueryState>
-          </View>
+          </Panel>
         ) : null}
         {can("reports.view") && !hidden ? (
-          <Panel>
+          <Panel glass>
             <SectionHeading
               title="Doanh thu tuần này"
               action="Chi tiết"
@@ -450,7 +437,7 @@ export default function Home() {
           </Panel>
         ) : null}
         {can("inventory.view") ? (
-          <Panel>
+          <Panel glass>
             <SectionHeading
               title="Theo dõi kho"
               action="Mở kho"
@@ -480,7 +467,7 @@ export default function Home() {
           </Panel>
         ) : null}
         {data?.debts && can("debts.view") ? (
-          <Panel>
+          <Panel glass>
             <SectionHeading
               title="Công nợ cửa hàng"
               action="Xem sổ nợ"

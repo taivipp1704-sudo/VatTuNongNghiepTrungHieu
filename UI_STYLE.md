@@ -1,4 +1,4 @@
-# Bố cục và phối màu AgriStock — Android 11
+# Bố cục và phối màu AgriStock — Android 12
 
 AgriStock dùng xanh rừng đậm và lime, nền sáng ấm và chữ đậm, áp dụng hướng Smart Garden từ [video người dùng gửi](VIDEO_UI.md). Hệ thống màu và font nằm trong `apps/mobile/src/theme.ts`; các màn hình dùng chung AppText, Label, Panel và các nút hiện có.
 
@@ -16,7 +16,9 @@ AgriStock dùng xanh rừng đậm và lime, nền sáng ấm và chữ đậm, 
 
 Nhãn chữ, biểu tượng và số tiền đi kèm màu để tránh phải đoán trạng thái chỉ qua màu sắc. Các cặp chữ chính đo được từ 5,18:1 trở lên; chữ trên lime 9,92:1; đường viền ô nhập 3,91:1 trên nền trắng.
 
-Tổng quan có khối doanh thu/thực thu, nút Bán tại quầy màu lime và họa tiết luống cây dạng vector. Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng API đã giới hạn theo kho/quyền. Kho có thẻ ảnh hai cột hoặc danh sách; khi sửa điểm hàng loạt hoặc cỡ chữ hệ thống trên 1,3, dùng danh sách. Chi tiết sản phẩm hiển thị ảnh lớn; ảnh dùng chế độ contain để không cắt bao bì. Chưa có ảnh thì hiển thị biểu tượng và nhãn rõ. Biểu đồ một chỉ số dùng một màu; mốc đang chọn có viền và giá trị/ngày bên dưới.
+Tổng quan có ảnh cánh đồng phủ phía sau toàn màn hình, cố định khi cuộn. Khối doanh thu/thực thu dùng lớp xanh bán trong suốt; các nhóm thông tin bên dưới dùng lớp sáng bán trong suốt, nút Bán tại quầy màu lime. Đây là ảnh nền được tạo riêng bằng image_gen, nhúng cục bộ trong APK, không phải ảnh sản phẩm hoặc vị trí thật của cửa hàng. Ảnh và prompt nằm trong `apps/mobile/assets/images/agri-landscape-v1.png` và tệp `.source.json` đi kèm. Không dùng blur native hoặc chụp màn hình mẫu làm nền.
+
+Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng API đã giới hạn theo kho/quyền. Kho có thẻ ảnh hai cột hoặc danh sách; khi sửa điểm hàng loạt hoặc cỡ chữ hệ thống trên 1,3, dùng danh sách. Chi tiết sản phẩm hiển thị ảnh lớn; ảnh dùng chế độ contain để không cắt bao bì. Chưa có ảnh thì hiển thị biểu tượng và nhãn rõ. Biểu đồ một chỉ số dùng một màu; mốc đang chọn có viền và giá trị/ngày bên dưới.
 
 Tiếp tục dùng công cụ của repo `D:/baoyu-design-main`: kiểm tra màu bằng `skills/dataviz/scripts/validate_palette.js` và xuất tham chiếu bằng `node scripts/export-design-system.mjs`. Thư mục `design-system/agristock/project` được sinh từ theme thật; công cụ check design-system đạt 0 lỗi cấu trúc, không kiểm tra render cover. Bản xuất này không thay nguồn theme của app. Không đưa mã editor, icon font hoặc ảnh mockup từ nguồn tham khảo vào APK.
 

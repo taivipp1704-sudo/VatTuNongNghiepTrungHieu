@@ -108,9 +108,11 @@ export function Panel({
   children,
   testID,
   tone,
+  glass = false,
 }: PropsWithChildren<{
   testID?: string;
   tone?: "info" | "success" | "warning";
+  glass?: boolean;
 }>) {
   return (
     <View
@@ -123,11 +125,17 @@ export function Panel({
               ? theme.colors.successBg
               : tone === "warning"
                 ? theme.colors.warningBg
-                : theme.colors.paper,
+                : glass
+                  ? theme.colors.glassLight
+                  : theme.colors.paper,
         borderRadius: theme.radius.lg,
         padding: theme.space.lg,
         borderWidth: 1,
-        borderColor: tone ? "transparent" : theme.colors.border,
+        borderColor: tone
+          ? "transparent"
+          : glass
+            ? theme.colors.glassBorder
+            : theme.colors.border,
         gap: theme.space.md,
       }}
     >
@@ -156,11 +164,13 @@ export function Page({
   refreshing = false,
   footer,
   scrollRef,
+  background,
 }: PropsWithChildren<{
   onRefresh?: () => void;
   refreshing?: boolean;
   footer?: ReactNode;
   scrollRef?: Ref<ComponentRef<typeof ScrollView>>;
+  background?: ReactNode;
 }>) {
   const insets = useSafeAreaInsets();
   return (
@@ -169,6 +179,15 @@ export function Page({
       behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={100}
     >
+      {background ? (
+        <View
+          pointerEvents="none"
+          aria-hidden={true}
+          style={{ position: "absolute", inset: 0 }}
+        >
+          {background}
+        </View>
+      ) : null}
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
@@ -491,6 +510,7 @@ export function Empty({
 export function QueryState({
   query,
   children,
+  loadingSurface = false,
 }: {
   query: {
     data: unknown;
@@ -500,6 +520,7 @@ export function QueryState({
     refetch: () => unknown;
   };
   children: ReactNode;
+  loadingSurface?: boolean;
 }) {
   if (query.data === undefined) {
     if (query.error)
@@ -514,7 +535,14 @@ export function QueryState({
     if (query.fetchStatus === "paused")
       return <Empty message="Đang ngoại tuyến. Kết nối mạng để tải dữ liệu." />;
     return (
-      <View style={{ padding: theme.space.xxl, gap: theme.space.md }}>
+      <View
+        style={{
+          padding: theme.space.xxl,
+          gap: theme.space.md,
+          backgroundColor: loadingSurface ? theme.colors.glassLight : undefined,
+          borderRadius: loadingSurface ? theme.radius.lg : undefined,
+        }}
+      >
         <ActivityIndicator color={theme.colors.primary} />
         <Caption>Đang tải dữ liệu…</Caption>
       </View>

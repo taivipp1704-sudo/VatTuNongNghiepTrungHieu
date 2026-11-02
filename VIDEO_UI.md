@@ -4,6 +4,8 @@ Nguồn: [video của @rifqieh](https://www.tiktok.com/@rifqieh/video/7680912434
 
 AgriStock áp dụng nền sáng, xanh rừng đậm phối lime, thẻ có vùng ảnh rõ, bộ lọc dạng viên, nhãn ngắn và điều hướng dưới dễ chạm. Ảnh hàng hóa dùng dữ liệu cửa hàng; chưa có ảnh thì hiện biểu tượng nhóm hàng và nhãn Chưa có ảnh.
 
+Android 12 bổ sung đúng lớp ảnh chìm theo ảnh người dùng làm rõ: cánh đồng phía sau toàn màn hình tổng quan, khối doanh thu xanh bán trong suốt và các nhóm thông tin nền sáng bán trong suốt. Ảnh nền tạo riêng bằng công cụ image_gen, được nhúng trong APK; không lấy khung hình TikTok làm ảnh nền. Prompt và nguồn tại `apps/mobile/assets/images/agri-landscape-v1.source.json`.
+
 Kho có chế độ thẻ ảnh hoặc danh sách. Sửa điểm hàng loạt dùng danh sách; cỡ chữ hệ thống lớn tự chuyển về danh sách để dễ đọc. Trang chi tiết hiển thị ảnh lớn; tổng quan có dải hàng trong kho theo quyền và kho đang chọn.
 
 Đây là áp dụng bố cục và cách trình bày. AI, thời tiết và bản đồ không nằm trong bản cập nhật này. Không sử dụng ảnh mockup, logo hay tài sản thiết kế từ video trong APK; khung hình tham khảo chỉ lưu cục bộ để phân tích. Quy trình bán tại quầy, tiền, tồn, điểm và phân quyền được giữ.

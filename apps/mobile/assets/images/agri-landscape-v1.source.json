@@ -1,0 +1,9 @@
+{
+  "file": "agri-landscape-v1.png",
+  "purpose": "Decorative full-screen background on the home dashboard; not a product photo or a real store location",
+  "method": "Built-in image_gen image generation",
+  "reference": "Agricultural scenery direction informed by the user-provided Smart Garden UI reference; no source frame or third-party design asset used as an input image",
+  "prompt": "Use case: photorealistic-natural. Create one high resolution portrait 9:16 photographic BACKGROUND ASSET ONLY for an agricultural inventory mobile app named AgriStock. No UI, no typography, no text, no logos, no watermarks, no phone mockup. A richly textured lush green Vietnamese agricultural landscape at early morning, viewed from a moderately elevated viewpoint. Foreground rice stalks and small dew-covered broad leaves in bottom right, gently curving cultivated rice rows leading toward distant hazy low hills, subtle warm sunlight and mist near top right. The photograph fills the whole frame, beautiful but realistic, deep forest greens and soft fresh lime foliage. Keep top-left and center-left low-detail, darker, without bright sky, for white app data text overlays. Lower two thirds feature clear agricultural textures and fields so the photo remains recognizable through translucent dark UI panels. Natural rich colors, crisp foliage, restrained editorial agricultural photography. Avoid buildings, people, machines, pesticides, packaging, isolated floating plants, artificial 3D style, collages and any written characters. Do NOT pre-darken everything to black; actual scene details should be visible. This is a bundled decorative background, not a product photograph.",
+  "sha256": "1f60cd7114f0e78aa5484e78cd8e90964c120cbf9d8e8d591bebe235c7116daa",
+  "bytes": 2591532
+}
