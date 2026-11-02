@@ -1,3 +1,13 @@
+# Kiểm tra mới nhất · Android 16
+
+Ngày 03/11/2026: khôi phục ảnh cánh đồng toàn nền Tổng quan, giữ bố cục và chức năng bản 15. Chỉ thay màu/lớp nền và tùy chọn surface của StoreRow (mặc định giữ trắng cho các màn khác). Backend không đổi.
+
+CUA web 390×844 và 320×740: nền toàn màn, cuộn nội dung trên ảnh cố định; nút ẩn/hiện doanh thu; tám lối tắt bốn cột; không tràn ngang và không có log error/warn trong phiên. Ảnh chỉ dùng dữ liệu QA riêng. Đo tương phản bảo thủ ảnh đen/trắng cho chữ trên lớp tối và sáng: mức thấp nhất 4,507:1, kết quả landscape-v16-contrast.json.
+
+TypeScript mobile và cấu hình phát hành được kiểm tra trước đóng gói. Kết quả APK 16 sẽ được ghi sau khi ký. Camera/in và thao tác native trên máy thật chưa nghiệm thu lại; iOS chưa đóng gói. API/test nghiệp vụ của bản trước được ghi bên dưới, không tính là chạy lại lần này.
+
+---
+
 # Kiểm tra mới nhất · Android 15
 
 Ngày 03/11/2026: npm run check đạt cho API và mobile; 4/4 bài cấu hình phát hành đạt. Chỉ thay UI, API cloud tiếp tục commit 2a6956c7f06fe90d1e916f2e1d6b5c19b1e8b864; không thay schema hay triển khai lại backend. 34 bài API, barcode và backup/restore của bản 14 được ghi bên dưới, không tính là chạy lại cho bản này.

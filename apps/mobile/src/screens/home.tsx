@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { PropsWithChildren, useState } from "react";
 import { router, Href } from "expo-router";
 import { Pressable, View } from "react-native";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui";
 import { AppText } from "@/components/text";
 import { Icon, IconName, SectionHeading } from "@/components/pos-ui";
-import { StoreRow, StoreSection } from "@/components/store-ui";
+import { StoreRow } from "@/components/store-ui";
 import { LandscapeBackground } from "@/components/landscape-background";
 import { RevenueChart } from "@/components/revenue-chart";
 import { useApi } from "@/lib/api";
@@ -90,19 +90,7 @@ export default function Home() {
         void query.refetch();
         if (can("reports.view")) void weekly.refetch();
       }}
-      background={
-        <View
-          style={{
-            height: 150,
-            overflow: "hidden",
-            borderBottomLeftRadius: 32,
-            borderBottomRightRadius: 32,
-            backgroundColor: theme.colors.hero,
-          }}
-        >
-          <LandscapeBackground />
-        </View>
-      }
+      background={<LandscapeBackground />}
     >
       <QueryState query={query} loadingSurface>
         <View
@@ -110,7 +98,9 @@ export default function Home() {
             marginHorizontal: 16,
             marginTop: 12,
             borderRadius: 14,
-            backgroundColor: theme.colors.paper,
+            backgroundColor: theme.colors.glassDark,
+            borderWidth: 1,
+            borderColor: theme.colors.glassBorder,
             padding: 16,
             gap: 12,
             boxShadow: "0px 4px 12px rgba(0,0,0,0.10)",
@@ -121,7 +111,7 @@ export default function Home() {
               style={{
                 fontSize: 13,
                 fontWeight: "600",
-                color: theme.colors.muted,
+                color: theme.colors.onHeroMuted,
                 flex: 1,
               }}
             >
@@ -140,7 +130,7 @@ export default function Home() {
             >
               <Icon
                 name={hidden ? "eye-off-outline" : "eye-outline"}
-                color={theme.colors.muted}
+                color={theme.colors.onHeroMuted}
                 size={20}
               />
             </Pressable>
@@ -151,7 +141,7 @@ export default function Home() {
                 onPress={() => router.push("/reports")}
                 style={{ minHeight: 44, justifyContent: "center" }}
               >
-                <AppText style={{ color: theme.colors.primary, fontSize: 13 }}>
+                <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}>
                   Xem chi tiết ›
                 </AppText>
               </Pressable>
@@ -159,7 +149,7 @@ export default function Home() {
           </View>
           <AppText
             variant="amount"
-            style={{ fontSize: 32, lineHeight: 40, fontWeight: "700" }}
+            style={{ fontSize: 32, lineHeight: 40, fontWeight: "700", color: theme.colors.onPrimary }}
           >
             {hidden
               ? "••••••"
@@ -171,7 +161,7 @@ export default function Home() {
             <View
               style={{
                 borderTopWidth: 1,
-                borderTopColor: theme.colors.border,
+                borderTopColor: theme.colors.glassBorder,
                 paddingTop: 14,
                 flexDirection: "row",
               }}
@@ -192,7 +182,7 @@ export default function Home() {
                     style={{
                       fontSize: 11,
                       lineHeight: 17,
-                      color: theme.colors.muted,
+                      color: theme.colors.onHeroMuted,
                       textAlign: "center",
                     }}
                   >
@@ -200,7 +190,7 @@ export default function Home() {
                   </AppText>
                   <AppText
                     variant="amount"
-                    style={{ fontSize: 14, lineHeight: 21, fontWeight: "600" }}
+                    style={{ fontSize: 14, lineHeight: 21, fontWeight: "600", color: theme.colors.onPrimary }}
                   >
                     {hidden ? "—" : s.value}
                   </AppText>
@@ -242,7 +232,7 @@ export default function Home() {
           <Icon name="chevron-right" />
         </Pressable>
       ) : null}
-      <StoreSection>
+      <LandscapeSection>
         <SectionHeading
           title="THAO TÁC NHANH"
           action={customizing ? "Đóng" : "Tùy chỉnh"}
@@ -323,24 +313,25 @@ export default function Home() {
               </Pressable>
             ))}
         </View>
-      </StoreSection>
-      <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
-        <SectionHeading
-          title="ĐƠN HÀNG CHỜ XỬ LÝ"
-          action="90 ngày gần nhất"
-          onPress={() => router.push("/orders")}
-        />
-      </View>
+      </LandscapeSection>
       <View
         style={{
           marginHorizontal: 16,
-          borderRadius: 10,
+          borderRadius: 14,
           overflow: "hidden",
-          backgroundColor: theme.colors.paper,
+          backgroundColor: theme.colors.glassLight,
         }}
       >
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+          <SectionHeading
+            title="ĐƠN HÀNG CHỜ XỬ LÝ"
+            action="90 ngày gần nhất"
+            onPress={() => router.push("/orders")}
+          />
+        </View>
         {can("inventory.view") ? (
           <StoreRow
+            surface="transparent"
             title="Phiếu chờ duyệt"
             icon="clipboard-check-outline"
             trailing={
@@ -357,6 +348,7 @@ export default function Home() {
         {can("sales.view") ? (
           <>
             <StoreRow
+            surface="transparent"
               title="Chờ thanh toán"
               icon="cash-clock"
               trailing={
@@ -367,6 +359,7 @@ export default function Home() {
               onPress={() => router.push("/orders?filter=UNPAID")}
             />
             <StoreRow
+            surface="transparent"
               title="Đã hoàn thành"
               icon="clipboard-check-outline"
               trailing={
@@ -380,6 +373,7 @@ export default function Home() {
         ) : null}
         {can("inventory.view") ? (
           <StoreRow
+            surface="transparent"
             title="Lô cận hạn"
             icon="calendar-alert"
             trailing={
@@ -390,7 +384,7 @@ export default function Home() {
         ) : null}
       </View>
       {can("reports.view") && !hidden ? (
-        <StoreSection>
+        <LandscapeSection>
           <SectionHeading
             title="Doanh thu tuần"
             action="Chi tiết"
@@ -401,17 +395,28 @@ export default function Home() {
               <RevenueChart points={weekly.data.series} period="WEEK" />
             ) : null}
           </QueryState>
-        </StoreSection>
+        </LandscapeSection>
       ) : null}
       {can("debts.view") ? (
-        <StoreSection title="Công nợ cửa hàng">
+        <LandscapeSection title="Công nợ cửa hàng">
           <StoreRow
+            surface="transparent"
             title="Xem sổ công nợ"
             icon="book-open-outline"
             onPress={() => router.push("/debts")}
           />
-        </StoreSection>
+        </LandscapeSection>
       ) : null}
     </Page>
+  );
+}
+
+// Home keeps the picture layout while letting the bundled landscape show around each group.
+function LandscapeSection({ children, title }: PropsWithChildren<{ title?: string }>) {
+  return (
+    <View style={{ marginHorizontal: 16, borderRadius: 14, backgroundColor: theme.colors.glassLight, paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}>
+      {title ? <AppText style={{ fontSize: 17, fontWeight: "600", lineHeight: 25, paddingVertical: 6 }}>{title}</AppText> : null}
+      {children}
+    </View>
   );
 }

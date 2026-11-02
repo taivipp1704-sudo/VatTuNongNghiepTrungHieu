@@ -1,6 +1,6 @@
 # Chạy AgriStock
 
-Để gửi APK Android bản 15 cho người ở mạng khác, xem [Thử từ xa](REMOTE_ANDROID.md). Backend và PostgreSQL đã chạy trên Render Free; laptop có thể tắt. Xem [bán tại quầy và biểu đồ doanh thu](COUNTER_APP.md), [bố cục theo ảnh picture và tông xanh lá](UI_STYLE.md) và [cách áp dụng mẫu video](VIDEO_UI.md). Xem [chức năng quản lý cửa hàng theo ảnh mẫu](FUNCTION_PARITY.md). Kết quả triển khai nằm trong [môi trường cloud](CLOUD_TEST.md).
+Để gửi APK Android bản 16 cho người ở mạng khác, xem [Thử từ xa](REMOTE_ANDROID.md). Backend và PostgreSQL đã chạy trên Render Free; laptop có thể tắt. Xem [bán tại quầy và biểu đồ doanh thu](COUNTER_APP.md), [bố cục theo ảnh picture và tông xanh lá](UI_STYLE.md) và [cách áp dụng mẫu video](VIDEO_UI.md). Xem [chức năng quản lý cửa hàng theo ảnh mẫu](FUNCTION_PARITY.md). Kết quả triển khai nằm trong [môi trường cloud](CLOUD_TEST.md).
 
 Bản Android Test 3 đã cập nhật 7 màn hình theo mẫu Stitch. Xem [Hướng dẫn sử dụng](STITCH_APP_GUIDE.md) và [Phạm vi chức năng](STITCH_IMPLEMENTATION.md).
 

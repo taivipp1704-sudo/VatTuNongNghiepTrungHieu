@@ -51,7 +51,7 @@ export function AppHeader({
     <View
       style={{
         paddingTop: session.offline ? 0 : insets.top,
-        backgroundColor: colored ? theme.colors.hero : theme.colors.paper,
+        backgroundColor: home ? theme.colors.landscapeHeader : report ? theme.colors.hero : theme.colors.paper,
         borderBottomWidth: colored ? 0 : 1,
         borderBottomColor: theme.colors.border,
       }}

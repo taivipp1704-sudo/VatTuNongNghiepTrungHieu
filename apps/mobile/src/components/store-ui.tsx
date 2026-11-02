@@ -75,6 +75,7 @@ export function StoreRow({
   onPress,
   trailing,
   children,
+  surface = theme.colors.paper,
 }: {
   title: string;
   subtitle?: string;
@@ -82,6 +83,7 @@ export function StoreRow({
   onPress?: () => void;
   trailing?: ReactNode;
   children?: ReactNode;
+  surface?: string;
 }) {
   const content = (
     <>
@@ -126,7 +128,7 @@ export function StoreRow({
       style={({ pressed }) => ({
         paddingHorizontal: 16,
         paddingVertical: 4,
-        backgroundColor: pressed ? theme.colors.soft : theme.colors.paper,
+        backgroundColor: pressed ? theme.colors.soft : surface,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
       })}
@@ -138,7 +140,7 @@ export function StoreRow({
       style={{
         paddingHorizontal: 16,
         paddingVertical: 4,
-        backgroundColor: theme.colors.paper,
+        backgroundColor: surface,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
       }}

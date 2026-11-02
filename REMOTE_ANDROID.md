@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 15
+# Thử AgriStock Android từ xa — bản 16
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-picture-v15/AgriStock-internal-signed-15.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 15. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-landscape-v16/AgriStock-internal-signed-16.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 16. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 16 giữ bố cục picture của bản 15 và đưa ảnh cánh đồng chìm về toàn nền Tổng quan. Khối doanh thu dùng xanh trong suốt, các nhóm phía dưới dùng lớp sáng để đọc rõ. Giữ lối tắt bốn cột, chức năng và máy chủ hiện tại. Cài cập nhật trực tiếp, không cần gỡ bản trước.
 
 Bản 15 thiết kế lại bố cục theo bộ ảnh picture, giữ tông xanh lá: tổng quan bốn cột lối tắt, danh sách sản phẩm/đơn phẳng, trung tâm Sản phẩm dạng menu, hồ sơ khách ba tab, POS với thanh thanh toán cố định và báo cáo theo nhóm. Giữ toàn bộ chức năng bản 14. Cài cập nhật trực tiếp bằng cùng khóa ký, không cần gỡ app. Backend cloud hiện tại được giữ. Xem [bố cục](UI_STYLE.md).
 
