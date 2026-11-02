@@ -18,6 +18,8 @@ Nhãn chữ, biểu tượng và số tiền đi kèm màu để tránh phải �
 
 Tổng quan có ảnh cánh đồng phủ phía sau toàn màn hình, cố định khi cuộn. Khối doanh thu/thực thu dùng lớp xanh bán trong suốt; các nhóm thông tin bên dưới dùng lớp sáng bán trong suốt, nút Bán tại quầy màu lime. Đây là ảnh nền được tạo riêng bằng image_gen, nhúng cục bộ trong APK, không phải ảnh sản phẩm hoặc vị trí thật của cửa hàng. Ảnh và prompt nằm trong `apps/mobile/assets/images/agri-landscape-v1.png` và tệp `.source.json` đi kèm. Không dùng blur native hoặc chụp màn hình mẫu làm nền.
 
+Lớp phủ nền 26%, thẻ xanh 76% và thẻ sáng 95%. Đo bảo thủ cả hai cực ảnh đen/trắng: chữ trắng trên thẻ xanh đạt 8,24:1, chữ phụ 6,26:1; các cặp chữ trên thẻ sáng từ 5,65:1. Kết quả trong `artifacts/landscape-contrast.json`. Trạng thái đang tải ở tổng quan cũng có nền sáng để chữ không nằm trực tiếp trên ảnh.
+
 Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng API đã giới hạn theo kho/quyền. Kho có thẻ ảnh hai cột hoặc danh sách; khi sửa điểm hàng loạt hoặc cỡ chữ hệ thống trên 1,3, dùng danh sách. Chi tiết sản phẩm hiển thị ảnh lớn; ảnh dùng chế độ contain để không cắt bao bì. Chưa có ảnh thì hiển thị biểu tượng và nhãn rõ. Biểu đồ một chỉ số dùng một màu; mốc đang chọn có viền và giá trị/ngày bên dưới.
 
 Tiếp tục dùng công cụ của repo `D:/baoyu-design-main`: kiểm tra màu bằng `skills/dataviz/scripts/validate_palette.js` và xuất tham chiếu bằng `node scripts/export-design-system.mjs`. Thư mục `design-system/agristock/project` được sinh từ theme thật; công cụ check design-system đạt 0 lỗi cấu trúc, không kiểm tra render cover. Bản xuất này không thay nguồn theme của app. Không đưa mã editor, icon font hoặc ảnh mockup từ nguồn tham khảo vào APK.

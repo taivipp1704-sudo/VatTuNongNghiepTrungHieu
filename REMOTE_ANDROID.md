@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 11
+# Thử AgriStock Android từ xa — bản 12
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-garden-v11/AgriStock-internal-signed-11.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 11. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-landscape-v12/AgriStock-internal-signed-12.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 12. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 12 thêm ảnh cánh đồng chìm sau toàn màn hình tổng quan theo ảnh mẫu người dùng làm rõ. Khối doanh thu dùng lớp xanh bán trong suốt, các nhóm trạng thái/lối tắt/báo cáo có nền sáng bán trong suốt. Ảnh nền được tạo riêng và nhúng trong app, không cần mạng để tải ảnh nền. Các màn nghiệp vụ, ảnh sản phẩm và chức năng bản 11 được giữ. Cài cập nhật lên bản trước, không cần gỡ app hoặc đổi tài khoản.
 
 Bản 11 áp dụng hướng Smart Garden trong [video tham khảo](VIDEO_UI.md): xanh rừng đậm, lime và nền sáng ấm; nút Bán tại quầy nổi bật, thẻ ảnh hàng hóa hai cột, chuyển sang danh sách, ảnh chi tiết lớn và dải Hàng trong kho ở tổng quan. Sửa điểm hàng loạt dùng danh sách; bộ lọc và chức năng cũ được giữ. Hàng chưa có ảnh hiện nhãn rõ, không dùng ảnh minh họa làm ảnh sản phẩm. Xem [bố cục và màu](UI_STYLE.md). Cài cập nhật lên bản trước bằng cùng khóa ký, dùng tài khoản hiện tại.
 
