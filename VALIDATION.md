@@ -8,7 +8,7 @@ Màn 320×740: biểu mẫu hàng, tổng quan và POS không tràn ngang; các 
 
 Ảnh bằng chứng riêng chứa dữ liệu QA: picture-home-390.png, picture-products-390.png, picture-inventory-390.png, picture-customer-390.png, picture-pos-empty-390.png, picture-payment-390.png, picture-reports-390.png, picture-product-detail-390.png, picture-product-form-390.png; thêm ba ảnh kiểm tra 320 px. Không đưa ảnh nguồn trong picture lên bản phát hành.
 
-Kết quả đóng gói APK 15 được ghi thêm sau khi ký và kiểm tra.
+Gradle assembleRelease hoàn tất trong 3 phút 34 giây. APK 15: 51,526,040 byte; SHA-256 `17084d1e5b461a9ecb7608c546fc1fd26ca63895ce7ff738d39d0bd37fbfac42`. Cùng package vn.agristock.internal và chứng chỉ các bản trước, minSdk 24, targetSdk 36, arm64. apksigner/aapt và kiểm tra trong ZIP đạt: API HTTPS cloud, JS bundle, sáu font/đủ dấu Việt, giấy phép, ảnh nền nhúng; debug/backup/HTTP tắt, không có tệp khóa ký. Native source `bd733366e826bd8f73e282f560cd792613faab0c`; API giữ `2a6956c7f06fe90d1e916f2e1d6b5c19b1e8b864`. Đã dừng API/Metro/PostgreSQL QA bằng clean shutdown; cloud health vẫn ok, Render tiếp tục deployment dep-dbkbmhjbc2fs73ee5cog. Kết quả ở android-signed-15-validation.json và picture-ui-validation.json trong assets phát hành.
 
 ---
 
