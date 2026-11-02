@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 10
+# Thử AgriStock Android từ xa — bản 11
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-cobalt-v10/AgriStock-internal-signed-10.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 10. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-garden-v11/AgriStock-internal-signed-11.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 11. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 11 áp dụng hướng Smart Garden trong [video tham khảo](VIDEO_UI.md): xanh rừng đậm, lime và nền sáng ấm; nút Bán tại quầy nổi bật, thẻ ảnh hàng hóa hai cột, chuyển sang danh sách, ảnh chi tiết lớn và dải Hàng trong kho ở tổng quan. Sửa điểm hàng loạt dùng danh sách; bộ lọc và chức năng cũ được giữ. Hàng chưa có ảnh hiện nhãn rõ, không dùng ảnh minh họa làm ảnh sản phẩm. Xem [bố cục và màu](UI_STYLE.md). Cài cập nhật lên bản trước bằng cùng khóa ký, dùng tài khoản hiện tại.
 
 Bản 10 thiết kế lại theo repo baoyu-design người dùng gửi: xanh cobalt đậm và cam, thanh đầu trang màu đậm, doanh thu và nút Bán tại quầy chung một khối, trạng thái có màu đặc và lối tắt hai cột. Kho gom hai nút Thêm hàng/Sửa số chấm; báo cáo đặt nút Hiện tại cạnh tiêu đề. Xem [bố cục và màu mới](UI_STYLE.md). Cài cập nhật lên bản trước, dùng tài khoản hiện tại.
 

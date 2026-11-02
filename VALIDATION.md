@@ -181,3 +181,18 @@ APK 5 build thành công 4 phút 7 giây, đã xác minh chữ ký cùng khóa p
 - Sáu font và giấy phép OFL khớp byte trong APK; đủ dấu tiếng Việt và ký hiệu đồng. Không kèm tệp khóa ký. Kết quả `artifacts/android-signed-10-validation.json`, metadata `AgriStock-internal-signed-10.apk.json`.
 - Đã dừng Metro/API/PostgreSQL QA cục bộ; API cloud vẫn health ok. Không tạo tài nguyên trả phí hoặc đổi dữ liệu cloud.
 
+
+
+## Smart Garden từ video tham khảo — Android 11, 02/11/2026
+
+- Đã xem video TikTok của @rifqieh, đối chiếu các mốc hình ảnh khoảng 20 giây. Đây là montage nhiều concept app; chọn Smart Garden vì phù hợp vật tư nông nghiệp. Áp dụng bố cục/màu, không bổ sung AI, thời tiết hoặc bản đồ. Phân tích tại VIDEO_UI.md; khung hình nguồn chỉ giữ cục bộ, không công bố hoặc đóng gói vào APK.
+- Xanh rừng–lime, thẻ ảnh hai cột hoặc danh sách, ảnh chi tiết lớn và dải hàng trong kho theo kho/quyền. Sửa điểm hàng loạt tự chuyển danh sách; cỡ chữ hệ thống trên 1,3 cũng dùng danh sách. Chưa nghiệm thu cỡ chữ lớn trên thiết bị thật.
+- TypeScript API/mobile và 4/4 kiểm thử cấu hình release đạt. Không sửa API/schema/quy tắc nghiệp vụ; 31 kiểm thử API đã đạt ở bản 8 không chạy lại cho thay đổi giao diện này.
+- 23 cặp chữ/nền đo được từ 5,18:1; chữ trên lime 9,92:1; viền ô nhập 3,91:1 trên trắng. Baoyu validator đạt cho một chuỗi biểu đồ #22834C; không tuyên bố kiểm chứng CVD cho toàn bộ màu trạng thái. Design-system check 0 lỗi cấu trúc, không kiểm tra render cover. Kết quả trong ui-palette-contrast.json, garden-palette-validation.txt, garden-design-system-validation.json.
+- CUA web: tổng quan và kho 390 px, kho/biểu mẫu/báo cáo 320×740. Đổi thẻ/danh sách giữ tìm kiếm và lọc; một thẻ lẻ giữ nửa hàng. Sửa điểm hàng loạt chuyển danh sách, chọn PB001 và nhập 0,1 bật được nút áp dụng; đóng biểu mẫu khôi phục chế độ thẻ. Không lưu điểm hoặc ghi đơn nghiệp vụ mới. Nút Lưu hàng hóa ở đáy 728/740 px; năm kỳ báo cáo vừa 320 px, mép tab Năm ở 288,8 px, trang không tràn ngang. Đổi doanh thu/thực thu và mốc tiếp theo hoạt động.
+- Đã gắn ảnh biểu tượng app vào SKU TEST riêng để kiểm tra đường ảnh có xác thực trên thẻ, chi tiết và dải tổng quan. Sau kiểm tra đã khôi phục trường ảnh cũ; không dùng ảnh biểu tượng như ảnh hàng thật, không thay đổi dữ liệu cloud. Ảnh chưa có hiện nhãn Chưa có ảnh.
+- Phát hiện cảnh báo React DOM do thuộc tính accessible của SVG, đã sửa thành aria-hidden trước khi build. Log cũ lúc 07:45:18 UTC vẫn lưu trong phiên; không xuất hiện lỗi/cảnh báo mới trong phần kiểm tra sau sửa.
+- Ảnh thực tế: garden-home-390.jpg, garden-catalog-390.jpg, garden-catalog-320.jpg, garden-form-320.jpg, garden-report-320.jpg. Ảnh dùng dữ liệu QA riêng; chưa cài/mở APK, camera, in hoặc nghiệm thu cảm ứng native. iOS chưa build.
+- Gradle assembleRelease thành công trong 3 phút 56 giây. APK 11: 47.098.084 byte; SHA-256 9fa765eddd45ef87d27fbf558bf5e0b44385b9cb05998088e17e4ec01415cc2d. Native source commit f4938659c8b2d992d4453ab7eab1b296af4b94f3. Sửa sau đó chỉ ở _layout.web.tsx để cắt nền tab theo viên, không thuộc bundle Android.
+- Cùng package/chứng chỉ phát hành trước, API cloud HTTPS, minSdk 24/targetSdk 36, arm64; không bật debug/backup/HTTP. Đối chiếu byte sáu font, đầy đủ dấu Việt/đồng và hai giấy phép OFL. Có bundle JavaScript, không kèm tệp khóa ký. Kết quả android-signed-11-validation.json và metadata APK.
+- Đã dừng Metro/API/PostgreSQL QA trên laptop bằng clean shutdown; kiểm tra cloud health riêng. Không triển khai lại API, đổi tài nguyên trả phí hoặc dữ liệu cloud cho bản giao diện này. Môi trường Free vẫn có thời gian ngủ và hạn database 30/11/2026; đây là bản thử, chưa nghiệm thu vận hành thật.

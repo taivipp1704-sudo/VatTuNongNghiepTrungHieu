@@ -1,6 +1,6 @@
 # Dùng AgriStock để bán tại quầy
 
-Bản Android hiện tại tập trung vào bán trực tiếp ở cửa hàng, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện. Bản 10 dùng [font Inter/Manrope, cobalt–cam và bố cục gọn](UI_STYLE.md) để làm rõ thông tin và thao tác.
+Bản Android hiện tại tập trung vào bán trực tiếp ở cửa hàng, giữ quản lý nhân viên, phân quyền, ảnh sản phẩm và tích điểm. Các mục bán giao hàng, tra cước, vận chuyển và kênh bán ngoài được bỏ khỏi giao diện. Bản 11 dùng [font Inter/Manrope, xanh rừng–lime và thẻ ảnh](UI_STYLE.md) để làm rõ thông tin và thao tác.
 
 ## Nhập, bán, sửa và trả hàng
 
