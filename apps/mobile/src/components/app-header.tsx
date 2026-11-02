@@ -47,9 +47,7 @@ export function AppHeader({
     <View
       style={{
         paddingTop: session.offline ? 0 : insets.top,
-        backgroundColor: theme.colors.paper,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border,
+        backgroundColor: theme.colors.primaryDark,
       }}
     >
       <View
@@ -62,7 +60,12 @@ export function AppHeader({
         }}
       >
         {back ? (
-          <IconButton name="chevron-left" label="Quay lại" onPress={onBack} />
+          <IconButton
+            name="chevron-left"
+            label="Quay lại"
+            onPress={onBack}
+            inverse
+          />
         ) : (
           <View
             style={{
@@ -91,14 +94,27 @@ export function AppHeader({
           <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
             <AppText
               numberOfLines={1}
-              style={{ fontSize: 14, fontWeight: "700", flexShrink: 1 }}
+              style={{
+                fontSize: 14,
+                fontWeight: "700",
+                flexShrink: 1,
+                color: theme.colors.onPrimary,
+              }}
             >
               {warehouse?.name || data.data?.store.name || "AgriStock"}
             </AppText>
-            <Icon name="chevron-down" size={16} color={theme.colors.muted} />
+            <Icon
+              name="chevron-down"
+              size={16}
+              color={theme.colors.onHeroMuted}
+            />
           </View>
           <AppText
-            style={{ fontSize: 12, color: theme.colors.muted, lineHeight: 20 }}
+            style={{
+              fontSize: 13,
+              color: theme.colors.onHeroMuted,
+              lineHeight: 20,
+            }}
           >
             {labels[path] || title}
           </AppText>
@@ -106,6 +122,7 @@ export function AppHeader({
         {!session.user?.mustChangePassword ? (
           <>
             <IconButton
+              inverse
               name="bell-outline"
               label="Thông báo công việc"
               onPress={() => router.push("/notifications")}
@@ -121,7 +138,7 @@ export function AppHeader({
                 alignItems: "center",
               }}
             >
-              <Avatar name={session.user?.name || "AS"} size={34} />
+              <Avatar name={session.user?.name || "AS"} size={34} inverse />
             </Pressable>
           </>
         ) : null}

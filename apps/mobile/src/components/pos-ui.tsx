@@ -23,11 +23,13 @@ export function IconButton({
   label,
   onPress,
   disabled = false,
+  inverse = false,
 }: {
   name: IconName;
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  inverse?: boolean;
 }) {
   return (
     <Pressable
@@ -39,24 +41,37 @@ export function IconButton({
         minHeight: 44,
         minWidth: 44,
         borderRadius: theme.radius.md,
-        backgroundColor: theme.colors.soft,
+        backgroundColor: inverse
+          ? theme.colors.headerControl
+          : theme.colors.soft,
         alignItems: "center",
         justifyContent: "center",
         opacity: disabled ? 0.45 : pressed ? 0.7 : 1,
       })}
     >
-      <Icon name={name} />
+      <Icon
+        name={name}
+        color={inverse ? theme.colors.onPrimary : theme.colors.primary}
+      />
     </Pressable>
   );
 }
-export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
+export function Avatar({
+  name,
+  size = 44,
+  inverse = false,
+}: {
+  name: string;
+  size?: number;
+  inverse?: boolean;
+}) {
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: theme.colors.blueLight,
+        backgroundColor: inverse ? theme.colors.paper : theme.colors.blueLight,
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -165,9 +180,10 @@ export function ChipTabs({
             paddingHorizontal: compact ? 4 : 16,
             borderRadius: theme.radius.pill,
             backgroundColor:
-              value === item.value
-                ? theme.colors.primary
-                : theme.colors.neutral,
+              value === item.value ? theme.colors.primary : theme.colors.paper,
+            borderWidth: 1,
+            borderColor:
+              value === item.value ? theme.colors.primary : theme.colors.border,
             justifyContent: "center",
           }}
         >

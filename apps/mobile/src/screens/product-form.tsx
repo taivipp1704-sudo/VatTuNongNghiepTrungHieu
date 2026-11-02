@@ -147,7 +147,7 @@ export function ProductForm() {
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView
         edges={["top"]}
-        style={{ backgroundColor: theme.colors.paper }}
+        style={{ backgroundColor: theme.colors.primaryDark }}
       >
         <View
           style={{
@@ -156,7 +156,7 @@ export function ProductForm() {
             alignItems: "center",
             paddingHorizontal: 8,
             borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border,
+            borderBottomColor: theme.colors.primaryDark,
           }}
         >
           <Pressable
@@ -171,7 +171,7 @@ export function ProductForm() {
               opacity: pressed ? 0.6 : 1,
             })}
           >
-            <Icon name="close" color={theme.colors.muted} size={26} />
+            <Icon name="close" color={theme.colors.onPrimary} size={26} />
           </Pressable>
           <AppText
             accessibilityRole="header"
@@ -179,6 +179,7 @@ export function ProductForm() {
               flex: 1,
               fontSize: 18,
               fontWeight: "600",
+              color: theme.colors.onPrimary,
               textAlign: "center",
             }}
           >
@@ -187,7 +188,9 @@ export function ProductForm() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Lưu hàng hóa trên thanh tiêu đề"
-            accessibilityState={{ disabled: command.pending || imageBusy || !ready }}
+            accessibilityState={{
+              disabled: command.pending || imageBusy || !ready,
+            }}
             disabled={command.pending || imageBusy || !ready}
             onPress={save}
             style={({ pressed }) => ({
@@ -195,10 +198,15 @@ export function ProductForm() {
               minHeight: 48,
               alignItems: "center",
               justifyContent: "center",
-              opacity: command.pending || imageBusy || !ready ? 0.4 : pressed ? 0.6 : 1,
+              opacity:
+                command.pending || imageBusy || !ready
+                  ? 0.4
+                  : pressed
+                    ? 0.6
+                    : 1,
             })}
           >
-            <Icon name="check" size={27} />
+            <Icon name="check" size={27} color={theme.colors.onPrimary} />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -234,8 +242,14 @@ export function ProductForm() {
             }}
           />
         ) : null}
-        <ProductImageEditor value={form.imageUrl} onChange={value => field("imageUrl", value)}
-          name={form.name} category={form.category} disabled={command.pending || !ready} onBusyChange={setImageBusy} />
+        <ProductImageEditor
+          value={form.imageUrl}
+          onChange={(value) => field("imageUrl", value)}
+          name={form.name}
+          category={form.category}
+          disabled={command.pending || !ready}
+          onBusyChange={setImageBusy}
+        />
         <ProductFormCard>
           <Field
             label="Tên hàng hóa"

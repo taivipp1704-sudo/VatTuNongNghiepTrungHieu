@@ -16,71 +16,78 @@ import { money, number } from "@/lib/format";
 import { DataRow } from "@/types";
 import { theme } from "@/theme";
 
+type QuickAction = {
+  name: string;
+  icon: IconName;
+  route: string;
+  permission: string;
+  color: string;
+};
 export default function Home() {
   const [hidden, setHidden] = useState(false);
   const query = useApi<DataRow>("/dashboard");
   const weekly = useApi<DataRow>("/reports?period=WEEK", can("reports.view"));
   const data = query.data;
-  const actions: {
-    name: string;
-    icon: IconName;
-    route: string;
-    permission?: string;
-  }[] = [
-    {
-      name: "Nhập hàng",
-      icon: "cart-arrow-down",
-      route: "/stock-form?kind=RECEIPT",
-      permission: "inventory.receipt.create",
-    },
-    {
-      name: "Hàng hóa",
-      icon: "package-variant-closed",
-      route: "/inventory",
-      permission: "inventory.view",
-    },
-    {
-      name: "Trả hàng",
-      icon: "keyboard-return",
-      route: "/orders",
-      permission: "sales.return",
-    },
-    {
-      name: "Khách hàng",
-      icon: "account-group-outline",
-      route: "/partners",
-      permission: "partners.view",
-    },
-    {
-      name: "Công nợ",
-      icon: "cash-clock",
-      route: "/debts",
-      permission: "debts.view",
-    },
-    {
-      name: "Tích điểm",
-      icon: "star-circle-outline",
-      route: "/loyalty",
-      permission: "loyalty.manage",
-    },
-    {
-      name: "Báo cáo",
-      icon: "chart-bar",
-      route: "/reports",
-      permission: "reports.view",
-    },
-    {
-      name: "Thêm hàng",
-      icon: "package-variant-plus",
-      route: "/product-form",
-      permission: "products.manage",
-    },
-  ].filter((item) => !item.permission || can(item.permission)) as {
-    name: string;
-    icon: IconName;
-    route: string;
-    permission?: string;
-  }[];
+  const actions = (
+    [
+      {
+        name: "Hàng hóa",
+        icon: "package-variant-closed",
+        route: "/inventory",
+        permission: "inventory.view",
+        color: theme.colors.primary,
+      },
+      {
+        name: "Nhập hàng",
+        icon: "cart-arrow-down",
+        route: "/stock-form?kind=RECEIPT",
+        permission: "inventory.receipt.create",
+        color: theme.colors.successFill,
+      },
+      {
+        name: "Khách hàng",
+        icon: "account-group-outline",
+        route: "/partners",
+        permission: "partners.view",
+        color: theme.colors.primary,
+      },
+      {
+        name: "Trả hàng",
+        icon: "keyboard-return",
+        route: "/orders",
+        permission: "sales.return",
+        color: theme.colors.accent,
+      },
+      {
+        name: "Công nợ",
+        icon: "cash-clock",
+        route: "/debts",
+        permission: "debts.view",
+        color: theme.colors.accent,
+      },
+      {
+        name: "Báo cáo",
+        icon: "chart-bar",
+        route: "/reports",
+        permission: "reports.view",
+        color: theme.colors.primaryDark,
+      },
+      {
+        name: "Tích điểm",
+        icon: "star-circle-outline",
+        route: "/loyalty",
+        permission: "loyalty.manage",
+        color: theme.colors.primaryDark,
+      },
+      {
+        name: "Thêm hàng",
+        icon: "package-variant-plus",
+        route: "/product-form",
+        permission: "products.manage",
+        color: theme.colors.successFill,
+      },
+    ] satisfies QuickAction[]
+  ).filter((item) => can(item.permission));
   return (
     <Page
       onRefresh={() => {
@@ -93,15 +100,15 @@ export default function Home() {
         <View
           style={{
             backgroundColor: theme.colors.hero,
-            borderRadius: 24,
-            padding: 20,
-            gap: 13,
+            borderRadius: theme.radius.lg,
+            padding: 18,
+            gap: 12,
           }}
         >
           <Row>
             <AppText
               style={{
-                color: theme.colors.onHeroMuted,
+                color: theme.colors.onPrimary,
                 fontSize: 13,
                 fontWeight: "600",
               }}
@@ -109,6 +116,7 @@ export default function Home() {
               DOANH THU HÔM NAY
             </AppText>
             <IconButton
+              inverse
               name={hidden ? "eye-off-outline" : "eye-outline"}
               label={hidden ? "Hiện doanh thu" : "Ẩn doanh thu"}
               onPress={() => setHidden(!hidden)}
@@ -120,9 +128,8 @@ export default function Home() {
             style={{
               color: theme.colors.onPrimary,
               fontSize: theme.type.display,
-              lineHeight: 43,
+              lineHeight: 44,
               fontWeight: "700",
-              fontVariant: ["tabular-nums"],
             }}
           >
             {hidden
@@ -132,21 +139,88 @@ export default function Home() {
                 : "Theo quyền tài khoản"}
           </AppText>
           {data?.sales ? (
-            <Row>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 16,
+                borderTopWidth: 1,
+                borderTopColor: theme.colors.heroRule,
+                paddingTop: 12,
+              }}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <AppText
+                  style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
+                >
+                  Tiền thực thu
+                </AppText>
+                <AppText
+                  variant="amount"
+                  style={{
+                    color: theme.colors.onPrimary,
+                    fontSize: 17,
+                    fontWeight: "700",
+                  }}
+                >
+                  {hidden ? "•••" : money(data.sales.collected)}
+                </AppText>
+              </View>
+              <View style={{ flex: 1, gap: 3 }}>
+                <AppText
+                  style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
+                >
+                  Đơn bán hôm nay
+                </AppText>
+                <AppText
+                  variant="amount"
+                  style={{
+                    color: theme.colors.onPrimary,
+                    fontSize: 17,
+                    fontWeight: "700",
+                  }}
+                >
+                  {hidden ? "—" : number(data.sales.orders)}
+                </AppText>
+              </View>
+            </View>
+          ) : null}
+          {can("sales.create") ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Bán tại quầy"
+              onPress={() => router.push("/pos")}
+              style={({ pressed }) => ({
+                backgroundColor: theme.colors.accent,
+                opacity: pressed ? 0.8 : 1,
+                borderRadius: theme.radius.md,
+                padding: 14,
+                flexDirection: "row",
+                gap: 12,
+                alignItems: "center",
+                minHeight: 60,
+              })}
+            >
+              <Icon
+                name="cash-register"
+                size={26}
+                color={theme.colors.onPrimary}
+              />
               <AppText
-                style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
+                variant="heading"
+                style={{
+                  flex: 1,
+                  color: theme.colors.onPrimary,
+                  fontWeight: "700",
+                  fontSize: 19,
+                }}
               >
-                Thực thu {hidden ? "•••" : money(data.sales.collected)}
+                Bán tại quầy
               </AppText>
-              <AppText
-                style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
-              >
-                {number(data.sales.orders)} đơn bán
-              </AppText>
-            </Row>
+              <Icon name="arrow-right" color={theme.colors.onPrimary} />
+            </Pressable>
           ) : null}
           <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 12 }}>
-            Bán tại quầy · Cập nhật{" "}
+            Bán tại cửa hàng · Cập nhật{" "}
             {data?.updatedAt
               ? new Date(data.updatedAt).toLocaleTimeString("vi-VN", {
                   hour: "2-digit",
@@ -155,157 +229,129 @@ export default function Home() {
               : "…"}
           </AppText>
         </View>
-        {can("sales.create") ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Bán tại quầy"
-            onPress={() => router.push("/pos")}
-            style={({ pressed }) => ({
-              backgroundColor: theme.colors.primary,
-              opacity: pressed ? 0.8 : 1,
-              borderRadius: theme.radius.lg,
-              padding: 18,
-              flexDirection: "row",
-              gap: 14,
-              alignItems: "center",
-              minHeight: 78,
-            })}
-          >
-            <Icon
-              name="cash-register"
-              size={30}
-              color={theme.colors.onPrimary}
-            />
-            <View style={{ flex: 1, gap: 4 }}>
-              <AppText
-                style={{
-                  color: theme.colors.onPrimary,
-                  fontWeight: "700",
-                  fontSize: 20,
-                }}
-              >
-                Bán tại quầy
-              </AppText>
-              <AppText style={{ color: theme.colors.onPrimary, fontSize: 13 }}>
-                Chọn hàng, chọn khách và thanh toán
-              </AppText>
-            </View>
-            <Icon name="arrow-right" color={theme.colors.onPrimary} />
-          </Pressable>
-        ) : null}
         {can("sales.view") ? (
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            {[
-              {
-                label: "Đang giao dịch",
-                count: data?.jobs?.unpaid || 0,
-                icon: "cash-clock" as IconName,
-                color: theme.colors.warning,
-                background: theme.colors.warningBg,
-                filter: "UNPAID",
-              },
-              {
-                label: "Hoàn thành",
-                count: data?.jobs?.completed || 0,
-                icon: "check-circle-outline" as IconName,
-                color: theme.colors.success,
-                background: theme.colors.successBg,
-                filter: "PAID",
-              },
-            ].map((item) => (
-              <Pressable
-                key={item.label}
-                accessibilityRole="button"
-                accessibilityLabel={item.label}
-                onPress={() =>
-                  router.push(("/orders?filter=" + item.filter) as Href)
-                }
-                style={{
-                  flex: 1,
-                  borderRadius: theme.radius.lg,
-                  backgroundColor: item.background,
-                  padding: 16,
-                  gap: 8,
-                  minHeight: 120,
-                }}
-              >
-                <Icon name={item.icon} color={item.color} />
-                <AppText
-                  style={{ fontSize: 26, fontWeight: "700", color: item.color }}
+          <View style={{ gap: 8 }}>
+            <Caption>Đơn hàng trong 90 ngày</Caption>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {[
+                {
+                  label: "Đang giao dịch",
+                  count: data?.jobs?.unpaid || 0,
+                  icon: "cash-clock" as IconName,
+                  background: theme.colors.warningFill,
+                  filter: "UNPAID",
+                },
+                {
+                  label: "Hoàn thành",
+                  count: data?.jobs?.completed || 0,
+                  icon: "check-circle-outline" as IconName,
+                  background: theme.colors.successFill,
+                  filter: "PAID",
+                },
+              ].map((item) => (
+                <Pressable
+                  key={item.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  onPress={() =>
+                    router.push(("/orders?filter=" + item.filter) as Href)
+                  }
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    borderRadius: theme.radius.md,
+                    backgroundColor: item.background,
+                    padding: 14,
+                    gap: 8,
+                    minHeight: 108,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
                 >
-                  {hidden ? "—" : number(item.count)}
-                </AppText>
-                <AppText
-                  style={{ fontSize: 13, color: item.color, fontWeight: "600" }}
-                >
-                  {item.label}
-                </AppText>
-                <AppText style={{ fontSize: 12, color: item.color }}>
-                  Đơn trong 90 ngày
-                </AppText>
-              </Pressable>
-            ))}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <AppText
+                      variant="amount"
+                      style={{
+                        fontSize: 28,
+                        fontWeight: "700",
+                        color: theme.colors.onPrimary,
+                      }}
+                    >
+                      {hidden ? "—" : number(item.count)}
+                    </AppText>
+                    <Icon
+                      name={item.icon}
+                      color={theme.colors.onPrimary}
+                      size={22}
+                    />
+                  </View>
+                  <AppText
+                    style={{
+                      fontSize: 13,
+                      color: theme.colors.onPrimary,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {item.label}
+                  </AppText>
+                </Pressable>
+              ))}
+            </View>
           </View>
         ) : null}
-        <SectionHeading
-          title="Thao tác tại cửa hàng"
-          action="Xem thêm"
-          onPress={() => router.push("/more")}
-        />
-        <Panel>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 18 }}>
+        <View style={{ gap: 10 }}>
+          <SectionHeading
+            title="Thao tác nhanh"
+            action="Tất cả"
+            onPress={() => router.push("/more")}
+          />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
             {actions.map((action) => (
               <Pressable
                 key={action.name}
                 accessibilityRole="button"
+                accessibilityLabel={action.name}
                 onPress={() => router.push(action.route as Href)}
                 style={({ pressed }) => ({
-                  width: "25%",
+                  flexBasis: "46%",
+                  flexGrow: 1,
+                  minHeight: 64,
+                  flexDirection: "row",
                   alignItems: "center",
-                  gap: 8,
-                  opacity: pressed ? 0.6 : 1,
-                  minHeight: 78,
-                  paddingHorizontal: 3,
+                  gap: 10,
+                  padding: 10,
+                  backgroundColor: theme.colors.paper,
+                  borderRadius: theme.radius.md,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  opacity: pressed ? 0.7 : 1,
                 })}
               >
                 <View
                   style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 15,
-                    backgroundColor:
-                      action.route === "/reports" ||
-                      action.route === "/partners"
-                        ? theme.colors.infoBg
-                        : action.route === "/orders" ||
-                            action.route === "/loyalty" ||
-                            action.route === "/debts"
-                          ? theme.colors.accentSoft
-                          : theme.colors.soft,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: action.color,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <Icon
                     name={action.icon}
-                    size={23}
-                    color={
-                      action.route === "/reports" ||
-                      action.route === "/partners"
-                        ? theme.colors.info
-                        : action.route === "/orders" ||
-                            action.route === "/loyalty" ||
-                            action.route === "/debts"
-                          ? theme.colors.accent
-                          : theme.colors.primary
-                    }
+                    size={21}
+                    color={theme.colors.onPrimary}
                   />
                 </View>
                 <AppText
                   style={{
+                    flex: 1,
                     fontSize: 13,
                     fontWeight: "600",
-                    textAlign: "center",
                     lineHeight: 19,
                   }}
                 >
@@ -314,7 +360,7 @@ export default function Home() {
               </Pressable>
             ))}
           </View>
-        </Panel>
+        </View>
         {can("reports.view") && !hidden ? (
           <Panel>
             <SectionHeading
@@ -338,15 +384,24 @@ export default function Home() {
             />
             <Row>
               <Caption>Phiếu cần duyệt</Caption>
-              <Label>{number(data?.pending || 0)}</Label>
+              <Label numeric tone={data?.pending ? "warning" : undefined}>
+                {number(data?.pending || 0)}
+              </Label>
             </Row>
             <Row>
               <Caption>Lô cận hạn trong 90 ngày</Caption>
-              <Label>{number(data?.stock?.expiring || 0)}</Label>
+              <Label
+                numeric
+                tone={data?.stock?.expiring ? "warning" : undefined}
+              >
+                {number(data?.stock?.expiring || 0)}
+              </Label>
             </Row>
             <Row>
               <Caption>Lô đã hết hạn</Caption>
-              <Label>{number(data?.stock?.expired || 0)}</Label>
+              <Label numeric tone={data?.stock?.expired ? "danger" : undefined}>
+                {number(data?.stock?.expired || 0)}
+              </Label>
             </Row>
           </Panel>
         ) : null}

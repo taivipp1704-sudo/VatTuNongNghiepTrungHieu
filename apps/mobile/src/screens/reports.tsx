@@ -12,7 +12,7 @@ import {
   Row,
   Section,
 } from "@/components/ui";
-import { ChipTabs, IconButton } from "@/components/pos-ui";
+import { ChipTabs, IconButton, SectionHeading } from "@/components/pos-ui";
 import { AppText } from "@/components/text";
 import { RevenueChart } from "@/components/revenue-chart";
 import { useApi } from "@/lib/api";
@@ -84,7 +84,11 @@ export default function Reports() {
       refreshing={query.isRefetching}
     >
       <View style={{ gap: 6 }}>
-        <Label big>Doanh thu cửa hàng</Label>
+        <SectionHeading
+          title="Doanh thu cửa hàng"
+          action="Hiện tại"
+          onPress={() => setAnchor(localToday())}
+        />
         <Caption>Theo ngày, tuần, tháng, quý hoặc năm · giờ Việt Nam</Caption>
       </View>
       <ChipTabs
@@ -114,11 +118,6 @@ export default function Reports() {
             onPress={() => setAnchor(shiftPeriod(anchor, period, 1))}
           />
         </Row>
-        <Button
-          title="Về kỳ hiện tại"
-          secondary
-          onPress={() => setAnchor(localToday())}
-        />
       </Panel>
       <QueryState query={query}>
         {data ? (

@@ -168,7 +168,7 @@ export function RevenueChart({
                     ? theme.colors.accent
                     : theme.colors.primary
               }
-              opacity={index === selected ? 1 : 0.75}
+              opacity={1}
             />
           ))}
           {points.map((point, index) =>
@@ -204,7 +204,7 @@ export function RevenueChart({
             style={{
               fontSize: 19,
               fontWeight: "700",
-              color: theme.colors.primary,
+              color: theme.colors.text,
             }}
           >
             {money(current?.[metric] || 0)}

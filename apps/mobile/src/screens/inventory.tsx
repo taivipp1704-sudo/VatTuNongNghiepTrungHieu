@@ -180,32 +180,28 @@ export default function Inventory() {
               { value: "expired", label: "Lô hết hạn" },
             ]}
           />
-          {can("loyalty.manage") ? (
-            <View
-              style={{
-                backgroundColor: theme.colors.neutral,
-                padding: 16,
-                borderRadius: 16,
-                gap: 10,
-              }}
-            >
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <Icon name="shield-account-outline" />
+          {can("loyalty.manage") || can("products.manage") ? (
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {can("products.manage") ? (
                 <View style={{ flex: 1 }}>
-                  <Label>Quản trị số chấm từng mặt hàng</Label>
-                  <Caption>
-                    Chọn nhiều mặt hàng để cập nhật tỷ lệ tích điểm cùng lúc.
-                  </Caption>
+                  <Button
+                    title="Thêm hàng"
+                    onPress={() => router.push("/product-form")}
+                  />
                 </View>
-              </View>
-              <Button
-                title={bulk ? "Đóng sửa hàng loạt" : "Sửa hàng loạt"}
-                secondary
-                onPress={() => {
-                  setBulk(!bulk);
-                  setSelected([]);
-                }}
-              />
+              ) : null}
+              {can("loyalty.manage") ? (
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={bulk ? "Đóng sửa điểm" : "Sửa số chấm"}
+                    secondary
+                    onPress={() => {
+                      setBulk(!bulk);
+                      setSelected([]);
+                    }}
+                  />
+                </View>
+              ) : null}
             </View>
           ) : null}
           {bulk ? (
@@ -230,12 +226,6 @@ export default function Inventory() {
                 disabled={offline || !selected.length}
               />
             </Panel>
-          ) : null}
-          {can("products.manage") ? (
-            <Button
-              title="Thêm hàng hóa"
-              onPress={() => router.push("/product-form")}
-            />
           ) : null}
           <Notice>{notice}</Notice>
           <QueryState query={query}>{null}</QueryState>
