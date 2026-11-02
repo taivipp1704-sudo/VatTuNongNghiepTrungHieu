@@ -6,7 +6,7 @@ import { useApi } from "@/lib/api";
 import { useSession, userKey } from "@/lib/session";
 import { useWarehouse } from "@/lib/warehouse";
 import { Bootstrap } from "@/types";
-import { Avatar, Icon, IconButton } from "./pos-ui";
+import { Icon } from "./pos-ui";
 import { AppText } from "./text";
 import { theme } from "@/theme";
 export function AppHeader({
@@ -18,10 +18,10 @@ export function AppHeader({
   back: boolean;
   onBack: () => void;
 }) {
-  const session = useSession();
-  const scope = useWarehouse();
-  const insets = useSafeAreaInsets();
-  const path = usePathname();
+  const session = useSession(),
+    scope = useWarehouse(),
+    insets = useSafeAreaInsets(),
+    path = usePathname();
   const data = useApi<Bootstrap>(
     "/bootstrap",
     !session.user?.mustChangePassword,
@@ -31,116 +31,120 @@ export function AppHeader({
       void scope.configure(userKey("active-warehouse"), data.data.warehouses);
   }, [data.data, session.user?.id, session.apiUrl]);
   const warehouse = data.data?.warehouses.find(
-    (item) => item.id === scope.warehouseId,
+    (w) => w.id === scope.warehouseId,
   );
+  const home = path === "/",
+    report = path === "/reports",
+    colored = home || report;
+  const foreground = colored ? theme.colors.onPrimary : theme.colors.text;
   const labels: Record<string, string> = {
-    "/": "Tổng quan",
-    "/work":
-      session.user?.owner || session.user?.permissions.includes("sales.view")
-        ? "Đơn hàng"
-        : "Hàng hóa",
-    "/sales": "Bán hàng",
-    "/customers": "Khách hàng",
+    "/work": "Đơn hàng",
+    "/customers": "Sản phẩm",
     "/more": "Thêm",
+    "/sales": "Bán tại quầy",
+    "/products": "Sản phẩm",
+    "/partners": "Khách hàng",
+    "/inventory": "Quản lý kho",
+    "/reports": "Báo cáo",
   };
   return (
     <View
       style={{
         paddingTop: session.offline ? 0 : insets.top,
-        backgroundColor: theme.colors.primaryDark,
+        backgroundColor: colored ? theme.colors.hero : theme.colors.paper,
+        borderBottomWidth: colored ? 0 : 1,
+        borderBottomColor: theme.colors.border,
       }}
     >
       <View
         style={{
-          minHeight: 66,
-          paddingHorizontal: 16,
+          height: 58,
+          paddingHorizontal: 8,
           flexDirection: "row",
           alignItems: "center",
-          gap: 10,
         }}
       >
-        {back ? (
-          <IconButton
-            name="chevron-left"
-            label="Quay lại"
-            onPress={onBack}
-            inverse
-          />
-        ) : (
-          <View
+        {home ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Chọn kho làm việc"
+            disabled={session.user?.mustChangePassword}
+            onPress={() => router.push("/warehouse-picker")}
             style={{
-              width: 34,
-              height: 38,
-              borderRadius: 9,
+              flex: 1,
+              minHeight: 48,
+              flexDirection: "row",
+              gap: 8,
               alignItems: "center",
-              justifyContent: "center",
+              paddingHorizontal: 8,
             }}
           >
-            <Icon
-              name="storefront-outline"
-              color={theme.colors.highlight}
-              size={24}
-            />
-          </View>
-        )}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Chọn kho làm việc"
-          disabled={session.user?.mustChangePassword}
-          onPress={() => router.push("/warehouse-picker")}
-          style={{ flex: 1, minHeight: 44, justifyContent: "center" }}
-        >
-          <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
+            <Icon name="map-marker" color={foreground} />
             <AppText
               numberOfLines={1}
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                flexShrink: 1,
-                color: theme.colors.onPrimary,
-              }}
+              style={{ fontSize: 17, color: foreground, flexShrink: 1 }}
             >
               {warehouse?.name || data.data?.store.name || "AgriStock"}
             </AppText>
-            <Icon
-              name="chevron-down"
-              size={16}
-              color={theme.colors.onHeroMuted}
-            />
-          </View>
-          <AppText
-            style={{
-              fontSize: 13,
-              color: theme.colors.onHeroMuted,
-              lineHeight: 20,
-            }}
-          >
-            {labels[path] || title}
-          </AppText>
-        </Pressable>
-        {!session.user?.mustChangePassword ? (
+            <Icon name="chevron-down" color={foreground} size={18} />
+          </Pressable>
+        ) : (
           <>
-            <IconButton
-              inverse
-              name="bell-outline"
-              label="Thông báo công việc"
-              onPress={() => router.push("/notifications")}
-            />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Tài khoản và cài đặt"
-              onPress={() => router.push("/more")}
+              accessibilityLabel="Quay lại"
+              onPress={back ? onBack : () => router.push("/")}
               style={{
                 minWidth: 44,
-                minHeight: 44,
+                minHeight: 48,
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
-              <Avatar name={session.user?.name || "AS"} size={34} inverse />
+              <Icon
+                name="arrow-left"
+                color={colored ? foreground : theme.colors.muted}
+                size={27}
+              />
             </Pressable>
+            <AppText
+              accessibilityRole="header"
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                fontSize: 19,
+                fontWeight: "600",
+                color: foreground,
+              }}
+            >
+              {labels[path] || title}
+            </AppText>
           </>
-        ) : null}
+        )}
+        {!session.user?.mustChangePassword ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              home ? "Thông báo công việc" : "Tài khoản và cài đặt"
+            }
+            onPress={() => router.push(home ? "/notifications" : "/more")}
+            style={{
+              minWidth: 44,
+              minHeight: 48,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Icon
+              name={home ? "bell-outline" : "dots-vertical"}
+              color={foreground}
+              size={25}
+            />
+          </Pressable>
+        ) : (
+          <View style={{ width: 44 }} />
+        )}
       </View>
     </View>
   );

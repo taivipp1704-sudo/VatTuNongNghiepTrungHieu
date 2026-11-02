@@ -167,25 +167,27 @@ export function ProductPicture({
   );
 }
 export function ChipTabs({
+  items,
   value,
   onChange,
-  items,
   compact = false,
 }: {
+  items: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
-  items: { value: string; label: string }[];
   compact?: boolean;
 }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        gap: compact ? 4 : 8,
-        paddingVertical: 2,
-        ...(compact ? { flexGrow: 1 } : {}),
+      style={{
+        flexGrow: 0,
+        backgroundColor: theme.colors.paper,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
       }}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
       {items.map((item) => (
         <Pressable
@@ -195,30 +197,24 @@ export function ChipTabs({
           aria-selected={value === item.value}
           onPress={() => onChange(item.value)}
           style={{
-            minHeight: 44,
-            minWidth: compact ? 44 : undefined,
-            flex: compact ? 1 : undefined,
-            paddingHorizontal: compact ? 4 : 16,
-            borderRadius: theme.radius.pill,
-            backgroundColor:
-              value === item.value
-                ? theme.colors.buttonFill
-                : theme.colors.paper,
-            borderWidth: 1,
-            borderColor:
-              value === item.value ? theme.colors.primary : theme.colors.border,
+            minHeight: 48,
+            minWidth: compact ? 44 : 76,
+            flexGrow: 1,
+            paddingHorizontal: compact ? 7 : 14,
+            borderBottomWidth: 2,
+            borderBottomColor:
+              value === item.value ? theme.colors.primary : "transparent",
             justifyContent: "center",
           }}
         >
           <AppText
+            numberOfLines={1}
             style={{
-              fontSize: compact ? 12 : 13,
+              fontSize: compact ? 13 : 15,
               textAlign: "center",
-              fontWeight: "600",
+              fontWeight: value === item.value ? "600" : "400",
               color:
-                value === item.value
-                  ? theme.colors.onHighlight
-                  : theme.colors.text,
+                value === item.value ? theme.colors.primary : theme.colors.text,
             }}
           >
             {item.label}

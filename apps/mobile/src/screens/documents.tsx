@@ -31,6 +31,7 @@ import {
   SectionHeading,
 } from "@/components/pos-ui";
 import { exportCsv, exportTablePdf } from "@/lib/export";
+import { SearchBar, FloatingAdd } from "@/components/store-ui";
 import { ListPager } from "@/components/list-pager";
 import { CalendarField } from "@/components/report-range";
 import { counterStatus } from "@/lib/counter";
@@ -59,6 +60,8 @@ function List({
   header,
   render,
   footer,
+  flat = false,
+  fab,
 }: {
   query: {
     data: DataRow[] | undefined;
@@ -70,47 +73,54 @@ function List({
   };
   header?: React.ReactNode;
   footer?: React.ReactNode;
+  flat?: boolean;
+  fab?: React.ReactNode;
   render: (item: DataRow) => React.ReactElement;
 }) {
   return (
-    <FlatList
-      style={{ backgroundColor: theme.colors.canvas }}
-      contentContainerStyle={{
-        padding: theme.space.lg,
-        gap: theme.space.md,
-        paddingBottom: theme.space.xxl,
-        maxWidth: 720,
-        width: "100%",
-        alignSelf: "center",
-      }}
-      data={query.data || []}
-      keyExtractor={(item) => item.id}
-      refreshControl={
-        <RefreshControl
-          refreshing={query.isRefetching}
-          onRefresh={() => {
-            void query.refetch();
-          }}
-        />
-      }
-      ListHeaderComponent={
-        <View style={{ gap: theme.space.lg, paddingBottom: theme.space.sm }}>
-          {header}
-          <QueryState query={query}>{null}</QueryState>
-        </View>
-      }
-      ListEmptyComponent={
-        query.data ? (
-          <Empty message="Chưa có chứng từ trong phạm vi tài khoản." />
-        ) : undefined
-      }
-      renderItem={({ item }) => render(item)}
-      ListFooterComponent={
-        footer ? (
-          <View style={{ gap: 16, paddingTop: 16 }}>{footer}</View>
-        ) : undefined
-      }
-    />
+    <View style={{ flex: 1 }}>
+      <FlatList
+        style={{
+          backgroundColor: flat ? theme.colors.paper : theme.colors.canvas,
+        }}
+        contentContainerStyle={{
+          padding: flat ? 0 : theme.space.lg,
+          gap: flat ? 0 : theme.space.md,
+          paddingBottom: flat ? 96 : theme.space.xxl,
+          maxWidth: 720,
+          width: "100%",
+          alignSelf: "center",
+        }}
+        data={query.data || []}
+        keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={query.isRefetching}
+            onRefresh={() => {
+              void query.refetch();
+            }}
+          />
+        }
+        ListHeaderComponent={
+          <View style={{ gap: theme.space.lg, paddingBottom: theme.space.sm }}>
+            {header}
+            <QueryState query={query}>{null}</QueryState>
+          </View>
+        }
+        ListEmptyComponent={
+          query.data ? (
+            <Empty message="Chưa có chứng từ trong phạm vi tài khoản." />
+          ) : undefined
+        }
+        renderItem={({ item }) => render(item)}
+        ListFooterComponent={
+          footer ? (
+            <View style={{ gap: 16, paddingTop: 16 }}>{footer}</View>
+          ) : undefined
+        }
+      />
+      {fab}
+    </View>
   );
 }
 
@@ -288,6 +298,7 @@ export function Orders() {
   const params = useLocalSearchParams<{
     filter?: string;
     customerId?: string;
+    search?: string;
   }>();
   const dashboard = useApi<DataRow>("/dashboard");
   const bootstrap = useApi<Bootstrap>("/bootstrap");
@@ -295,7 +306,8 @@ export function Orders() {
   const scan = useScan();
   const offline = useSession((state) => state.offline);
   const [expanded, setExpanded] = useState("");
-  const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [search, setSearch] = useState(params.search || "");
   const [filter, setFilter] = useState(params.filter || "all");
   const [page, setPage] = useState(1),
     [sort, setSort] = useState("NEWEST"),
@@ -358,7 +370,7 @@ export function Orders() {
               : !item.returned && item.paid >= item.total),
     );
   const filters = [
-    { value: "all", label: "Tất cả (" + (query.data?.length || 0) + ")" },
+    { value: "all", label: "Tất cả" },
     { value: "PAID", label: "Hoàn thành" },
     { value: "UNPAID", label: "Đang giao dịch" },
     { value: "RETURNED", label: "Đã trả hàng" },
@@ -448,214 +460,193 @@ export function Orders() {
   );
   return (
     <List
+      flat
+      fab={
+        can("sales.create") ? (
+          <FloatingAdd
+            label="Tạo đơn bán"
+            onPress={() => router.push("/pos")}
+          />
+        ) : undefined
+      }
       query={{ ...query, data: query.data ? rows : undefined }}
       footer={footer}
       header={
         <>
-          <View
-            style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}
-          >
-            <View style={{ flex: 1 }}>
-              <Field
-                label="Tìm mã đơn, tên hoặc SĐT khách"
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Mã đơn (#DH...), tên khách"
-              />
-            </View>
-            <IconButton
-              name="barcode-scan"
-              label="Quét mã đơn hàng"
-              onPress={() =>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+            <SearchBar
+              label="Tìm mã đơn, tên hoặc SĐT khách"
+              value={search}
+              onChange={setSearch}
+              placeholder="Nhập tên, SĐT hoặc mã đơn"
+              onScan={() =>
                 router.push({ pathname: "/scan", params: { target: "orders" } })
               }
             />
           </View>
-          <ChipTabs value={filter} onChange={setFilter} items={filters} />
-          <Select
-            label="Sắp xếp đơn hàng"
-            value={sort}
-            onChange={setSort}
-            options={[
-              { value: "NEWEST", label: "Mới nhất" },
-              { value: "OLDEST", label: "Cũ nhất" },
-              { value: "TOTAL", label: "Giá trị cao nhất" },
-            ]}
-          />
-          <Button
-            secondary
-            title={dateOpen ? "Đóng bộ lọc ngày" : "Lọc theo ngày bán"}
-            onPress={() => setDateOpen(!dateOpen)}
-          />
-          {dateOpen ? (
-            <Panel>
-              <CalendarField label="Từ ngày" value={from} onChange={setFrom} />
-              <CalendarField
-                label="Đến ngày"
-                value={through}
-                onChange={setThrough}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+
+              <ChipTabs
+                value={filter}
+                onChange={setFilter}
+                items={[filters.find((v) => v.value === filter) ?? filters[0]]}
               />
-              <Caption>Tối đa 366 ngày, gồm cả ngày kết thúc.</Caption>
-              <Button
-                title="Áp dụng ngày"
-                disabled={!from || !through}
-                onPress={() =>
-                  setDates(
-                    "&from=" +
-                      encodeURIComponent(from) +
-                      "&through=" +
-                      encodeURIComponent(through),
-                  )
-                }
+            </View>
+            <IconButton
+              name="filter-variant"
+              label="Lọc đơn hàng"
+              onPress={() => setFiltersOpen(!filtersOpen)}
+            />
+          </View>
+          {filtersOpen ? (
+            <View style={{ padding: 16, gap: 12 }}>
+              <Select
+                label="Trạng thái đơn hàng"
+                value={filter}
+                onChange={setFilter}
+                options={filters}
+              />
+              <Select
+                label="Sắp xếp đơn hàng"
+                value={sort}
+                onChange={setSort}
+                options={[
+                  { value: "NEWEST", label: "Mới nhất" },
+                  { value: "OLDEST", label: "Cũ nhất" },
+                  { value: "TOTAL", label: "Giá trị cao nhất" },
+                ]}
               />
               <Button
                 secondary
-                title="Bỏ lọc ngày"
-                onPress={() => {
-                  setDates("");
-                  setFrom("");
-                  setThrough("");
-                }}
+                title={dateOpen ? "Đóng bộ lọc ngày" : "Lọc theo ngày bán"}
+                onPress={() => setDateOpen(!dateOpen)}
               />
-            </Panel>
+              {dateOpen ? (
+                <Panel>
+                  <CalendarField
+                    label="Từ ngày"
+                    value={from}
+                    onChange={setFrom}
+                  />
+                  <CalendarField
+                    label="Đến ngày"
+                    value={through}
+                    onChange={setThrough}
+                  />
+                  <Caption>Tối đa 366 ngày, gồm cả ngày kết thúc.</Caption>
+                  <Button
+                    title="Áp dụng ngày"
+                    disabled={!from || !through}
+                    onPress={() =>
+                      setDates(
+                        "&from=" +
+                          encodeURIComponent(from) +
+                          "&through=" +
+                          encodeURIComponent(through),
+                      )
+                    }
+                  />
+                  <Button
+                    secondary
+                    title="Bỏ lọc ngày"
+                    onPress={() => {
+                      setDates("");
+                      setFrom("");
+                      setThrough("");
+                    }}
+                  />
+                </Panel>
+              ) : null}
+            </View>
           ) : null}
-          {dashboard.data?.sales ? (
-            <Panel>
-              <Row>
-                <Icon name="calendar-outline" />
-                <View style={{ flex: 1 }}>
-                  <Caption>Doanh thu hôm nay (kho đang chọn)</Caption>
-                  <AppText style={{ fontSize: 21, fontWeight: "700" }}>
-                    {money(dashboard.data.sales.revenue)}
-                  </AppText>
-                </View>
-                <IconButton
-                  name="export-variant"
-                  label="Xuất đơn hàng Excel"
-                  onPress={() => void exportData(false)}
-                  disabled={exportBusy}
-                />
-              </Row>
-            </Panel>
+          {query.data ? (
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                backgroundColor: theme.colors.canvas,
+              }}
+            >
+              <Caption>
+                {number(query.data[0]?.list_total ?? 0)} đơn hàng
+              </Caption>
+            </View>
           ) : null}
           <Notice error>{command.error}</Notice>
         </>
       }
       render={(item) => (
-        <Panel testID={"order-" + item.id}>
-          <Row>
-            <AppText
-              style={{
-                fontSize: 18,
-                fontWeight: "700",
-                color: item.returned
-                  ? theme.colors.danger
-                  : theme.colors.primary,
-              }}
-            >
-              {item.code}
-            </AppText>
-            <AppText
-              variant="amount"
-              style={{
-                fontSize: 21,
-                fontWeight: "700",
-                color: item.returned ? theme.colors.danger : theme.colors.text,
-              }}
-            >
-              {item.returned ? "−" + money(item.paid) : money(item.total)}
-            </AppText>
-          </Row>
-          <Row>
-            <Badge
-              label={counterStatus(item as any)}
-              tone={
-                item.returned
-                  ? "danger"
-                  : item.payment_status === "PAID"
-                    ? "positive"
-                    : "warning"
-              }
-            />
-            <Caption>
-              {item.payment_method === "CASH"
-                ? "Tiền mặt"
-                : item.payment_method === "TRANSFER"
-                  ? "Chuyển khoản"
-                  : "Ghi nợ"}
-            </Caption>
-          </Row>
-          <Caption>
-            {day(item.created_at)} · Thu ngân: {item.actor}
-          </Caption>
-          <View
-            style={{
-              padding: 12,
-              borderRadius: 12,
-              backgroundColor: theme.colors.soft,
+        <View
+          testID={"order-" + item.id}
+          style={{
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border,
+            backgroundColor: theme.colors.paper,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={"Mở đơn " + item.code}
+            onPress={() => open(item)}
+            style={({ pressed }) => ({
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              minHeight: 88,
               flexDirection: "row",
-              gap: 10,
-              alignItems: "center",
-            }}
+              gap: 12,
+              backgroundColor: pressed ? theme.colors.soft : theme.colors.paper,
+            })}
           >
-            <Avatar name={item.customer_name || "Khách lẻ"} size={36} />
-            <View style={{ flex: 1 }}>
-              <AppText style={{ fontSize: 13, fontWeight: "600" }}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText style={{ fontSize: 16, fontWeight: "600" }}>
+                {item.code}
+              </AppText>
+              <AppText
+                numberOfLines={1}
+                style={{ fontSize: 14, color: theme.colors.muted }}
+              >
                 {item.customer_name || "Khách lẻ"}
               </AppText>
-              <Caption>Đã thu {money(item.paid)}</Caption>
+              <AppText style={{ fontSize: 12, color: theme.colors.muted }}>
+                {day(item.created_at)} ·{" "}
+                {new Date(item.created_at).toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </AppText>
             </View>
-            <View style={{ alignItems: "flex-end" }}>
+            <View style={{ alignItems: "flex-end", gap: 6, maxWidth: 128 }}>
+              <AppText variant="amount" style={{ fontSize: 16 }}>
+                {money(item.total)}
+              </AppText>
               <AppText
                 style={{
                   fontSize: 12,
-                  fontWeight: "700",
-                  color: theme.colors.success,
+                  lineHeight: 18,
+                  color: item.returned
+                    ? theme.colors.danger
+                    : item.paid < item.total
+                      ? theme.colors.warning
+                      : theme.colors.muted,
                 }}
               >
-                +{number(item.loyalty_earned || 0)} điểm
-              </AppText>
-              <AppText
-                style={{
-                  fontSize: 10,
-                  lineHeight: 16,
-                  color: theme.colors.muted,
-                }}
-              >
-                {item.returned
-                  ? item.loyalty_snapshot?.settings?.reverseEarnOnReturn ===
-                    false
-                    ? "Giữ theo cấu hình"
-                    : "Đã thu hồi"
-                  : item.loyalty_earned > 0
-                    ? "Đã cộng điểm"
-                    : (item.loyalty_snapshot?.potentialPoints || 0) > 0
-                      ? "Chờ thanh toán đủ"
-                      : "Không tích điểm"}
+                {counterStatus(item as any)}
               </AppText>
             </View>
-          </View>
-          <Caption>
-            {item.returned
-              ? "Đã trả hàng · Hàng về cách ly"
-              : counterStatus(item as any)}{" "}
-            · {item.lines.length} mặt hàng
-          </Caption>
-          {item.loyalty_spent > 0 ? (
-            <Caption>
-              Đổi {number(item.loyalty_spent)} điểm · Giảm{" "}
-              {money(item.loyalty_discount)}
-            </Caption>
-          ) : null}
-          <Button
-            title={
-              expanded === item.id ? "Ẩn chi tiết" : "Chi tiết đơn / trả hàng"
-            }
-            secondary
-            onPress={() => open(item)}
-          />
+          </Pressable>
           {expanded === item.id ? (
-            <>
+            <View
+              style={{
+                padding: 16,
+                gap: 12,
+                backgroundColor: theme.colors.canvas,
+              }}
+            >
+              <Caption>
+                Đã thu {money(item.paid)} · Thu ngân: {item.actor} · Điểm đã
+                cộng: {number(item.loyalty_earned || 0)}
+              </Caption>
               <Caption>{item.note || "Không có ghi chú đơn."}</Caption>
               {item.lines.map((line: DataRow, index: number) => (
                 <Row key={index}>
@@ -787,9 +778,9 @@ export function Orders() {
                   />
                 </>
               ) : null}
-            </>
+            </View>
           ) : null}
-        </Panel>
+        </View>
       )}
     />
   );

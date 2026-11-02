@@ -101,7 +101,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style={user && !offline ? "light" : "dark"} />
+        <StatusBar style={user && !offline && (pathname === "/" || pathname === "/reports") ? "light" : "dark"} />
         {offline && user ? (
           <SafeAreaView
             edges={["top"]}

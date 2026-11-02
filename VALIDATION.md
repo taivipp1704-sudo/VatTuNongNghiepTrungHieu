@@ -1,3 +1,17 @@
+# Kiểm tra mới nhất · Android 15
+
+Ngày 03/11/2026: npm run check đạt cho API và mobile; 4/4 bài cấu hình phát hành đạt. Chỉ thay UI, API cloud tiếp tục commit 2a6956c7f06fe90d1e916f2e1d6b5c19b1e8b864; không thay schema hay triển khai lại backend. 34 bài API, barcode và backup/restore của bản 14 được ghi bên dưới, không tính là chạy lại cho bản này.
+
+CUA trên web 390×844: tổng quan, trung tâm Sản phẩm, hàng hóa danh sách, chi tiết và biểu mẫu hàng; hồ sơ khách, mở bút sửa/hủy, sổ nợ và lịch sử; mở đơn từ lịch sử; POS chọn hàng/đổi kho/chiết khấu 10% (480.000đ → 432.000đ), mở/hủy thanh toán, giữ/khôi phục giỏ; chọn báo cáo tháng, doanh thu và lợi nhuận. Không ghi nhận giao dịch tài chính mới trong phiên UI. Giỏ tạm chỉ lưu trên thiết bị QA.
+
+Màn 320×740: biểu mẫu hàng, tổng quan và POS không tràn ngang; các nút/ô nhập trong bề rộng màn. Đã sửa các khoảng trắng JSX nằm trực tiếp trong View phát hiện khi QA; không có log error/warn mới trong các luồng kiểm tra sau 17:06:35 UTC ngày 02/11. Native chưa nghiệm thu trên điện thoại thật; camera, in và lịch native vẫn cần kiểm tra. iOS chưa được đóng gói.
+
+Ảnh bằng chứng riêng chứa dữ liệu QA: picture-home-390.png, picture-products-390.png, picture-inventory-390.png, picture-customer-390.png, picture-pos-empty-390.png, picture-payment-390.png, picture-reports-390.png, picture-product-detail-390.png, picture-product-form-390.png; thêm ba ảnh kiểm tra 320 px. Không đưa ảnh nguồn trong picture lên bản phát hành.
+
+Kết quả đóng gói APK 15 được ghi thêm sau khi ký và kiểm tra.
+
+---
+
 # Kiểm tra mới nhất · Android 14
 
 Ngày 02/11/2026: TypeScript API/mobile đạt; 34/34 bài API và 4/4 bài cấu hình phát hành đạt. Sao lưu–khôi phục database QA giữ đúng ảnh, dữ liệu cũ, thuộc tính hàng/hồ sơ khách, thiết lập kho và điều chỉnh nợ. Mã vạch Code 128, QR Unicode đã giải mã lại bằng ZXing độc lập; kiểm tra giới hạn số tem và escape HTML đạt.

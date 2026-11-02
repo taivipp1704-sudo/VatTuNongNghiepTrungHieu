@@ -41,6 +41,7 @@ import {
 } from "@/components/pos-ui";
 import { parseRate, rateLabel, productPoints } from "@/lib/loyalty";
 import { ListPager } from "@/components/list-pager";
+import { SearchBar, FloatingAdd } from "@/components/store-ui";
 import { ProductStock } from "@/components/product-stock";
 import { ProductLoyalty } from "@/components/product-loyalty";
 
@@ -50,7 +51,8 @@ export default function Inventory() {
   const [category, setCategory] = useState("all");
   const [filter, setFilter] = useState(params.filter || "all");
   const [bulk, setBulk] = useState(false);
-  const [layout, setLayout] = useState<"tiles" | "list">("tiles");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [layout, setLayout] = useState<"tiles" | "list">("list");
   const { width, fontScale } = useWindowDimensions();
   const tiles = layout === "tiles" && !bulk && fontScale <= 1.3;
   const tileWidth = (Math.min(width, 720) - 44) / 2;
@@ -141,325 +143,295 @@ export default function Inventory() {
     }
   };
   return (
-    <FlatList
-      key={tiles ? "tiles" : "list"}
-      numColumns={tiles ? 2 : 1}
-      columnWrapperStyle={
-        tiles ? { gap: 12, alignItems: "stretch" } : undefined
-      }
-      style={{ backgroundColor: theme.colors.canvas }}
-      contentContainerStyle={{
-        padding: 16,
-        gap: 14,
-        paddingBottom: 40,
-        maxWidth: 720,
-        width: "100%",
-        alignSelf: "center",
-      }}
-      data={query.data ? rows : []}
-      keyExtractor={(p) => p.id}
-      keyboardShouldPersistTaps="handled"
-      refreshControl={
-        <RefreshControl
-          refreshing={query.isRefetching}
-          onRefresh={() => void query.refetch()}
-        />
-      }
-      ListFooterComponent={
-        <ListPager
-          page={page}
-          total={query.data?.[0]?.list_total ?? 0}
-          onChange={setPage}
-        />
-      }
-      ListHeaderComponent={
-        <View style={{ gap: 14, paddingBottom: 4 }}>
-          <View
-            style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}
-          >
-            <View style={{ flex: 1 }}>
-              <Field
+    <View style={{ flex: 1, backgroundColor: theme.colors.paper }}>
+      <FlatList
+        key={tiles ? "tiles" : "list"}
+        numColumns={tiles ? 2 : 1}
+        columnWrapperStyle={
+          tiles ? { gap: 12, paddingHorizontal: 12 } : undefined
+        }
+        contentContainerStyle={{
+          paddingBottom: 96,
+          maxWidth: 720,
+          width: "100%",
+          alignSelf: "center",
+        }}
+        data={query.data ? rows : []}
+        keyExtractor={(p) => p.id}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={query.isRefetching}
+            onRefresh={() => void query.refetch()}
+          />
+        }
+        ListHeaderComponent={
+          <View style={{ backgroundColor: theme.colors.paper }}>
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingTop: 12,
+                paddingBottom: 8,
+              }}
+            >
+              <SearchBar
                 label="Tìm tên hàng, SKU hoặc mã vạch"
                 value={search}
-                onChangeText={setSearch}
-                placeholder="Tên hàng hoặc mã SKU"
-              />
-            </View>
-            <IconButton
-              name="barcode-scan"
-              label="Quét mã hàng hóa"
-              onPress={() =>
-                router.push({
-                  pathname: "/scan",
-                  params: { target: "inventory" },
-                })
-              }
-            />
-          </View>
-          <ChipTabs
-            value={category}
-            onChange={setCategory}
-            items={[
-              {
-                value: "all",
-                label: "Tất cả (" + (query.data?.length || 0) + ")",
-              },
-              ...["Phân bón", "Thuốc BVTV", "Hạt giống", "Vật tư"].map((v) => ({
-                value: v,
-                label: v,
-              })),
-            ]}
-          />
-          <View
-            style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}
-          >
-            <View style={{ flex: 1 }}>
-              <Select
-                label="Lọc tồn kho"
-                value={filter}
-                onChange={setFilter}
-                options={[
-                  { value: "all", label: "Tất cả trạng thái" },
-                  { value: "low", label: "Tồn thấp" },
-                  { value: "soon", label: "Lô cận hạn" },
-                  { value: "expired", label: "Lô hết hạn" },
-                ]}
-              />
-            </View>
-            <IconButton
-              name="view-grid-outline"
-              label="Hiển thị thẻ ảnh"
-              selected={tiles}
-              disabled={bulk || fontScale > 1.3}
-              onPress={() => setLayout("tiles")}
-            />
-            <IconButton
-              name="format-list-bulleted"
-              label="Hiển thị danh sách"
-              selected={!tiles}
-              onPress={() => setLayout("list")}
-            />
-          </View>
-          {can("loyalty.manage") || can("products.manage") ? (
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              {can("products.manage") ? (
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title="Thêm hàng"
-                    onPress={() => router.push("/product-form")}
-                  />
-                </View>
-              ) : null}
-              {can("loyalty.manage") ? (
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title={bulk ? "Đóng sửa điểm" : "Sửa số chấm"}
-                    secondary
-                    onPress={() => {
-                      setBulk(!bulk);
-                      setSelected([]);
-                    }}
-                  />
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-          {bulk ? (
-            <Panel>
-              <Button
-                title="Chọn kết quả đang lọc (tối đa 100)"
-                secondary
-                onPress={() => setSelected(rows.slice(0, 100).map((p) => p.id))}
-              />
-              <Caption>Đã chọn {selected.length} mặt hàng</Caption>
-              <Field
-                label="Tỷ lệ mới cho các hàng đã chọn (%)"
-                value={rate}
-                onChangeText={setRate}
-                keyboardType="decimal-pad"
-              />
-              <Notice error>{command.error}</Notice>
-              <Button
-                title="Áp dụng số chấm"
-                onPress={apply}
-                pending={command.pending}
-                disabled={offline || !selected.length}
-              />
-            </Panel>
-          ) : null}
-          <Notice>{notice}</Notice>
-          <QueryState query={query}>{null}</QueryState>
-        </View>
-      }
-      ListEmptyComponent={
-        query.data ? (
-          <Empty message="Không có hàng hóa phù hợp với bộ lọc." />
-        ) : undefined
-      }
-      renderItem={({ item }) =>
-        tiles ? (
-          <View style={{ width: tileWidth }}>
-            <ProductCard
-              product={item}
-              onPress={() =>
-                router.push({ pathname: "/product", params: { id: item.id } })
-              }
-              onEditRate={
-                can("loyalty.manage")
-                  ? () =>
-                      router.push({
-                        pathname: "/product",
-                        params: { id: item.id },
-                      })
-                  : undefined
-              }
-            />
-          </View>
-        ) : (
-          <View>
-            <Panel>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  bulk ? "Chọn " + item.name : "Xem " + item.name
+                onChange={setSearch}
+                placeholder="Tìm tên, SKU hoặc mã vạch"
+                onScan={() =>
+                  router.push({
+                    pathname: "/scan",
+                    params: { target: "inventory" },
+                  })
                 }
-                onPress={() =>
-                  bulk
-                    ? toggle(item.id)
-                    : router.push({
-                        pathname: "/product",
-                        params: { id: item.id },
-                      })
-                }
-              >
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  {bulk ? (
-                    <View style={{ justifyContent: "center" }}>
-                      <Icon
-                        name={
-                          selected.includes(item.id)
-                            ? "checkbox-marked"
-                            : "checkbox-blank-outline"
-                        }
-                      />
-                    </View>
-                  ) : null}
-                  <ProductPicture product={item} size={70} />
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Row>
-                      <Caption>{item.sku}</Caption>
-                      <Badge
-                        label={
-                          "Tồn: " +
-                          number(item.available / item.pack_factor) +
-                          " " +
-                          item.pack_unit
-                        }
-                        tone={
-                          item.available < item.min_stock
-                            ? "warning"
-                            : "positive"
-                        }
-                      />
-                    </Row>
-                    <AppText
-                      numberOfLines={2}
-                      style={{ fontWeight: "600", fontSize: 16 }}
-                    >
-                      {item.name}
-                    </AppText>
-                    <AppText
-                      variant="amount"
-                      style={{
-                        fontSize: 22,
-                        lineHeight: 31,
-                        fontWeight: "700",
-                        color: theme.colors.info,
-                      }}
-                    >
-                      {money(item.price_pack)}
-                    </AppText>
-                    <Caption>
-                      / {item.pack_unit} · {number(item.actual)}{" "}
-                      {item.base_unit} thực tế
-                    </Caption>
-                  </View>
-                </View>
-              </Pressable>
-              <View
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.border,
+              }}
+            >
+              <AppText
                 style={{
-                  backgroundColor: theme.colors.soft,
-                  padding: 12,
-                  borderRadius: 12,
-                  gap: 6,
+                  flex: 1,
+                  color: theme.colors.primary,
+                  fontSize: 16,
+                  fontWeight: "500",
                 }}
               >
-                <View
+                {category === "all" ? "Tất cả sản phẩm" : category}
+              </AppText>
+              <IconButton
+                name={filtersOpen ? "close" : "filter-variant"}
+                label={filtersOpen ? "Đóng bộ lọc" : "Lọc và công cụ sản phẩm"}
+                onPress={() => setFiltersOpen(!filtersOpen)}
+              />
+            </View>
+            {filtersOpen ? (
+              <View
+                style={{
+                  padding: 16,
+                  gap: 12,
+                  backgroundColor: theme.colors.canvas,
+                }}
+              >
+                <Select
+                  label="Nhóm hàng"
+                  value={category}
+                  onChange={setCategory}
+                  options={[
+                    { value: "all", label: "Tất cả" },
+                    ...["Phân bón", "Thuốc BVTV", "Hạt giống", "Vật tư"].map(
+                      (value) => ({ value, label: value }),
+                    ),
+                  ]}
+                />
+                <Select
+                  label="Lọc tồn kho"
+                  value={filter}
+                  onChange={setFilter}
+                  options={[
+                    { value: "all", label: "Tất cả trạng thái" },
+                    { value: "low", label: "Tồn thấp" },
+                    { value: "soon", label: "Lô cận hạn" },
+                    { value: "expired", label: "Lô hết hạn" },
+                  ]}
+                />
+                <Row>
+                  <IconButton
+                    name="view-grid-outline"
+                    label="Hiển thị thẻ ảnh"
+                    selected={tiles}
+                    disabled={bulk || fontScale > 1.3}
+                    onPress={() => setLayout("tiles")}
+                  />
+                  <IconButton
+                    name="format-list-bulleted"
+                    label="Hiển thị danh sách"
+                    selected={!tiles}
+                    onPress={() => setLayout("list")}
+                  />
+                  {can("loyalty.manage") ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Sửa số chấm hàng loạt"
+                      onPress={() => {
+                        setBulk(!bulk);
+                        setSelected([]);
+                      }}
+                      style={{ minHeight: 44, justifyContent: "center" }}
+                    >
+                      <AppText style={{ color: theme.colors.primary }}>
+                        {bulk ? "Đóng sửa điểm" : "Sửa số chấm"}
+                      </AppText>
+                    </Pressable>
+                  ) : null}
+                </Row>
+              </View>
+            ) : null}
+            {bulk ? (
+              <Panel>
+                <Button
+                  secondary
+                  title="Chọn kết quả đang lọc (tối đa 100)"
+                  onPress={() =>
+                    setSelected(rows.slice(0, 100).map((p) => p.id))
+                  }
+                />
+                <Caption>Đã chọn {selected.length} mặt hàng</Caption>
+                <Field
+                  label="Tỷ lệ mới cho các hàng đã chọn (%)"
+                  value={rate}
+                  onChangeText={setRate}
+                  keyboardType="decimal-pad"
+                />
+                <Notice error>{command.error}</Notice>
+                <Button
+                  title="Áp dụng số chấm"
+                  onPress={apply}
+                  pending={command.pending}
+                  disabled={offline || !selected.length}
+                />
+              </Panel>
+            ) : null}
+            <Notice>{notice}</Notice>
+            <QueryState query={query}>{null}</QueryState>
+            {query.data ? (
+              <View
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  backgroundColor: theme.colors.canvas,
+                }}
+              >
+                <Caption>
+                  {number(query.data[0]?.list_total ?? 0)} sản phẩm · Giá theo
+                  đơn vị đóng gói
+                </Caption>
+              </View>
+            ) : null}
+          </View>
+        }
+        ListEmptyComponent={
+          query.data ? (
+            <Empty message="Không có hàng hóa phù hợp với bộ lọc." />
+          ) : undefined
+        }
+        ListFooterComponent={
+          (query.data?.[0]?.list_total ?? 0) > 50 ? (
+            <View style={{ paddingHorizontal: 16 }}>
+              <ListPager
+                page={page}
+                total={query.data?.[0]?.list_total ?? 0}
+                onChange={setPage}
+              />
+            </View>
+          ) : undefined
+        }
+        renderItem={({ item }) =>
+          tiles ? (
+            <View style={{ width: tileWidth, paddingVertical: 8 }}>
+              <ProductCard
+                product={item}
+                onPress={() =>
+                  router.push({ pathname: "/product", params: { id: item.id } })
+                }
+              />
+            </View>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                bulk ? "Chọn " + item.name : "Xem " + item.name
+              }
+              onPress={() =>
+                bulk
+                  ? toggle(item.id)
+                  : router.push({
+                      pathname: "/product",
+                      params: { id: item.id },
+                    })
+              }
+              style={({ pressed }) => ({
+                minHeight: 100,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.border,
+                backgroundColor: pressed
+                  ? theme.colors.soft
+                  : theme.colors.paper,
+                flexDirection: "row",
+                gap: 12,
+                alignItems: "flex-start",
+              })}
+            >
+              {bulk ? (
+                <Icon
+                  name={
+                    selected.includes(item.id)
+                      ? "checkbox-marked"
+                      : "checkbox-blank-outline"
+                  }
+                />
+              ) : null}
+              <ProductPicture product={item} size={58} />
+              <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+                <AppText
+                  numberOfLines={2}
+                  style={{ fontSize: 15, fontWeight: "600", lineHeight: 22 }}
+                >
+                  {item.name}
+                </AppText>
+                <AppText
                   style={{
-                    flexDirection: "row",
-                    gap: 10,
-                    alignItems: "center",
+                    fontSize: 12,
+                    color: theme.colors.muted,
+                    lineHeight: 18,
                   }}
                 >
-                  <Icon
-                    name={
-                      item.loyalty_rate
-                        ? "star-circle-outline"
-                        : "minus-circle-outline"
-                    }
-                    color={
-                      item.loyalty_rate
-                        ? theme.colors.success
-                        : theme.colors.muted
-                    }
-                  />
-                  <View style={{ flex: 1 }}>
-                    <AppText
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: item.loyalty_rate
-                          ? theme.colors.success
-                          : theme.colors.muted,
-                      }}
-                    >
-                      Tích điểm: {rateLabel(item.loyalty_rate)}
-                    </AppText>
-                    <Caption>
-                      {rules.data?.enabled
-                        ? "Mua 1 " +
-                          item.pack_unit +
-                          " dự kiến " +
-                          number(
-                            productPoints(
-                              item.price_pack,
-                              item.loyalty_rate,
-                              rules.data,
-                            ),
-                          ) +
-                          " điểm"
-                        : "Chương trình tích điểm đang tắt"}
-                    </Caption>
-                  </View>
-                  {can("loyalty.manage") && !bulk ? (
-                    <IconButton
-                      name="pencil-outline"
-                      label={"Sửa số chấm " + item.sku}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/product",
-                          params: { id: item.id },
-                        })
-                      }
-                    />
-                  ) : null}
-                </View>
+                  SKU: {item.sku}
+                  {rules.data?.enabled
+                    ? " · " + rateLabel(item.loyalty_rate)
+                    : ""}
+                </AppText>
               </View>
-            </Panel>
-          </View>
-        )
-      }
-    />
+              <View style={{ alignItems: "flex-end", gap: 6, maxWidth: 104 }}>
+                <AppText
+                  variant="amount"
+                  style={{ fontSize: 15, lineHeight: 22 }}
+                >
+                  {money(item.price_pack)}
+                </AppText>
+                <AppText
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 18,
+                    color:
+                      item.available < item.min_stock
+                        ? theme.colors.warning
+                        : theme.colors.muted,
+                  }}
+                >
+                  {number(item.available / item.pack_factor)} {item.pack_unit}
+                </AppText>
+              </View>
+            </Pressable>
+          )
+        }
+      />
+      {can("products.manage") && can("inventory.cost.view") ? (
+        <FloatingAdd
+          label="Thêm hàng"
+          onPress={() => router.push("/product-form")}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -467,6 +439,7 @@ export function ProductDetail() {
   const command = useCommand();
   const offline = useSession((state) => state.offline);
   const [releaseReason, setReleaseReason] = useState("");
+  const [actionsOpen, setActionsOpen] = useState(false);
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useApi<Product[]>(
     "/inventory?search=" + encodeURIComponent(id ?? ""),
@@ -485,107 +458,181 @@ export function ProductDetail() {
       <QueryState query={query}>
         {product ? (
           <>
+            <ProductCover product={product} height={210} />
             <Panel>
-              <ProductCover product={product} height={210} />
-              <Badge label={product.category} />
-              <Label big>{product.name}</Label>
-              <Caption>
-                {product.sku} · {product.barcode}
-              </Caption>
-              <Label>
-                Khả dụng: {number(product.available)} {product.base_unit}
-              </Label>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              >
+                <AppText
+                  style={{
+                    flex: 1,
+                    fontSize: 18,
+                    lineHeight: 26,
+                    fontWeight: "500",
+                  }}
+                >
+                  {product.name}
+                </AppText>
+                {can("products.manage") ? (
+                  <IconButton
+                    name="pencil-outline"
+                    label="Chỉnh sửa hàng hóa"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/product-form",
+                        params: { id: product.id },
+                      })
+                    }
+                  />
+                ) : null}
+              </View>
+              {[
+                ["SKU", product.sku],
+                ["Barcode", product.barcode || "---"],
+                [
+                  "Khối lượng",
+                  number(product.details?.weightGrams ?? 0) + " g",
+                ],
+                ["Đơn vị tính", product.base_unit + " / " + product.pack_unit],
+                ["Kích thước", product.details?.dimensions || "Mặc định"],
+              ].map(([label, value]) => (
+                <View key={label} style={{ flexDirection: "row", gap: 12 }}>
+                  <AppText
+                    style={{
+                      width: "35%",
+                      color: theme.colors.muted,
+                      fontSize: 14,
+                      lineHeight: 23,
+                    }}
+                  >
+                    {label}
+                  </AppText>
+                  <AppText style={{ flex: 1, fontSize: 14, lineHeight: 23 }}>
+                    : {value}
+                  </AppText>
+                </View>
+              ))}
+            </Panel>
+            <Panel>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <Icon name="tag" color={theme.colors.muted} />
+                <Label>Giá sản phẩm</Label>
+              </View>
+              <Caption>Chưa áp dụng thuế · Giá theo đơn vị đóng gói</Caption>
+              <View style={{ flexDirection: "row", gap: 16 }}>
+                <View style={{ flex: 1, gap: 5 }}>
+                  <Caption>Giá bán lẻ</Caption>
+                  <Label numeric>{money(product.price_pack)}</Label>
+                </View>
+                {can("sales.wholesale") || can("products.manage") ? (
+                  <View style={{ flex: 1, gap: 5 }}>
+                    <Caption>Giá bán sỉ</Caption>
+                    <Label numeric>
+                      {money(
+                        product.details?.wholesalePack ?? product.price_pack,
+                      )}
+                    </Label>
+                  </View>
+                ) : null}
+              </View>
+              {can("inventory.cost.view") && product.cost_base !== undefined ? (
+                <>
+                  <View
+                    style={{ height: 1, backgroundColor: theme.colors.border }}
+                  />
+                  <Caption>
+                    Giá vốn / {product.base_unit}: {money(product.cost_base)}
+                  </Caption>
+                </>
+              ) : null}
               <Caption>
                 1 {product.pack_unit} = {number(product.pack_factor)}{" "}
-                {product.base_unit}
+                {product.base_unit} · Giá lẻ cơ sở {money(product.price_base)}
               </Caption>
-              <Row>
-                <Label>
-                  {money(product.price_pack)} / {product.pack_unit}
-                </Label>
-                <Caption>
-                  {money(product.price_base)} / {product.base_unit}
-                </Caption>
-              </Row>
-              {can("inventory.cost.view") && product.cost_base !== undefined ? (
-                <Caption>
-                  Giá vốn: {money(product.cost_base)} / {product.base_unit}
-                </Caption>
-              ) : null}
-              {product.technical_info ? (
-                <Caption>{product.technical_info}</Caption>
-              ) : null}
             </Panel>
-            <Row>
-              {can("inventory.receipt.create") ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Thao tác sản phẩm"
+              onPress={() => setActionsOpen(!actionsOpen)}
+              style={{
+                minHeight: 48,
+                paddingHorizontal: 16,
+                backgroundColor: theme.colors.paper,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <AppText style={{ flex: 1, fontSize: 16 }}>
+                Thao tác sản phẩm
+              </AppText>
+              <Icon
+                name={actionsOpen ? "chevron-up" : "chevron-down"}
+                color={theme.colors.muted}
+              />
+            </Pressable>
+            {actionsOpen ? (
+              <>
+                <Row>
+                  {can("inventory.receipt.create") ? (
+                    <Button
+                      title="Nhập hàng"
+                      secondary
+                      onPress={() => router.push("/stock-form?kind=RECEIPT")}
+                    />
+                  ) : null}
+                  {can("sales.create") ? (
+                    <Button
+                      title="Bán sản phẩm này"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/pos",
+                          params: { search: product.sku },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {can("sales.return") ? (
+                    <Button
+                      title="Mở đơn để trả hàng"
+                      secondary
+                      onPress={() => router.push("/orders")}
+                    />
+                  ) : null}
+                </Row>
                 <Button
-                  title="Nhập hàng"
                   secondary
-                  onPress={() => router.push("/stock-form?kind=RECEIPT")}
-                />
-              ) : null}
-              {can("sales.create") ? (
-                <Button
-                  title="Bán sản phẩm này"
+                  title="In tem mã vạch"
                   onPress={() =>
                     router.push({
-                      pathname: "/pos",
-                      params: { search: product.sku },
+                      pathname: "/barcode-labels",
+                      params: { id: product.id, sku: product.sku },
                     })
                   }
                 />
-              ) : null}
-              {can("sales.return") ? (
-                <Button
-                  title="Mở đơn để trả hàng"
-                  secondary
-                  onPress={() => router.push("/orders")}
-                />
-              ) : null}
-            </Row>
-            {can("products.manage") ? (
-              <Button
-                title="Chỉnh sửa hàng hóa"
-                secondary
-                onPress={() =>
-                  router.push({
-                    pathname: "/product-form",
-                    params: { id: product.id },
-                  })
-                }
-              />
+              </>
             ) : null}
             <Panel>
-              <Label>Thuộc tính và bảng giá</Label>
+              <Row>
+                <Icon name="warehouse" color={theme.colors.muted} />
+                <Label>Kho hàng</Label>
+              </Row>
               <Caption>
                 {product.details?.sellable === false
                   ? "Tạm ngừng bán"
-                  : "Đang bán tại quầy"}{" "}
-                · Khối lượng {number(product.details?.weightGrams ?? 0)} g ·{" "}
-                {product.details?.dimensions || "Chưa có kích thước"}
+                  : "Cho phép bán tại quầy"}
               </Caption>
-              {can("sales.wholesale") || can("products.manage") ? (
-                <Caption>
-                  Giá sỉ:{" "}
-                  {money(product.details?.wholesalePack ?? product.price_pack)}{" "}
-                  / {product.pack_unit} ·{" "}
-                  {money(product.details?.wholesaleBase ?? product.price_base)}{" "}
-                  / {product.base_unit}
-                </Caption>
-              ) : null}
-              <Button
-                secondary
-                title="In tem mã vạch"
-                onPress={() =>
-                  router.push({
-                    pathname: "/barcode-labels",
-                    params: { id: product.id, sku: product.sku },
-                  })
-                }
-              />
             </Panel>
             <ProductStock product={product} />
             <ProductLoyalty key={product.id} product={product} />
+            {product.technical_info ? (
+              <Panel>
+                <Label>Thông tin kỹ thuật</Label>
+                <Caption>{product.technical_info}</Caption>
+              </Panel>
+            ) : null}
             <Section title="Lô & hạn sử dụng">
               {product.lots.map((lot) => (
                 <Panel key={lot.id}>

@@ -1,6 +1,6 @@
-# Chức năng quản lý cửa hàng · Android 14
+# Chức năng quản lý cửa hàng · Android 15
 
-Phạm vi đã chốt: bán trực tiếp tại quầy cho một doanh nghiệp; nhiều nhân viên dùng chung máy chủ. Các ảnh trong thư mục tham khảo chỉ dùng để đối chiếu chức năng. Không đưa ảnh, danh bạ hoặc bản ghi âm riêng tư lên repository hay APK.
+Phạm vi đã chốt: bán trực tiếp tại quầy cho một doanh nghiệp; nhiều nhân viên dùng chung máy chủ. Bản 15 đối chiếu cả bố cục với ảnh trong thư mục picture và giữ tông xanh lá. Chức năng của bản 14 được giữ. Không đưa ảnh, danh bạ hoặc bản ghi âm riêng tư lên repository hay APK.
 
 | Khu vực mẫu | Chức năng trong AgriStock |
 | --- | --- |

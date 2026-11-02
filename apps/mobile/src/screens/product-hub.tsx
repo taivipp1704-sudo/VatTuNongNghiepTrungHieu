@@ -1,70 +1,96 @@
 import { router } from "expo-router";
-import {
-  Button,
-  Caption,
-  Denied,
-  Label,
-  LinkRow,
-  Page,
-  Panel,
-} from "@/components/ui";
+import { Pressable, View } from "react-native";
+import { Denied, Page } from "@/components/ui";
+import { StoreRow } from "@/components/store-ui";
+import { AppText } from "@/components/text";
+import { Icon } from "@/components/pos-ui";
 import { can } from "@/lib/session";
+import { theme } from "@/theme";
 export default function ProductHub() {
   if (!can("inventory.view")) return <Denied />;
   return (
-    <Page>
-      <Label big>Sản phẩm & kho hàng</Label>
-      <Caption>
-        Quản lý hàng hóa, nhập và kiểm kho, nhà cung cấp, tem mã vạch.
-      </Caption>
+    <Page edgeToEdge>
       {can("products.manage") && can("inventory.cost.view") ? (
-        <Button
-          title="Thêm sản phẩm"
-          onPress={() => router.push("/product-form")}
-        />
+        <View style={{ paddingHorizontal: 28, paddingTop: 28 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Thêm sản phẩm"
+            onPress={() => router.push("/product-form")}
+            style={({ pressed }) => ({
+              height: 152,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: pressed ? theme.colors.soft : theme.colors.paper,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 14,
+            })}
+          >
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                backgroundColor: theme.colors.buttonFill,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="plus" color={theme.colors.primary} size={30} />
+            </View>
+            <AppText style={{ fontSize: 19, fontWeight: "600" }}>
+              Thêm sản phẩm
+            </AppText>
+          </Pressable>
+        </View>
       ) : null}
-      <Panel>
-        <LinkRow
+      <View style={{ gap: 0, marginTop: -12 }}>
+        <StoreRow
           title="Danh sách sản phẩm"
-          description="Ảnh, giá, tồn kho và số chấm"
+          icon="package-variant-closed"
           onPress={() => router.push("/inventory")}
         />
         {can("inventory.receipt.create") ? (
-          <LinkRow
+          <StoreRow
             title="Nhập hàng"
-            description="Tạo phiếu nhập từ nhà cung cấp"
+            icon="clipboard-edit-outline"
             onPress={() => router.push("/stock-form?kind=RECEIPT")}
           />
         ) : null}
         {can("inventory.count.create") ? (
-          <LinkRow
+          <StoreRow
             title="Kiểm hàng"
-            description="Ghi nhận kiểm kê theo lô, duyệt và lưu nhật ký"
+            icon="checkbox-marked-outline"
             onPress={() => router.push("/stock-form?kind=COUNT")}
           />
         ) : null}
-        <LinkRow
-          title="Phiếu kho & lịch sử"
-          onPress={() => router.push("/documents")}
-        />
         {can("partners.view") ? (
-          <LinkRow
+          <StoreRow
             title="Nhà cung cấp"
+            icon="account"
             onPress={() => router.push("/partners?kind=SUPPLIER")}
           />
         ) : null}
-        <LinkRow
+        <StoreRow
           title="In tem mã vạch"
-          description="Chọn mặt hàng, số tem và khổ giấy; xem trước, chia sẻ PDF hoặc in"
+          icon="barcode"
           onPress={() => router.push("/barcode-labels")}
         />
+        <StoreRow
+          title="Phiếu kho & lịch sử"
+          icon="history"
+          onPress={() => router.push("/documents")}
+        />
         {can("reports.view") ? (
-          <LinkRow
+          <StoreRow
             title="Báo cáo nhập xuất tồn"
+            icon="chart-box-outline"
             onPress={() => router.push("/reports?section=inventory")}
           />
         ) : null}
-      </Panel>
+      </View>
     </Page>
   );
 }

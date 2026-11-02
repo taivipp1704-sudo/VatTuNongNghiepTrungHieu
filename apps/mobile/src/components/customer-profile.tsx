@@ -13,6 +13,12 @@ import {
   Toggle,
   confirmAction,
 } from "./ui";
+import { InfoRow, StoreRow } from "./store-ui";
+import { router } from "expo-router";
+import { memberTier } from "@/lib/loyalty";
+import { LoyaltySettings } from "@/types";
+import { number } from "@/lib/format";
+import { theme } from "@/theme";
 import { ChipTabs } from "./pos-ui";
 import { CalendarField } from "./report-range";
 import { CustomerPurchases } from "./customer-purchases";
@@ -23,18 +29,32 @@ import { DataRow, Partner } from "@/types";
 import { day, money } from "@/lib/format";
 import { parseRate } from "@/lib/loyalty";
 
-export function CustomerProfile({ partner }: { partner: Partner }) {
+export function CustomerProfile({
+  partner,
+  editRequested = 0,
+}: {
+  partner: Partner;
+  editRequested?: number;
+}) {
   const [tab, setTab] = useState("info"),
-    [editing, setEditing] = useState(false);
+    [editing, setEditing] = useState(false),
+    [addresses, setAddresses] = useState(false),
+    [contacts, setContacts] = useState(false);
+  const rules = useApi<LoyaltySettings>("/loyalty/settings");
   const profile = partner.profile ?? {};
   useEffect(() => {
     setTab("info");
     setEditing(false);
   }, [partner.id]);
+  useEffect(() => {
+    if (editRequested) {
+      setTab("info");
+      setEditing(true);
+    }
+  }, [editRequested]);
   return (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: 0 }}>
       <ChipTabs
-        compact
         value={tab}
         onChange={setTab}
         items={[
@@ -47,71 +67,225 @@ export function CustomerProfile({ partner }: { partner: Partner }) {
       />
       {tab === "info" ? (
         <>
-          <Caption>
-            Mã: {profile.code || "KH" + partner.id.slice(0, 6).toUpperCase()} ·{" "}
-            {profile.active === false ? "Ngừng giao dịch" : "Đang giao dịch"}
-          </Caption>
-          <Caption>
-            {partner.phone || "Chưa có SĐT"} ·{" "}
-            {profile.email || "Chưa có email"}
-          </Caption>
-          <Caption>
-            Nhóm: {profile.group || "Bán lẻ"} · Bảng giá:{" "}
-            {profile.priceBook === "WHOLESALE" ? "Bán sỉ" : "Bán lẻ"}
-          </Caption>
-          <Caption>
-            Chiết khấu đề xuất: {profile.discountPercent ?? 0}% · Phụ trách:{" "}
-            {profile.assignedStaff || "Chưa gán"}
-          </Caption>
-          <Caption>
-            Sinh nhật: {profile.birthday ? day(profile.birthday) : "Chưa đặt"} ·{" "}
-            {profile.gender === "MALE"
-              ? "Nam"
-              : profile.gender === "FEMALE"
-                ? "Nữ"
-                : "Khác / Chưa đặt"}
-          </Caption>
-          <Caption>
-            MST: {partner.tax_code || "Chưa có"} · Địa chỉ:{" "}
-            {partner.address || "Chưa có"}
-          </Caption>
-          {(profile.addresses ?? []).map((a, i) => (
-            <Caption key={i}>
-              {a.label}: {a.address}
-            </Caption>
-          ))}
-          {(profile.contacts ?? []).map((c, i) => (
-            <Caption key={i}>
-              Liên hệ: {c.name} · {c.phone} · {c.email}
-            </Caption>
-          ))}
-          {can("partners.manage") ? (
-            <Button
-              secondary
-              title={
-                editing
-                  ? "Đóng thông tin bổ sung"
-                  : "Sửa nhóm, bảng giá và liên hệ"
-              }
-              onPress={() => setEditing(!editing)}
-            />
-          ) : null}
           {editing ? (
-            <ProfileEditor
-              key={partner.id}
-              partner={partner}
-              onDone={() => setEditing(false)}
-            />
-          ) : null}
+            <View style={{ padding: 16, gap: 12 }}>
+              <Label big>Sửa hồ sơ khách hàng</Label>
+              <ProfileEditor
+                key={partner.id}
+                partner={partner}
+                onDone={() => setEditing(false)}
+              />
+              <Button
+                secondary
+                title="Hủy chỉnh sửa"
+                onPress={() => setEditing(false)}
+              />
+            </View>
+          ) : (
+            <>
+              <View style={{ paddingHorizontal: 16 }}>
+                <InfoRow
+                  label="Nhóm khách hàng"
+                  value={profile.group || "Bán lẻ"}
+                />
+                <InfoRow
+                  label="Ngày sinh"
+                  value={profile.birthday ? day(profile.birthday) : "---"}
+                />
+                <InfoRow
+                  label="Giới tính"
+                  value={
+                    profile.gender === "MALE"
+                      ? "Nam"
+                      : profile.gender === "FEMALE"
+                        ? "Nữ"
+                        : "Khác"
+                  }
+                />
+                <InfoRow label="Mã số thuế" value={partner.tax_code || "---"} />
+                <InfoRow
+                  label="Chiết khấu"
+                  value={(profile.discountPercent ?? 0) + "%"}
+                />
+                <InfoRow
+                  label="Giá mặc định"
+                  value={
+                    profile.priceBook === "WHOLESALE"
+                      ? "Giá bán sỉ"
+                      : "Giá bán lẻ"
+                  }
+                />
+                <InfoRow
+                  label="Nhân viên phụ trách"
+                  value={profile.assignedStaff || "---"}
+                />
+              </View>
+              <View
+                style={{ height: 14, backgroundColor: theme.colors.canvas }}
+              />
+              <View style={{ paddingHorizontal: 16 }}>
+                <InfoRow
+                  label="Điểm hiện tại"
+                  value={number(partner.loyalty_balance ?? 0)}
+                />
+                <InfoRow
+                  label="Hạng thẻ"
+                  value={memberTier(partner, rules.data)}
+                />
+                <InfoRow
+                  label="Chi tiêu trong phạm vi kho"
+                  value={money(partner.lifetime_spend ?? 0)}
+                />
+              </View>
+              <View
+                style={{ height: 14, backgroundColor: theme.colors.canvas }}
+              />
+              <StoreRow
+                title="Sổ địa chỉ"
+                onPress={() => setAddresses(!addresses)}
+              />
+              {addresses ? (
+                <View style={{ paddingHorizontal: 16 }}>
+                  <InfoRow
+                    label="Địa chỉ chính"
+                    value={partner.address || "---"}
+                  />
+                  {(profile.addresses ?? []).map((a, i) => (
+                    <InfoRow key={i} label={a.label} value={a.address} />
+                  ))}
+                </View>
+              ) : null}
+              <StoreRow
+                title="Sổ liên hệ"
+                onPress={() => setContacts(!contacts)}
+              />
+              {contacts ? (
+                <View style={{ paddingHorizontal: 16 }}>
+                  {(profile.contacts ?? []).length ? (
+                    (profile.contacts ?? []).map((c, i) => (
+                      <InfoRow
+                        key={i}
+                        label={c.name}
+                        value={
+                          [c.phone, c.email].filter(Boolean).join(" · ") ||
+                          "---"
+                        }
+                      />
+                    ))
+                  ) : (
+                    <Caption>Chưa có người liên hệ bổ sung.</Caption>
+                  )}
+                </View>
+              ) : null}
+              <StoreRow
+                title="Trạng thái giao dịch"
+                subtitle={
+                  profile.active === false
+                    ? "Ngừng giao dịch"
+                    : "Đang giao dịch"
+                }
+              />
+              <StoreRow
+                title="Lịch sử điểm thưởng"
+                onPress={() =>
+                  router.push({
+                    pathname: "/customer-loyalty",
+                    params: { id: partner.id },
+                  })
+                }
+              />
+              <CustomerPointAdjust partner={partner} />
+              {can("partners.manage") ? (
+                <View style={{ padding: 16 }}>
+                  <Button
+                    secondary
+                    title="Sửa thông tin khách hàng"
+                    onPress={() => setEditing(true)}
+                  />
+                </View>
+              ) : null}
+            </>
+          )}
         </>
       ) : tab === "history" ? (
-        <CustomerPurchases customerId={partner.id} />
+        <View style={{ padding: 16 }}>
+          <CustomerPurchases customerId={partner.id} />
+        </View>
       ) : (
-        <CustomerLedger partner={partner} />
+        <View style={{ padding: 16 }}>
+          <CustomerLedger partner={partner} />
+        </View>
       )}
     </View>
   );
 }
+function CustomerPointAdjust({ partner }: { partner: Partner }) {
+  const [open, setOpen] = useState(false),
+    [delta, setDelta] = useState(""),
+    [reason, setReason] = useState("");
+  const command = useCommand(),
+    offline = useSession((s) => s.offline);
+  if (!can("loyalty.adjust")) return null;
+  const save = async () => {
+    const amount = Number(delta);
+    if (
+      !delta.trim() ||
+      !Number.isSafeInteger(amount) ||
+      amount === 0 ||
+      Math.abs(amount) > 1e9 ||
+      reason.trim().length < 3
+    ) {
+      command.setError("Nhập số điểm nguyên khác 0 và lý do ít nhất 3 ký tự.");
+      return;
+    }
+    if (
+      !(await confirmAction(
+        "Điều chỉnh điểm khách hàng",
+        partner.name + ": " + number(amount) + " điểm. Lý do: " + reason,
+      ))
+    )
+      return;
+    if (
+      await command.run("/loyalty/customers/" + partner.id + "/adjust", {
+        delta: amount,
+        reason: reason.trim(),
+      })
+    ) {
+      setOpen(false);
+      setDelta("");
+      setReason("");
+    }
+  };
+  return (
+    <>
+      <StoreRow title="Điều chỉnh điểm thưởng" onPress={() => setOpen(!open)} />
+      {open ? (
+        <View style={{ padding: 16, gap: 12 }}>
+          <Field
+            label="Số điểm điều chỉnh (+ hoặc −)"
+            value={delta}
+            onChangeText={setDelta}
+            keyboardType="numbers-and-punctuation"
+          />
+          <Field
+            label="Lý do điều chỉnh điểm"
+            value={reason}
+            onChangeText={setReason}
+            multiline
+          />
+          <Notice error>{command.error}</Notice>
+          <Button
+            title="Xác nhận điều chỉnh điểm"
+            pending={command.pending}
+            disabled={offline}
+            onPress={() => void save()}
+          />
+        </View>
+      ) : null}
+    </>
+  );
+}
+
 function ProfileEditor({
   partner,
   onDone,
@@ -121,6 +295,11 @@ function ProfileEditor({
 }) {
   const p = partner.profile ?? {};
   const [form, setForm] = useState({
+    name: partner.name,
+    phone: partner.phone,
+    address: partner.address,
+    taxCode: partner.tax_code,
+    creditLimit: String(partner.credit_limit),
     code: p.code ?? "",
     email: p.email ?? "",
     group: p.group ?? "Bán lẻ",
@@ -144,12 +323,12 @@ function ProfileEditor({
     const result = await command.run(
       "/partners/" + partner.id,
       {
-        name: partner.name,
+        name: form.name,
         kind: partner.kind,
-        phone: partner.phone,
-        address: partner.address,
-        taxCode: partner.tax_code,
-        creditLimit: partner.credit_limit,
+        phone: form.phone,
+        address: form.address,
+        taxCode: form.taxCode,
+        creditLimit: Number(form.creditLimit),
         profile: {
           code: form.code,
           email: form.email,
@@ -170,6 +349,34 @@ function ProfileEditor({
   };
   return (
     <View style={{ gap: 12 }}>
+      <Field
+        label="Tên khách hàng"
+        value={form.name}
+        onChangeText={(name) => setForm({ ...form, name })}
+      />
+      <Field
+        label="Số điện thoại"
+        value={form.phone}
+        onChangeText={(phone) => setForm({ ...form, phone })}
+        keyboardType="phone-pad"
+      />
+      <Field
+        label="Địa chỉ chính"
+        value={form.address}
+        onChangeText={(address) => setForm({ ...form, address })}
+      />
+      <Field
+        label="Mã số thuế"
+        value={form.taxCode}
+        onChangeText={(taxCode) => setForm({ ...form, taxCode })}
+      />
+      <Field
+        label="Hạn mức công nợ (đồng)"
+        value={form.creditLimit}
+        onChangeText={(creditLimit) => setForm({ ...form, creditLimit })}
+        keyboardType="numeric"
+        editable={can("partners.credit.manage")}
+      />
       <Field
         label="Mã khách hàng"
         value={form.code}

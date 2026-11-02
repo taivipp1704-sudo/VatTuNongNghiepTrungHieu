@@ -1,50 +1,35 @@
 import { useState } from "react";
 import { router, Href } from "expo-router";
-import { Pressable, ScrollView, View } from "react-native";
-import { LandscapeBackground } from "@/components/landscape-background";
-import { ProductCard } from "@/components/product-card";
+import { Pressable, View } from "react-native";
 import {
   Button,
   Caption,
   Label,
   Notice,
   Page,
-  Panel,
   QueryState,
-  Row,
   Toggle,
 } from "@/components/ui";
 import { AppText } from "@/components/text";
-import {
-  Icon,
-  IconButton,
-  IconName,
-  SectionHeading,
-} from "@/components/pos-ui";
+import { Icon, IconName, SectionHeading } from "@/components/pos-ui";
+import { StoreRow, StoreSection } from "@/components/store-ui";
+import { LandscapeBackground } from "@/components/landscape-background";
 import { RevenueChart } from "@/components/revenue-chart";
 import { useApi } from "@/lib/api";
 import { can } from "@/lib/session";
-import { money, number } from "@/lib/format";
-import { DataRow, Product } from "@/types";
 import { useDraft } from "@/lib/drafts";
+import { money, number } from "@/lib/format";
+import { DataRow } from "@/types";
 import { theme } from "@/theme";
-
-type QuickAction = {
-  name: string;
-  icon: IconName;
-  route: string;
-  permission: string;
-};
 export default function Home() {
-  const [hidden, setHidden] = useState(false);
-  const [customizing, setCustomizing] = useState(false);
+  const [hidden, setHidden] = useState(false),
+    [customizing, setCustomizing] = useState(false);
   const shortcuts = useDraft("home-shortcuts", () => ({
     hidden: [] as string[],
   }));
-  const query = useApi<DataRow>("/dashboard");
-  const weekly = useApi<DataRow>("/reports?period=WEEK", can("reports.view"));
-  const inventory = useApi<Product[]>("/inventory", can("inventory.view"));
-  const data = query.data;
+  const query = useApi<DataRow>("/dashboard"),
+    weekly = useApi<DataRow>("/reports?period=WEEK", can("reports.view")),
+    data = query.data;
   const actions = (
     [
       {
@@ -52,6 +37,12 @@ export default function Home() {
         icon: "package-variant-closed",
         route: "/products",
         permission: "inventory.view",
+      },
+      {
+        name: "Thêm sản phẩm",
+        icon: "package-variant-plus",
+        route: "/product-form",
+        permission: "products.manage",
       },
       {
         name: "Nhập hàng",
@@ -66,16 +57,16 @@ export default function Home() {
         permission: "partners.view",
       },
       {
-        name: "Trả hàng",
-        icon: "keyboard-return",
-        route: "/orders",
-        permission: "sales.return",
-      },
-      {
         name: "Công nợ",
         icon: "cash-clock",
         route: "/debts",
         permission: "debts.view",
+      },
+      {
+        name: "Trả hàng",
+        icon: "keyboard-return",
+        route: "/orders?filter=RETURNED",
+        permission: "sales.return",
       },
       {
         name: "Báo cáo",
@@ -89,457 +80,338 @@ export default function Home() {
         route: "/loyalty",
         permission: "loyalty.manage",
       },
-      {
-        name: "Thêm hàng",
-        icon: "package-variant-plus",
-        route: "/product-form",
-        permission: "products.manage",
-      },
-    ] satisfies QuickAction[]
-  ).filter((item) => can(item.permission));
+    ] as { name: string; icon: IconName; route: string; permission: string }[]
+  ).filter((a) => can(a.permission));
   return (
     <Page
-      background={<LandscapeBackground />}
+      edgeToEdge
+      refreshing={query.isRefetching}
       onRefresh={() => {
         void query.refetch();
         if (can("reports.view")) void weekly.refetch();
-        if (can("inventory.view")) void inventory.refetch();
       }}
-      refreshing={query.isRefetching}
+      background={
+        <View
+          style={{
+            height: 150,
+            overflow: "hidden",
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+            backgroundColor: theme.colors.hero,
+          }}
+        >
+          <LandscapeBackground />
+        </View>
+      }
     >
       <QueryState query={query} loadingSurface>
         <View
           style={{
-            backgroundColor: theme.colors.glassDark,
-            borderWidth: 1,
-            borderColor: theme.colors.glassBorder,
-            borderRadius: theme.radius.lg,
-            padding: 18,
+            marginHorizontal: 16,
+            marginTop: 12,
+            borderRadius: 14,
+            backgroundColor: theme.colors.paper,
+            padding: 16,
             gap: 12,
-            overflow: "hidden",
+            boxShadow: "0px 4px 12px rgba(0,0,0,0.10)",
           }}
         >
-          <View style={{ gap: 4, paddingBottom: 4 }}>
-            <AppText
-              variant="heading"
-              style={{
-                color: theme.colors.onPrimary,
-                fontSize: 24,
-                lineHeight: 34,
-                fontWeight: "700",
-              }}
-            >
-              Hôm nay tại cửa hàng
-            </AppText>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <AppText
               style={{
-                color: theme.colors.onHeroMuted,
-                fontSize: 14,
-                lineHeight: 21,
-              }}
-            >
-              Kho hàng, khách hàng và bán tại quầy.
-            </AppText>
-          </View>
-          <Row>
-            <AppText
-              style={{
-                color: theme.colors.onPrimary,
                 fontSize: 13,
                 fontWeight: "600",
+                color: theme.colors.muted,
+                flex: 1,
               }}
             >
-              DOANH THU HÔM NAY
+              DOANH THU NGÀY
             </AppText>
-            <IconButton
-              inverse
-              name={hidden ? "eye-off-outline" : "eye-outline"}
-              label={hidden ? "Hiện doanh thu" : "Ẩn doanh thu"}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={hidden ? "Hiện doanh thu" : "Ẩn doanh thu"}
               onPress={() => setHidden(!hidden)}
-            />
-          </Row>
+              style={{
+                minWidth: 44,
+                minHeight: 44,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon
+                name={hidden ? "eye-off-outline" : "eye-outline"}
+                color={theme.colors.muted}
+                size={20}
+              />
+            </Pressable>
+            {can("reports.view") ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Xem chi tiết doanh thu"
+                onPress={() => router.push("/reports")}
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <AppText style={{ color: theme.colors.primary, fontSize: 13 }}>
+                  Xem chi tiết ›
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
           <AppText
-            selectable
             variant="amount"
-            style={{
-              color: theme.colors.onPrimary,
-              fontSize: theme.type.display,
-              lineHeight: 44,
-              fontWeight: "700",
-            }}
+            style={{ fontSize: 32, lineHeight: 40, fontWeight: "700" }}
           >
             {hidden
               ? "••••••"
               : data?.sales
                 ? money(data.sales.revenue)
-                : "Theo quyền tài khoản"}
+                : "Theo quyền"}
           </AppText>
           {data?.sales ? (
             <View
               style={{
-                flexDirection: "row",
-                gap: 16,
                 borderTopWidth: 1,
-                borderTopColor: theme.colors.heroRule,
-                paddingTop: 12,
+                borderTopColor: theme.colors.border,
+                paddingTop: 14,
+                flexDirection: "row",
               }}
             >
-              <View style={{ flex: 1, gap: 3 }}>
-                <AppText
-                  style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
-                >
-                  Tiền thực thu
-                </AppText>
-                <AppText
-                  variant="amount"
-                  style={{
-                    color: theme.colors.onPrimary,
-                    fontSize: 17,
-                    fontWeight: "700",
-                  }}
-                >
-                  {hidden ? "•••" : money(data.sales.collected)}
-                </AppText>
-              </View>
-              <View style={{ flex: 1, gap: 3 }}>
-                <AppText
-                  style={{ color: theme.colors.onHeroMuted, fontSize: 13 }}
-                >
-                  Đơn bán hôm nay
-                </AppText>
-                <AppText
-                  variant="amount"
-                  style={{
-                    color: theme.colors.onPrimary,
-                    fontSize: 17,
-                    fontWeight: "700",
-                  }}
-                >
-                  {hidden ? "—" : number(data.sales.orders)}
-                </AppText>
-              </View>
-            </View>
-          ) : null}
-          {can("sales.create") ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Bán tại quầy"
-              onPress={() => router.push("/pos")}
-              style={({ pressed }) => ({
-                backgroundColor: theme.colors.glassAction,
-                borderWidth: 1,
-                borderColor: theme.colors.glassBorder,
-                opacity: pressed ? 0.8 : 1,
-                borderRadius: theme.radius.pill,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                flexDirection: "row",
-                gap: 12,
-                alignItems: "center",
-                minHeight: 60,
-              })}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: theme.radius.pill,
-                  backgroundColor: theme.colors.buttonFill,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon name="cash-register" size={22} />
-              </View>
-              <AppText
-                variant="heading"
-                style={{
-                  flex: 1,
-                  color: theme.colors.onPrimary,
-                  fontWeight: "700",
-                  fontSize: 19,
-                }}
-              >
-                Bán tại quầy
-              </AppText>
-              <Icon name="arrow-right" color={theme.colors.onPrimary} />
-            </Pressable>
-          ) : null}
-          <AppText style={{ color: theme.colors.onHeroMuted, fontSize: 12 }}>
-            Bán tại cửa hàng · Cập nhật{" "}
-            {data?.updatedAt
-              ? new Date(data.updatedAt).toLocaleTimeString("vi-VN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "…"}
-          </AppText>
-        </View>
-        {can("sales.view") ? (
-          <Panel glass>
-            <Caption>Đơn hàng trong 90 ngày</Caption>
-            <View style={{ flexDirection: "row", gap: 12 }}>
               {[
+                { label: "Đơn hôm nay", value: number(data.sales.orders) },
+                { label: "Tiền thực thu", value: money(data.sales.collected) },
                 {
-                  label: "Đang giao dịch",
-                  count: data?.jobs?.unpaid || 0,
-                  icon: "cash-clock" as IconName,
-                  color: theme.colors.warning,
-                  filter: "UNPAID",
+                  label: "Đã trả · 90 ngày",
+                  value: number(data.jobs?.returned ?? 0),
                 },
-                {
-                  label: "Hoàn thành",
-                  count: data?.jobs?.completed || 0,
-                  icon: "check-circle-outline" as IconName,
-                  color: theme.colors.success,
-                  filter: "PAID",
-                },
-              ].map((item, index) => (
-                <Pressable
-                  key={item.label}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  onPress={() =>
-                    router.push(("/orders?filter=" + item.filter) as Href)
-                  }
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    borderLeftWidth: index ? 1 : 0,
-                    borderLeftColor: theme.colors.border,
-                    backgroundColor: pressed
-                      ? theme.colors.buttonFill
-                      : "transparent",
-                    padding: 14,
-                    gap: 8,
-                    minHeight: 108,
-                  })}
+              ].map((s) => (
+                <View
+                  key={s.label}
+                  style={{ flex: 1, alignItems: "center", gap: 8 }}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <AppText
-                      variant="amount"
-                      style={{
-                        fontSize: 28,
-                        fontWeight: "700",
-                        color: theme.colors.text,
-                      }}
-                    >
-                      {hidden ? "—" : number(item.count)}
-                    </AppText>
-                    <Icon name={item.icon} color={item.color} size={22} />
-                  </View>
                   <AppText
                     style={{
-                      fontSize: 13,
+                      fontSize: 11,
+                      lineHeight: 17,
                       color: theme.colors.muted,
-                      fontWeight: "600",
+                      textAlign: "center",
                     }}
                   >
-                    {item.label}
+                    {s.label}
                   </AppText>
-                </Pressable>
+                  <AppText
+                    variant="amount"
+                    style={{ fontSize: 14, lineHeight: 21, fontWeight: "600" }}
+                  >
+                    {hidden ? "—" : s.value}
+                  </AppText>
+                </View>
               ))}
-            </View>
-          </Panel>
-        ) : null}
-        <Panel glass>
-          <SectionHeading
-            title="Thao tác nhanh"
-            action={customizing ? "Đóng" : "Tùy chỉnh"}
-            onPress={() => setCustomizing(!customizing)}
-          />
-          {customizing ? (
-            <View style={{ gap: 10 }}>
-              {actions.map((a) => (
-                <Toggle
-                  key={a.route}
-                  label={a.name}
-                  disabled={!shortcuts.ready}
-                  value={!(shortcuts.value.hidden ?? []).includes(a.route)}
-                  onChange={(on) =>
-                    shortcuts.setValue((v) => ({
-                      hidden: on
-                        ? v.hidden.filter((x) => x !== a.route)
-                        : [...v.hidden, a.route],
-                    }))
-                  }
-                />
-              ))}
-              <Notice error>{shortcuts.storageError}</Notice>
-              <Button
-                secondary
-                title="Khôi phục tất cả thao tác"
-                onPress={() => shortcuts.setValue({ hidden: [] })}
-              />
-              <Button
-                title="Lưu bố cục trên thiết bị"
-                disabled={!shortcuts.ready}
-                onPress={async () => {
-                  if (await shortcuts.save()) setCustomizing(false);
-                }}
-              />
             </View>
           ) : null}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {actions
-              .filter((a) => !(shortcuts.value.hidden ?? []).includes(a.route))
-              .map((action) => (
-                <Pressable
-                  key={action.name}
-                  accessibilityRole="button"
-                  accessibilityLabel={action.name}
-                  onPress={() => router.push(action.route as Href)}
-                  style={({ pressed }) => ({
-                    flexBasis: "46%",
-                    flexGrow: 1,
-                    minHeight: 64,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: 10,
-                    backgroundColor: pressed
-                      ? theme.colors.buttonFill
-                      : "transparent",
-                    borderRadius: theme.radius.pill,
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: theme.radius.pill,
-                      backgroundColor: theme.colors.buttonFill,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Icon
-                      name={action.icon}
-                      size={21}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <AppText
-                    style={{
-                      flex: 1,
-                      fontSize: 13,
-                      fontWeight: "600",
-                      lineHeight: 19,
-                    }}
-                  >
-                    {action.name}
-                  </AppText>
-                </Pressable>
-              ))}
-          </View>
-        </Panel>
-        {can("inventory.view") ? (
-          <Panel glass>
-            <SectionHeading
-              title="Hàng trong kho"
-              action="Xem tất cả"
-              onPress={() => router.push("/inventory")}
-            />
-            <Caption>Ảnh, giá bán và số lượng khả dụng.</Caption>
-            <QueryState query={inventory}>
-              {inventory.data?.length ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 12, paddingBottom: 4 }}
-                >
-                  {inventory.data.slice(0, 4).map((product) => (
-                    <View key={product.id} style={{ width: 168 }}>
-                      <ProductCard
-                        product={product}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/product",
-                            params: { id: product.id },
-                          })
-                        }
-                      />
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <Caption>Chưa có hàng hóa trong kho đang chọn.</Caption>
-              )}
-            </QueryState>
-          </Panel>
-        ) : null}
-        {can("reports.view") && !hidden ? (
-          <Panel glass>
-            <SectionHeading
-              title="Doanh thu tuần này"
-              action="Chi tiết"
-              onPress={() => router.push("/reports")}
-            />
-            <QueryState query={weekly}>
-              {weekly.data ? (
-                <RevenueChart points={weekly.data.series} period="WEEK" />
-              ) : null}
-            </QueryState>
-          </Panel>
-        ) : null}
-        {can("inventory.view") ? (
-          <Panel glass>
-            <SectionHeading
-              title="Theo dõi kho"
-              action="Mở kho"
-              onPress={() => router.push("/inventory")}
-            />
-            <Row>
-              <Caption>Phiếu cần duyệt</Caption>
-              <Label numeric tone={data?.pending ? "warning" : undefined}>
-                {number(data?.pending || 0)}
-              </Label>
-            </Row>
-            <Row>
-              <Caption>Lô cận hạn trong 90 ngày</Caption>
-              <Label
-                numeric
-                tone={data?.stock?.expiring ? "warning" : undefined}
-              >
-                {number(data?.stock?.expiring || 0)}
-              </Label>
-            </Row>
-            <Row>
-              <Caption>Lô đã hết hạn</Caption>
-              <Label numeric tone={data?.stock?.expired ? "danger" : undefined}>
-                {number(data?.stock?.expired || 0)}
-              </Label>
-            </Row>
-          </Panel>
-        ) : null}
-        {data?.debts && can("debts.view") ? (
-          <Panel glass>
-            <SectionHeading
-              title="Công nợ cửa hàng"
-              action="Xem sổ nợ"
-              onPress={() => router.push("/debts")}
-            />
-            <Row>
-              <Caption>Phải thu khách hàng</Caption>
-              <Label numeric tone="warning">
-                {hidden ? "•••" : money(data.debts.receivable)}
-              </Label>
-            </Row>
-            <Row>
-              <Caption>Phải trả nhà cung cấp</Caption>
-              <Label numeric>
-                {hidden ? "•••" : money(data.debts.payable)}
-              </Label>
-            </Row>
-          </Panel>
-        ) : null}
+        </View>
       </QueryState>
+      {can("sales.create") ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Bán tại quầy"
+          onPress={() => router.push("/pos")}
+          style={({ pressed }) => ({
+            marginHorizontal: 16,
+            minHeight: 62,
+            backgroundColor: pressed
+              ? theme.colors.buttonPressed
+              : theme.colors.buttonFill,
+            borderRadius: 10,
+            paddingHorizontal: 18,
+            flexDirection: "row",
+            gap: 12,
+            alignItems: "center",
+          })}
+        >
+          <Icon name="store-plus-outline" size={29} />
+          <AppText
+            style={{
+              flex: 1,
+              fontSize: 18,
+              fontWeight: "600",
+              color: theme.colors.primary,
+            }}
+          >
+            Bán tại quầy
+          </AppText>
+          <Icon name="chevron-right" />
+        </Pressable>
+      ) : null}
+      <StoreSection>
+        <SectionHeading
+          title="THAO TÁC NHANH"
+          action={customizing ? "Đóng" : "Tùy chỉnh"}
+          onPress={() => setCustomizing(!customizing)}
+        />
+        {customizing ? (
+          <View style={{ gap: 10 }}>
+            {actions.map((a) => (
+              <Toggle
+                key={a.route}
+                label={a.name}
+                value={!(shortcuts.value.hidden ?? []).includes(a.route)}
+                disabled={!shortcuts.ready}
+                onChange={(on) =>
+                  shortcuts.setValue((v) => ({
+                    hidden: on
+                      ? v.hidden.filter((x) => x !== a.route)
+                      : [...v.hidden, a.route],
+                  }))
+                }
+              />
+            ))}
+            <Notice error>{shortcuts.storageError}</Notice>
+            <Button
+              title="Lưu bố cục"
+              onPress={async () => {
+                if (await shortcuts.save()) setCustomizing(false);
+              }}
+            />
+            <Button
+              secondary
+              title="Khôi phục tất cả thao tác"
+              onPress={() => shortcuts.setValue({ hidden: [] })}
+            />
+          </View>
+        ) : null}
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            paddingVertical: 10,
+          }}
+        >
+          {actions
+            .filter((a) => !(shortcuts.value.hidden ?? []).includes(a.route))
+            .map((a) => (
+              <Pressable
+                key={a.route}
+                accessibilityRole="button"
+                accessibilityLabel={a.name}
+                onPress={() => router.push(a.route as Href)}
+                style={({ pressed }) => ({
+                  width: "25%",
+                  minHeight: 112,
+                  alignItems: "center",
+                  paddingHorizontal: 3,
+                  gap: 9,
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <View
+                  style={{
+                    width: 49,
+                    height: 49,
+                    borderRadius: 25,
+                    backgroundColor: theme.colors.soft,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon name={a.icon} size={27} />
+                </View>
+                <AppText
+                  style={{ fontSize: 12, lineHeight: 18, textAlign: "center" }}
+                >
+                  {a.name}
+                </AppText>
+              </Pressable>
+            ))}
+        </View>
+      </StoreSection>
+      <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+        <SectionHeading
+          title="ĐƠN HÀNG CHỜ XỬ LÝ"
+          action="90 ngày gần nhất"
+          onPress={() => router.push("/orders")}
+        />
+      </View>
+      <View
+        style={{
+          marginHorizontal: 16,
+          borderRadius: 10,
+          overflow: "hidden",
+          backgroundColor: theme.colors.paper,
+        }}
+      >
+        {can("inventory.view") ? (
+          <StoreRow
+            title="Phiếu chờ duyệt"
+            icon="clipboard-check-outline"
+            trailing={
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              >
+                <Label numeric>{number(data?.pending ?? 0)}</Label>
+                <Icon name="chevron-right" color={theme.colors.control} />
+              </View>
+            }
+            onPress={() => router.push("/documents")}
+          />
+        ) : null}
+        {can("sales.view") ? (
+          <>
+            <StoreRow
+              title="Chờ thanh toán"
+              icon="cash-clock"
+              trailing={
+                <Label numeric>
+                  {hidden ? "—" : number(data?.jobs?.unpaid ?? 0)}
+                </Label>
+              }
+              onPress={() => router.push("/orders?filter=UNPAID")}
+            />
+            <StoreRow
+              title="Đã hoàn thành"
+              icon="clipboard-check-outline"
+              trailing={
+                <Label numeric>
+                  {hidden ? "—" : number(data?.jobs?.completed ?? 0)}
+                </Label>
+              }
+              onPress={() => router.push("/orders?filter=PAID")}
+            />
+          </>
+        ) : null}
+        {can("inventory.view") ? (
+          <StoreRow
+            title="Lô cận hạn"
+            icon="calendar-alert"
+            trailing={
+              <Label numeric>{number(data?.stock?.expiring ?? 0)}</Label>
+            }
+            onPress={() => router.push("/inventory?filter=soon")}
+          />
+        ) : null}
+      </View>
+      {can("reports.view") && !hidden ? (
+        <StoreSection>
+          <SectionHeading
+            title="Doanh thu tuần"
+            action="Chi tiết"
+            onPress={() => router.push("/reports")}
+          />
+          <QueryState query={weekly}>
+            {weekly.data ? (
+              <RevenueChart points={weekly.data.series} period="WEEK" />
+            ) : null}
+          </QueryState>
+        </StoreSection>
+      ) : null}
+      {can("debts.view") ? (
+        <StoreSection title="Công nợ cửa hàng">
+          <StoreRow
+            title="Xem sổ công nợ"
+            icon="book-open-outline"
+            onPress={() => router.push("/debts")}
+          />
+        </StoreSection>
+      ) : null}
     </Page>
   );
 }

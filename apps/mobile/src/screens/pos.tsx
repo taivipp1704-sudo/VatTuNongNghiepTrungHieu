@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, View } from "react-native";
+import { Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
+import { BottomSheet } from "@expo/ui";
+import { SearchBar, StoreRow, StoreSection } from "@/components/store-ui";
 import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
@@ -56,6 +60,13 @@ export default function Pos() {
   const warehouse = useWarehouse((state) => state.warehouseId);
   const appliedContext = useRef("");
   const [showCustomer, setShowCustomer] = useState(false);
+  const [productsOpen, setProductsOpen] = useState(false),
+    [paymentOpen, setPaymentOpen] = useState(false),
+    [discountOpen, setDiscountOpen] = useState(false),
+    [priceOpen, setPriceOpen] = useState(false),
+    [noteOpen, setNoteOpen] = useState(false),
+    [optionsOpen, setOptionsOpen] = useState(false);
+  const { height } = useWindowDimensions();
   const [editLine, setEditLine] = useState("");
   const [autoPrint, setAutoPrint] = useState(false);
   const [discountMode, setDiscountMode] = useState("AMOUNT"),
@@ -358,6 +369,7 @@ export default function Pos() {
     );
     if (response) {
       setResult(response);
+      setPaymentOpen(false);
       setDiscountMode("AMOUNT");
       setPercent("");
       setValue({
@@ -417,89 +429,71 @@ export default function Pos() {
     command.pending;
   const footer = (
     <View
-      style={{
-        flexDirection: "row",
-        gap: 10,
-        alignItems: "center",
-        maxWidth: 720,
-        width: "100%",
-        alignSelf: "center",
-      }}
+      style={{ maxWidth: 720, width: "100%", alignSelf: "center", gap: 12 }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Lưu giỏ nháp trên thiết bị"
-        disabled={!draft.ready}
-        onPress={() => void draft.save()}
-        style={{
-          width: 60,
-          minHeight: 62,
-          borderRadius: theme.radius.pill,
-          backgroundColor: theme.colors.soft,
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 3,
-        }}
-      >
-        <Icon name="content-save-outline" />
-        <AppText style={{ fontSize: 10, lineHeight: 16 }}>Lưu tạm</AppText>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        testID="checkout-submit"
-        accessibilityLabel="Ghi nhận đơn bán"
-        disabled={disabled}
-        onPress={() => void checkout()}
-        style={({ pressed }) => ({
-          flex: 1,
-          minHeight: 62,
-          borderRadius: theme.radius.pill,
-          borderWidth: 1,
-          borderColor: disabled ? theme.colors.border : theme.colors.control,
-          backgroundColor: disabled
-            ? theme.colors.neutral
-            : pressed
-              ? theme.colors.buttonPressed
-              : theme.colors.buttonFill,
-          paddingHorizontal: 16,
-          paddingVertical: 9,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 10,
-        })}
-      >
+      <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+        <AppText style={{ fontSize: 16 }}>Tạm tính</AppText>
         <View style={{ flex: 1 }}>
-          <AppText
-            style={{
-              fontSize: 11,
-              fontWeight: "600",
-              lineHeight: 18,
-              color: disabled ? theme.colors.muted : theme.colors.primary,
-            }}
-          >
-            {command.pending
-              ? "ĐANG XỬ LÝ…"
-              : autoPrint && can("invoices.view")
-                ? "THANH TOÁN & IN"
-                : "GHI NHẬN ĐƠN BÁN"}
-          </AppText>
-          <AppText
-            variant="amount"
-            style={{
-              fontSize: 21,
-              fontWeight: "700",
-              lineHeight: 28,
-              color: disabled ? theme.colors.muted : theme.colors.primary,
-            }}
-          >
-            {money(Math.max(total, 0))}
+          <AppText style={{ fontSize: 12, color: theme.colors.primary }}>
+            {number(value.lines.reduce((a, l) => a + l.quantity, 0))} sản phẩm
           </AppText>
         </View>
-        <Icon
-          name={autoPrint ? "printer-outline" : "arrow-right"}
-          color={disabled ? theme.colors.muted : theme.colors.primary}
-        />
-      </Pressable>
+        <AppText variant="amount" style={{ fontSize: 22, fontWeight: "600" }}>
+          {money(Math.max(total, 0))}
+        </AppText>
+      </View>
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Lưu giỏ nháp trên thiết bị"
+          disabled={!draft.ready}
+          onPress={() => void draft.save()}
+          style={{
+            width: 100,
+            minHeight: 54,
+            borderWidth: 1,
+            borderColor: theme.colors.primary,
+            borderRadius: 6,
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 3,
+          }}
+        >
+          <Icon name="tray-arrow-down" size={20} />
+          <AppText style={{ fontSize: 12, color: theme.colors.primary }}>
+            Lưu tạm
+          </AppText>
+        </Pressable>
+        <Pressable
+          testID="checkout-submit"
+          accessibilityRole="button"
+          accessibilityLabel="Mở thanh toán"
+          disabled={disabled}
+          onPress={() => setPaymentOpen(true)}
+          style={({ pressed }) => ({
+            flex: 1,
+            minHeight: 54,
+            borderRadius: 6,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: disabled
+              ? theme.colors.neutral
+              : pressed
+                ? theme.colors.buttonPressed
+                : theme.colors.buttonFill,
+          })}
+        >
+          <AppText
+            style={{
+              fontSize: 17,
+              fontWeight: "600",
+              color: disabled ? theme.colors.muted : theme.colors.primary,
+            }}
+          >
+            Thanh toán
+          </AppText>
+        </Pressable>
+      </View>
     </View>
   );
   const clear = async () => {
@@ -543,151 +537,824 @@ export default function Pos() {
     update({ redeemPoints: String(maximum) });
   };
   return (
-    <Page footer={footer}>
-      <Notice error>{draft.storageError}</Notice>
-      {result ? (
-        <Panel>
-          <Badge label="Đã ghi nhận đơn" tone="positive" />
-          <Label>
-            {result.code} · {money(result.total)}
-          </Label>
-          <Caption>
-            Cộng {number(result.loyalty_earned || 0)} điểm
-            {result.loyalty_potential > result.loyalty_earned
-              ? " · Còn điểm chờ thu tiền"
-              : ""}{" "}
-            · Còn nợ {money(result.debt)}
-          </Caption>
-          {can("invoices.view") ? (
-            <Button
-              title="In / chia sẻ lại phiếu"
-              secondary
-              onPress={() => void printOrder(result)}
-              pending={printBusy}
-            />
-          ) : null}
-        </Panel>
-      ) : null}
-      <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}>
-        <View style={{ flex: 1 }}>
-          <Field
-            label="Tìm hàng hoặc mã vạch"
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Tên SP, mã SKU hoặc quét mã"
-          />
-        </View>
-        <IconButton
-          name="barcode-scan"
-          label="Quét mã sản phẩm"
-          onPress={() =>
-            router.push({ pathname: "/scan", params: { target: "pos" } })
-          }
-        />
-      </View>
-      {!value.lines.length || search.trim() ? (
-        <Panel>
-          <QueryState query={inventory}>
-            {filtered.map((product) => (
+    <View style={{ flex: 1, backgroundColor: theme.colors.paper }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Page
+        edgeToEdge
+        footer={footer}
+        header={
+          <SafeAreaView
+            edges={["top"]}
+            style={{ backgroundColor: theme.colors.paper }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 4,
+                paddingVertical: 8,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.border,
+              }}
+            >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={"Thêm " + product.sku}
-                key={product.id}
-                onPress={() => {
-                  add(product);
-                  setSearch("");
-                }}
-                disabled={!draft.ready || product.available <= 0}
+                accessibilityLabel="Đóng bán hàng"
+                onPress={() => router.back()}
                 style={{
-                  flexDirection: "row",
-                  gap: 12,
-                  paddingVertical: 10,
+                  width: 40,
+                  minHeight: 44,
                   alignItems: "center",
-                  borderBottomWidth: 1,
-                  borderBottomColor: theme.colors.border,
+                  justifyContent: "center",
                 }}
               >
-                <ProductPicture product={product} size={48} />
-                <View style={{ flex: 1 }}>
-                  <AppText style={{ fontSize: 14, fontWeight: "600" }}>
-                    {product.name}
-                  </AppText>
-                  <Caption>
-                    {money(product.price_pack)} / {product.pack_unit} · Tồn{" "}
-                    {number(product.available / product.pack_factor)}
-                  </Caption>
-                </View>
-                <Icon name="plus-circle-outline" />
+                <Icon name="close" color={theme.colors.muted} size={27} />
               </Pressable>
-            ))}
-          </QueryState>
-          {inventory.data && !filtered.length ? (
-            <Caption>Không có mặt hàng phù hợp.</Caption>
-          ) : null}
-        </Panel>
-      ) : null}
-      <Panel>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Chọn hoặc đổi khách hàng"
-          onPress={() => setShowCustomer(!showCustomer)}
-          style={{
-            flexDirection: "row",
-            gap: 10,
-            alignItems: "center",
-            minHeight: 48,
-          }}
-        >
-          <Avatar name={customer?.name || "Khách lẻ"} />
-          <View style={{ flex: 1 }}>
-            <Row>
-              <AppText style={{ fontSize: 14, fontWeight: "600" }}>
-                {customer?.name || "Khách lẻ"}
-              </AppText>
-              {customer ? (
-                <Badge label={memberTier(customer, settings)} />
-              ) : null}
-            </Row>
+              <View style={{ flex: 1 }}>
+                <SearchBar
+                  label="Tìm hàng hoặc mã vạch"
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Tìm và thêm sản phẩm"
+                  onScan={() =>
+                    router.push({
+                      pathname: "/scan",
+                      params: { target: "pos" },
+                    })
+                  }
+                />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Giỏ tạm giữ"
+                onPress={() => setShowHeld(true)}
+                style={{
+                  width: 44,
+                  minHeight: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon
+                  name="clipboard-clock-outline"
+                  color={theme.colors.muted}
+                />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Tùy chọn bán hàng"
+                onPress={() => setOptionsOpen(true)}
+                style={{
+                  width: 40,
+                  minHeight: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="dots-vertical" color={theme.colors.muted} />
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        }
+      >
+        <Notice error>{draft.storageError}</Notice>
+        {result ? (
+          <Panel>
+            <Badge label="Đã ghi nhận đơn" tone="positive" />
+            <Label>
+              {result.code} · {money(result.total)}
+            </Label>
             <Caption>
-              {customer?.phone || "Chọn hồ sơ để tích điểm hoặc ghi nợ"}
+              Cộng {number(result.loyalty_earned || 0)} điểm
+              {result.loyalty_potential > result.loyalty_earned
+                ? " · Còn điểm chờ thu tiền"
+                : ""}{" "}
+              · Còn nợ {money(result.debt)}
             </Caption>
+            {can("invoices.view") ? (
+              <Button
+                title="In / chia sẻ lại phiếu"
+                secondary
+                onPress={() => void printOrder(result)}
+                pending={printBusy}
+              />
+            ) : null}
+          </Panel>
+        ) : null}
+
+        {productsOpen || search.trim() ? (
+          <StoreSection>
+            <QueryState query={inventory}>
+              {filtered.map((product) => (
+                <Pressable
+                  key={product.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={"Thêm " + product.sku}
+                  disabled={!draft.ready || product.available <= 0}
+                  onPress={() => {
+                    add(product);
+                    setSearch("");
+                    setProductsOpen(false);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    gap: 12,
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.colors.border,
+                    alignItems: "center",
+                  }}
+                >
+                  <ProductPicture product={product} size={48} />
+                  <View style={{ flex: 1 }}>
+                    <AppText
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "500",
+                        lineHeight: 22,
+                      }}
+                    >
+                      {product.name}
+                    </AppText>
+                    <Caption>
+                      {money(priceOf(product, "PACK"))} / {product.pack_unit} ·
+                      Tồn {number(product.available / product.pack_factor)}
+                    </Caption>
+                  </View>
+                  <Icon name="plus-circle-outline" />
+                </Pressable>
+              ))}
+            </QueryState>
+            {inventory.data && !filtered.length ? (
+              <Caption>Không có mặt hàng phù hợp.</Caption>
+            ) : null}
+          </StoreSection>
+        ) : null}
+        {!value.lines.length && !productsOpen && !search.trim() ? (
+          <View
+            style={{
+              backgroundColor: theme.colors.paper,
+              minHeight: 205,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              padding: 20,
+            }}
+          >
+            <View
+              style={{
+                width: 90,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: theme.colors.canvas,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon
+                name="clipboard-plus-outline"
+                size={70}
+                color={theme.colors.control}
+              />
+            </View>
+            <AppText
+              style={{
+                fontSize: 14,
+                lineHeight: 22,
+                textAlign: "center",
+                color: theme.colors.muted,
+              }}
+            >
+              Đơn hàng của bạn chưa có sản phẩm nào!
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Chọn sản phẩm"
+              onPress={() => setProductsOpen(true)}
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
+              <AppText style={{ fontSize: 17, color: theme.colors.primary }}>
+                Chọn sản phẩm
+              </AppText>
+            </Pressable>
           </View>
-          <Icon name="swap-horizontal" />
-        </Pressable>
-        <Panel>
-          <Select
-            label="Bảng giá bán"
-            value={book}
-            onChange={(v) => void changeBook(v)}
-            options={[
-              { value: "RETAIL", label: "Giá bán lẻ" },
-              ...(can("sales.wholesale")
-                ? [{ value: "WHOLESALE", label: "Giá bán sỉ" }]
-                : []),
-            ]}
+        ) : null}
+        {value.lines.length ? (
+          <View style={{ backgroundColor: theme.colors.paper }}>
+            <View style={{ paddingHorizontal: 16 }}>
+
+              <SectionHeading
+                title={"Giỏ hàng · " + value.lines.length + " mặt hàng"}
+                action="Làm mới"
+                onPress={() => void clear()}
+              />
+              {!value.lines.length ? (
+                <Caption>Chọn hoặc quét hàng hóa để bắt đầu đơn bán.</Caption>
+              ) : null}
+              {value.lines.map((line, index) => {
+                const product = inventory.data?.find(
+                  (item) => item.id === line.productId,
+                );
+                const lineTotal = Math.round(line.quantity * line.unitPrice);
+                return (
+                  <View
+                    key={line.productId}
+                    style={{
+                      padding: 16,
+                      gap: 10,
+                      backgroundColor: theme.colors.paper,
+                      borderBottomWidth: 1,
+                      borderBottomColor: theme.colors.border,
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <ProductPicture
+                        product={
+                          product || { name: line.name, category: "Vật tư" }
+                        }
+                        size={56}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <AppText
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "600",
+                            lineHeight: 22,
+                          }}
+                        >
+                          {line.name}
+                        </AppText>
+                        <Caption>
+                          {line.unitLabel} · Tồn{" "}
+                          {number(product?.available || 0)} {product?.base_unit}
+                        </Caption>
+                      </View>
+                      <IconButton
+                        name="close"
+                        label={"Bỏ " + line.name}
+                        onPress={() =>
+                          update({
+                            lines: value.lines.filter((_, i) => i !== index),
+                          })
+                        }
+                      />
+                    </View>
+                    <Row>
+                      <RateChip rate={product?.loyalty_rate || 0}>
+                        {product?.loyalty_rate
+                          ? " (+" +
+                            money(
+                              Math.round(
+                                (lineTotal * product.loyalty_rate) / 100,
+                              ),
+                            ) +
+                            ")"
+                          : " (không tích điểm)"}
+                      </RateChip>
+                      <AppText
+                        style={{
+                          fontSize: 17,
+                          fontWeight: "700",
+                          color: theme.colors.primary,
+                        }}
+                      >
+                        {money(lineTotal)}
+                      </AppText>
+                    </Row>
+                    <Caption>
+                      {money(line.unitPrice)} / {line.unitLabel} · Giá trị tích
+                      lũy trước chiết khấu
+                    </Caption>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: 8,
+                        backgroundColor: theme.colors.soft,
+                        borderRadius: 10,
+                      }}
+                    >
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={"Chỉnh dòng " + line.name}
+                        onPress={() =>
+                          setEditLine(
+                            editLine === line.productId ? "" : line.productId,
+                          )
+                        }
+                        style={{ minHeight: 44, justifyContent: "center" }}
+                      >
+                        <AppText
+                          style={{ fontSize: 12, color: theme.colors.muted }}
+                        >
+                          Số lượng / đơn vị{" "}
+                          <Icon name="pencil-outline" size={13} />
+                        </AppText>
+                      </Pressable>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 14,
+                        }}
+                      >
+                        <IconButton
+                          name="minus"
+                          label={"Giảm " + line.name}
+                          onPress={() =>
+                            changeLine(index, {
+                              quantity: Math.max(1, line.quantity - 1),
+                            })
+                          }
+                        />
+                        <AppText style={{ fontSize: 16, fontWeight: "700" }}>
+                          {number(line.quantity)}
+                        </AppText>
+                        <IconButton
+                          name="plus"
+                          label={"Tăng " + line.name}
+                          onPress={() =>
+                            product
+                              ? add(product)
+                              : changeLine(index, {
+                                  quantity: line.quantity + 1,
+                                })
+                          }
+                        />
+                      </View>
+                    </View>
+                    {editLine === line.productId ? (
+                      <>
+                        <Select
+                          label="Đơn vị bán"
+                          value={line.unit}
+                          onChange={(unit) =>
+                            changeLine(index, {
+                              unit: unit as CartLine["unit"],
+                              unitLabel:
+                                unit === "PACK"
+                                  ? product?.pack_unit
+                                  : product?.base_unit,
+                              unitPrice: priceOf(product, unit, line.unitPrice),
+                              quantity: 1,
+                            })
+                          }
+                          options={[
+                            {
+                              value: "PACK",
+                              label: product?.pack_unit || "Đóng gói",
+                            },
+                            {
+                              value: "BASE",
+                              label: product?.base_unit || "Cơ sở",
+                            },
+                          ]}
+                        />
+                        <Field
+                          label={"Số lượng " + line.name}
+                          value={String(line.quantity)}
+                          onChangeText={(text) =>
+                            changeLine(index, { quantity: Number(text) })
+                          }
+                          keyboardType="decimal-pad"
+                        />
+                        {can("sales.price.edit") ? (
+                          <Field
+                            label={"Giá bán " + line.name}
+                            value={String(line.unitPrice)}
+                            onChangeText={(text) =>
+                              changeLine(index, { unitPrice: Number(text) })
+                            }
+                            keyboardType="numeric"
+                          />
+                        ) : null}
+                      </>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+        <View style={{ gap: 0 }}>
+          <StoreRow
+            title="Áp dụng chiết khấu"
+            icon="gift-outline"
+            onPress={
+              can("sales.discount")
+                ? () => setDiscountOpen(!discountOpen)
+                : undefined
+            }
           />
-          {customer?.profile?.priceBook === "WHOLESALE" &&
-          book !== "WHOLESALE" &&
-          can("sales.wholesale") ? (
-            <Button
-              secondary
-              title="Dùng bảng giá sỉ theo hồ sơ khách"
-              onPress={() => void changeBook("WHOLESALE")}
+          <StoreSection>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <AppText>Tổng tiền hàng</AppText>
+              <AppText variant="amount">{money(subtotal)}</AppText>
+            </View>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <AppText style={{ color: theme.colors.primary }}>
+                Chiết khấu
+              </AppText>
+              <AppText variant="amount">{money(discount)}</AppText>
+            </View>
+            {quoteCurrent && quote.data!.loyaltyDiscount > 0 ? (
+              <Caption>
+                Giảm bằng điểm: {money(quote.data!.loyaltyDiscount)}
+              </Caption>
+            ) : null}
+            {discountOpen ? (
+              <>
+                {can("sales.discount") ? (
+                  <View style={{ gap: 10 }}>
+                    <Select
+                      label="Chiết khấu / Ưu đãi"
+                      value={discountMode}
+                      onChange={(mode) => {
+                        setDiscountMode(mode);
+                        setPercent("");
+                        update({ discount: "" });
+                      }}
+                      options={[
+                        { value: "AMOUNT", label: "Số tiền (đồng)" },
+                        { value: "PERCENT", label: "Phần trăm (%)" },
+                      ]}
+                    />
+                    <Field
+                      label={
+                        discountMode === "PERCENT"
+                          ? "Chiết khấu toàn đơn (%)"
+                          : "Chiết khấu toàn đơn (đồng)"
+                      }
+                      value={
+                        discountMode === "PERCENT" ? percent : value.discount
+                      }
+                      onChangeText={(v) =>
+                        discountMode === "PERCENT"
+                          ? setPercent(v)
+                          : update({ discount: v })
+                      }
+                      keyboardType="decimal-pad"
+                      placeholder="0"
+                    />
+                    {customer?.profile?.discountPercent &&
+                    customer.profile.discountPercent > 0 ? (
+                      <Button
+                        secondary
+                        title={
+                          "Áp dụng đề xuất khách: " +
+                          customer.profile.discountPercent +
+                          "%"
+                        }
+                        onPress={() => {
+                          setDiscountMode("PERCENT");
+                          setPercent(String(customer.profile!.discountPercent));
+                        }}
+                      />
+                    ) : null}
+                  </View>
+                ) : (
+                  <Row>
+                    <Caption>Chiết khấu hóa đơn</Caption>
+                    <Label numeric>{money(discount)}</Label>
+                  </Row>
+                )}
+              </>
+            ) : null}
+          </StoreSection>
+        </View>
+        <View>
+          <StoreSection title="Khách hàng">
+            <StoreRow
+              title={customer?.name || "Thêm khách hàng"}
+              icon="account-plus"
+              subtitle={customer?.phone}
+              onPress={() => setShowCustomer(!showCustomer)}
+            />
+            {showCustomer ? (
+              <View style={{ gap: 10 }}>
+                <Field
+                  label="Tìm tên, SĐT hoặc mã khách"
+                  value={customerSearch}
+                  onChangeText={setCustomerSearch}
+                />
+                <Select
+                  label="Khách hàng"
+                  value={value.customerId}
+                  onChange={(customerId) => {
+                    update({ customerId, redeemPoints: "" });
+                    setShowCustomer(false);
+                  }}
+                  options={[
+                    { value: "", label: "Khách lẻ — thanh toán đủ" },
+                    ...(partners.data || [])
+                      .filter(
+                        (item) =>
+                          item.kind === "CUSTOMER" &&
+                          item.profile?.active !== false,
+                      )
+                      .map((item) => ({
+                        value: item.id,
+                        label: item.name + " · " + item.phone,
+                      })),
+                  ]}
+                />
+              </View>
+            ) : null}
+
+            <StoreRow
+              title={book === "WHOLESALE" ? "Giá bán sỉ" : "Giá bán lẻ"}
+              icon="tag-outline"
+              onPress={() => setPriceOpen(!priceOpen)}
+            />
+            {priceOpen ? (
+              <View style={{ gap: 10 }}>
+                <Select
+                  label="Bảng giá bán"
+                  value={book}
+                  onChange={(v) => void changeBook(v)}
+                  options={[
+                    { value: "RETAIL", label: "Giá bán lẻ" },
+                    ...(can("sales.wholesale")
+                      ? [{ value: "WHOLESALE", label: "Giá bán sỉ" }]
+                      : []),
+                  ]}
+                />
+                {customer?.profile?.priceBook === "WHOLESALE" &&
+                book !== "WHOLESALE" &&
+                can("sales.wholesale") ? (
+                  <Button
+                    secondary
+                    title="Dùng giá sỉ theo hồ sơ khách"
+                    onPress={() => void changeBook("WHOLESALE")}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+          </StoreSection>
+          {customer && settings?.enabled ? (
+            <Panel>
+              {settings.redeemEnabled && can("loyalty.redeem") ? (
+                <>
+                  <Toggle
+                    label="Dùng điểm trừ tiền"
+                    value={Number(value.redeemPoints) > 0}
+                    onChange={toggleRedeem}
+                  />
+                  {Number(value.redeemPoints) > 0 ? (
+                    <Field
+                      label="Số điểm dùng giảm tiền"
+                      value={value.redeemPoints || ""}
+                      onChangeText={(redeemPoints) => update({ redeemPoints })}
+                      keyboardType="numeric"
+                    />
+                  ) : null}
+                  <Caption>
+                    1 điểm = {money(settings.pointValue)} · Tối đa{" "}
+                    {rateLabel(settings.maxRedeemPercent)} giá trị đơn
+                  </Caption>
+                </>
+              ) : (
+                <Caption>
+                  {settings.redeemEnabled
+                    ? "Tài khoản chưa được cấp quyền đổi điểm."
+                    : "Theo dõi tích lũy / hạng VIP, chưa đổi điểm trừ tiền."}
+                </Caption>
+              )}
+              <View
+                style={{
+                  backgroundColor: theme.colors.successBg,
+                  padding: 10,
+                  borderRadius: 8,
+                }}
+              >
+                <Row>
+                  <AppText
+                    style={{ fontSize: 12, color: theme.colors.success }}
+                  >
+                    Tích lũy dự kiến cả đơn
+                  </AppText>
+                  <AppText
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: theme.colors.success,
+                    }}
+                  >
+                    +{number(quoteCurrent ? quote.data!.potentialPoints : 0)}{" "}
+                    điểm
+                  </AppText>
+                </Row>
+              </View>
+            </Panel>
+          ) : Number(value.redeemPoints) > 0 ? (
+            <Field
+              label="Số điểm dùng giảm tiền"
+              value={value.redeemPoints}
+              onChangeText={(redeemPoints) => update({ redeemPoints })}
+              keyboardType="numeric"
             />
           ) : null}
+        </View>
+        {can("invoices.view") ? (
+          <StoreRow
+            title="Hóa đơn điện tử"
+            icon="file-document-outline"
+            subtitle="Chưa cấu hình nhà cung cấp"
+            onPress={() => router.push("/connections")}
+          />
+        ) : null}
+        <View>
+          <StoreRow
+            title={value.note ? "Ghi chú: " + value.note : "Thêm ghi chú"}
+            icon="pencil-outline"
+            onPress={() => setNoteOpen(!noteOpen)}
+          />
+          {noteOpen ? (
+            <StoreSection>
+              <Field
+                label="Ghi chú đơn"
+                value={value.note || ""}
+                onChangeText={(note) => update({ note })}
+                multiline
+              />
+            </StoreSection>
+          ) : null}
+        </View>
+        <Notice error>{quote.error?.message || command.error}</Notice>
+        {value.lines.length > 0 && (!quoteCurrent || quote.isError) ? (
           <Button
             secondary
-            title={
-              showHeld
-                ? "Đóng giỏ tạm giữ"
-                : "Giỏ tạm giữ (" +
-                  (held.value.items ?? []).filter(
-                    (x) => x.cart.warehouseId === value.warehouseId,
-                  ).length +
-                  ")"
-            }
-            onPress={() => setShowHeld(!showHeld)}
+            title="Tính lại điểm và tổng tiền"
+            pending={quote.isFetching}
+            onPress={() => void quote.refetch()}
           />
+        ) : null}
+      </Page>
+      <BottomSheet
+        isPresented={optionsOpen}
+        onDismiss={() => setOptionsOpen(false)}
+        containerColor={theme.colors.paper}
+        contentPadding={{ left: 16, right: 16, top: 8, bottom: 16 }}
+      >
+        <View style={{ gap: 14 }}>
+          <Label big>Tùy chọn bán hàng</Label>
+          <Select
+            label="Kho xuất hàng"
+            value={value.warehouseId}
+            onChange={async (warehouseId) => {
+              if (
+                value.lines.length &&
+                !(await confirmAction(
+                  "Đổi kho",
+                  "Bỏ các dòng hàng để chọn lại trong kho mới?",
+                ))
+              )
+                return;
+              update({ warehouseId, lines: [], requestKey: newKey() });
+              setOptionsOpen(false);
+            }}
+            options={(bootstrap.data?.warehouses ?? []).map((w) => ({
+              value: w.id,
+              label: w.name,
+            }))}
+          />
+          <Button
+            secondary
+            title="Làm mới giỏ hàng"
+            disabled={command.pending}
+            onPress={async () => {
+              await clear();
+              setOptionsOpen(false);
+            }}
+          />
+          <Button
+            secondary
+            title="Đóng tùy chọn"
+            onPress={() => setOptionsOpen(false)}
+          />
+        </View>
+      </BottomSheet>
+      <BottomSheet
+        isPresented={paymentOpen}
+        onDismiss={() => setPaymentOpen(false)}
+        containerColor={theme.colors.paper}
+        contentPadding={{ left: 0, right: 0, top: 8, bottom: 16 }}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          style={{ maxHeight: height * 0.78 }}
+          contentContainerStyle={{ padding: 16, gap: 12 }}
+        >
+          <Label big>Thanh toán tại quầy</Label>
+          <Panel>
+            <SectionHeading title="Phương thức thu tiền & tích điểm" />
+            <Select
+              label="Thanh toán"
+              value={value.method}
+              onChange={(method) => update({ method, paid: "" })}
+              options={[
+                { value: "CASH", label: "Tiền mặt" },
+                { value: "TRANSFER", label: "Chuyển khoản" },
+                { value: "CREDIT", label: "Ghi nợ toàn bộ" },
+              ]}
+            />
+            {value.method !== "CREDIT" ? (
+              <Field
+                label="Đã thu (để trống = thu đủ)"
+                value={value.paid}
+                onChangeText={(paid) => update({ paid })}
+                keyboardType="numeric"
+                placeholder={String(Math.max(total, 0))}
+              />
+            ) : null}
+            <Row>
+              <Caption>Công nợ phát sinh</Caption>
+              <Label numeric tone="warning">
+                {money(Math.max(debt, 0))}
+              </Label>
+            </Row>
+            <Caption>
+              Điểm cộng theo quy tắc admin đã chọn; đơn ghi nợ có thể có điểm
+              đang chờ thu tiền.
+            </Caption>
+            <Field
+              label="Ghi chú đơn / mã chứng từ liên kết"
+              value={value.note || ""}
+              onChangeText={(note) => update({ note })}
+              multiline
+            />
+            {can("invoices.view") ? (
+              <Toggle
+                label="Mở hộp thoại in sau khi thanh toán"
+                value={autoPrint}
+                onChange={setAutoPrint}
+              />
+            ) : null}
+            <Caption>
+              {draft.saved
+                ? "Đã lưu giỏ nháp trên thiết bị"
+                : "Giỏ tự lưu theo tài khoản"}{" "}
+              · Kho xuất:{" "}
+              {bootstrap.data?.warehouses.find(
+                (item) => item.id === value.warehouseId,
+              )?.name || "Chưa chọn"}
+            </Caption>
+            <Select
+              label="Xuất từ kho"
+              value={value.warehouseId}
+              onChange={async (warehouseId) => {
+                if (
+                  value.lines.length &&
+                  !(await confirmAction(
+                    "Đổi kho",
+                    "Bỏ các dòng hàng để chọn lại trong kho mới?",
+                  ))
+                )
+                  return;
+                update({ warehouseId, lines: [], requestKey: newKey() });
+              }}
+              options={(bootstrap.data?.warehouses || []).map((item) => ({
+                value: item.id,
+                label: item.name,
+              }))}
+            />
+          </Panel>
+          <Notice error>{quote.error?.message || command.error}</Notice>
+          <Button
+            title={
+              autoPrint && can("invoices.view")
+                ? "Ghi nhận & in phiếu"
+                : "Ghi nhận đơn bán"
+            }
+            pending={command.pending}
+            disabled={disabled}
+            onPress={() => void checkout()}
+          />
+          <Button
+            secondary
+            title="Quay lại giỏ hàng"
+            disabled={command.pending}
+            onPress={() => setPaymentOpen(false)}
+          />
+        </ScrollView>
+      </BottomSheet>
+      <BottomSheet
+        isPresented={showHeld}
+        onDismiss={() => setShowHeld(false)}
+        containerColor={theme.colors.paper}
+        contentPadding={{ left: 16, right: 16, top: 8, bottom: 16 }}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          style={{ maxHeight: height * 0.72 }}
+          contentContainerStyle={{ gap: 12 }}
+        >
+          <Label big>Giỏ tạm giữ</Label>
           {showHeld ? (
             <>
               <Button
@@ -796,452 +1463,14 @@ export default function Pos() {
                 ))}
             </>
           ) : null}
-        </Panel>
-        {showCustomer ? (
-          <View style={{ gap: 10 }}>
-            <Field
-              label="Tìm tên, SĐT hoặc mã khách"
-              value={customerSearch}
-              onChangeText={setCustomerSearch}
-            />
-            <Select
-              label="Khách hàng"
-              value={value.customerId}
-              onChange={(customerId) => {
-                update({ customerId, redeemPoints: "" });
-                setShowCustomer(false);
-              }}
-              options={[
-                { value: "", label: "Khách lẻ — thanh toán đủ" },
-                ...(partners.data || [])
-                  .filter(
-                    (item) =>
-                      item.kind === "CUSTOMER" &&
-                      item.profile?.active !== false,
-                  )
-                  .map((item) => ({
-                    value: item.id,
-                    label: item.name + " · " + item.phone,
-                  })),
-              ]}
-            />
-          </View>
-        ) : null}
-        {customer ? (
-          <View
-            style={{
-              backgroundColor: theme.colors.soft,
-              padding: 10,
-              borderRadius: 10,
-            }}
-          >
-            <Row>
-              <View
-                style={{ flexDirection: "row", gap: 5, alignItems: "center" }}
-              >
-                <Icon
-                  name="tag-outline"
-                  color={theme.colors.success}
-                  size={17}
-                />
-                <AppText style={{ fontSize: 12, color: theme.colors.success }}>
-                  Khả dụng: {number(Math.max(wallet, 0))} điểm
-                </AppText>
-              </View>
-              <AppText style={{ fontSize: 11, color: theme.colors.muted }}>
-                ≈ {money(Math.max(wallet, 0) * (settings?.pointValue || 0))}
-              </AppText>
-            </Row>
-          </View>
-        ) : null}
-      </Panel>
-      <SectionHeading
-        title={"Giỏ hàng · " + value.lines.length + " mặt hàng"}
-        action="Làm mới"
-        onPress={() => void clear()}
-      />
-      {!value.lines.length ? (
-        <Caption>Chọn hoặc quét hàng hóa để bắt đầu đơn bán.</Caption>
-      ) : null}
-      {value.lines.map((line, index) => {
-        const product = inventory.data?.find(
-          (item) => item.id === line.productId,
-        );
-        const lineTotal = Math.round(line.quantity * line.unitPrice);
-        return (
-          <Panel key={line.productId}>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <ProductPicture
-                product={product || { name: line.name, category: "Vật tư" }}
-                size={56}
-              />
-              <View style={{ flex: 1 }}>
-                <AppText
-                  style={{ fontSize: 14, fontWeight: "600", lineHeight: 22 }}
-                >
-                  {line.name}
-                </AppText>
-                <Caption>
-                  {line.unitLabel} · Tồn {number(product?.available || 0)}{" "}
-                  {product?.base_unit}
-                </Caption>
-              </View>
-              <IconButton
-                name="close"
-                label={"Bỏ " + line.name}
-                onPress={() =>
-                  update({ lines: value.lines.filter((_, i) => i !== index) })
-                }
-              />
-            </View>
-            <Row>
-              <RateChip rate={product?.loyalty_rate || 0}>
-                {product?.loyalty_rate
-                  ? " (+" +
-                    money(
-                      Math.round((lineTotal * product.loyalty_rate) / 100),
-                    ) +
-                    ")"
-                  : " (không tích điểm)"}
-              </RateChip>
-              <AppText
-                style={{
-                  fontSize: 17,
-                  fontWeight: "700",
-                  color: theme.colors.primary,
-                }}
-              >
-                {money(lineTotal)}
-              </AppText>
-            </Row>
-            <Caption>
-              {money(line.unitPrice)} / {line.unitLabel} · Giá trị tích lũy
-              trước chiết khấu
-            </Caption>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 8,
-                backgroundColor: theme.colors.soft,
-                borderRadius: 10,
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={"Chỉnh dòng " + line.name}
-                onPress={() =>
-                  setEditLine(editLine === line.productId ? "" : line.productId)
-                }
-                style={{ minHeight: 44, justifyContent: "center" }}
-              >
-                <AppText style={{ fontSize: 12, color: theme.colors.muted }}>
-                  Số lượng / đơn vị <Icon name="pencil-outline" size={13} />
-                </AppText>
-              </Pressable>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
-              >
-                <IconButton
-                  name="minus"
-                  label={"Giảm " + line.name}
-                  onPress={() =>
-                    changeLine(index, {
-                      quantity: Math.max(1, line.quantity - 1),
-                    })
-                  }
-                />
-                <AppText style={{ fontSize: 16, fontWeight: "700" }}>
-                  {number(line.quantity)}
-                </AppText>
-                <IconButton
-                  name="plus"
-                  label={"Tăng " + line.name}
-                  onPress={() =>
-                    product
-                      ? add(product)
-                      : changeLine(index, { quantity: line.quantity + 1 })
-                  }
-                />
-              </View>
-            </View>
-            {editLine === line.productId ? (
-              <>
-                <Select
-                  label="Đơn vị bán"
-                  value={line.unit}
-                  onChange={(unit) =>
-                    changeLine(index, {
-                      unit: unit as CartLine["unit"],
-                      unitLabel:
-                        unit === "PACK"
-                          ? product?.pack_unit
-                          : product?.base_unit,
-                      unitPrice: priceOf(product, unit, line.unitPrice),
-                      quantity: 1,
-                    })
-                  }
-                  options={[
-                    { value: "PACK", label: product?.pack_unit || "Đóng gói" },
-                    { value: "BASE", label: product?.base_unit || "Cơ sở" },
-                  ]}
-                />
-                <Field
-                  label={"Số lượng " + line.name}
-                  value={String(line.quantity)}
-                  onChangeText={(text) =>
-                    changeLine(index, { quantity: Number(text) })
-                  }
-                  keyboardType="decimal-pad"
-                />
-                {can("sales.price.edit") ? (
-                  <Field
-                    label={"Giá bán " + line.name}
-                    value={String(line.unitPrice)}
-                    onChangeText={(text) =>
-                      changeLine(index, { unitPrice: Number(text) })
-                    }
-                    keyboardType="numeric"
-                  />
-                ) : null}
-              </>
-            ) : null}
-          </Panel>
-        );
-      })}
-      {customer && settings?.enabled ? (
-        <Panel>
-          {settings.redeemEnabled && can("loyalty.redeem") ? (
-            <>
-              <Toggle
-                label="Dùng điểm trừ tiền"
-                value={Number(value.redeemPoints) > 0}
-                onChange={toggleRedeem}
-              />
-              {Number(value.redeemPoints) > 0 ? (
-                <Field
-                  label="Số điểm dùng giảm tiền"
-                  value={value.redeemPoints || ""}
-                  onChangeText={(redeemPoints) => update({ redeemPoints })}
-                  keyboardType="numeric"
-                />
-              ) : null}
-              <Caption>
-                1 điểm = {money(settings.pointValue)} · Tối đa{" "}
-                {rateLabel(settings.maxRedeemPercent)} giá trị đơn
-              </Caption>
-            </>
-          ) : (
-            <Caption>
-              {settings.redeemEnabled
-                ? "Tài khoản chưa được cấp quyền đổi điểm."
-                : "Theo dõi tích lũy / hạng VIP, chưa đổi điểm trừ tiền."}
-            </Caption>
-          )}
-          <View
-            style={{
-              backgroundColor: theme.colors.successBg,
-              padding: 10,
-              borderRadius: 8,
-            }}
-          >
-            <Row>
-              <AppText style={{ fontSize: 12, color: theme.colors.success }}>
-                Tích lũy dự kiến cả đơn
-              </AppText>
-              <AppText
-                style={{
-                  fontSize: 14,
-                  fontWeight: "700",
-                  color: theme.colors.success,
-                }}
-              >
-                +{number(quoteCurrent ? quote.data!.potentialPoints : 0)} điểm
-              </AppText>
-            </Row>
-          </View>
-        </Panel>
-      ) : Number(value.redeemPoints) > 0 ? (
-        <Field
-          label="Số điểm dùng giảm tiền"
-          value={value.redeemPoints}
-          onChangeText={(redeemPoints) => update({ redeemPoints })}
-          keyboardType="numeric"
-        />
-      ) : null}
-      <Panel>
-        <Row>
-          <Caption>Tạm tính ({value.lines.length} mã)</Caption>
-          <Label numeric>{money(subtotal)}</Label>
-        </Row>
-        {can("sales.discount") ? (
-          <View style={{ gap: 10 }}>
-            <Select
-              label="Chiết khấu / Ưu đãi"
-              value={discountMode}
-              onChange={(mode) => {
-                setDiscountMode(mode);
-                setPercent("");
-                update({ discount: "" });
-              }}
-              options={[
-                { value: "AMOUNT", label: "Số tiền (đồng)" },
-                { value: "PERCENT", label: "Phần trăm (%)" },
-              ]}
-            />
-            <Field
-              label={
-                discountMode === "PERCENT"
-                  ? "Chiết khấu toàn đơn (%)"
-                  : "Chiết khấu toàn đơn (đồng)"
-              }
-              value={discountMode === "PERCENT" ? percent : value.discount}
-              onChangeText={(v) =>
-                discountMode === "PERCENT"
-                  ? setPercent(v)
-                  : update({ discount: v })
-              }
-              keyboardType="decimal-pad"
-              placeholder="0"
-            />
-            {customer?.profile?.discountPercent &&
-            customer.profile.discountPercent > 0 ? (
-              <Button
-                secondary
-                title={
-                  "Áp dụng đề xuất khách: " +
-                  customer.profile.discountPercent +
-                  "%"
-                }
-                onPress={() => {
-                  setDiscountMode("PERCENT");
-                  setPercent(String(customer.profile!.discountPercent));
-                }}
-              />
-            ) : null}
-          </View>
-        ) : (
-          <Row>
-            <Caption>Chiết khấu hóa đơn</Caption>
-            <Label numeric>{money(discount)}</Label>
-          </Row>
-        )}
-        <Row>
-          <Caption>Điểm thưởng giảm</Caption>
-          <AppText style={{ color: theme.colors.success, fontWeight: "600" }}>
-            −{money(quoteCurrent ? quote.data!.loyaltyDiscount : 0)}
-          </AppText>
-        </Row>
-        <View
-          style={{
-            backgroundColor: theme.colors.soft,
-            padding: 12,
-            borderRadius: 10,
-          }}
-        >
-          <Row>
-            <Label>Khách phải trả</Label>
-            <AppText
-              variant="amount"
-              style={{
-                fontSize: 25,
-                fontWeight: "700",
-                lineHeight: 34,
-                color: theme.colors.primary,
-              }}
-            >
-              {money(Math.max(total, 0))}
-            </AppText>
-          </Row>
-        </View>
-      </Panel>
-      <Panel>
-        <SectionHeading title="Phương thức thu tiền & tích điểm" />
-        <Select
-          label="Thanh toán"
-          value={value.method}
-          onChange={(method) => update({ method, paid: "" })}
-          options={[
-            { value: "CASH", label: "Tiền mặt" },
-            { value: "TRANSFER", label: "Chuyển khoản" },
-            { value: "CREDIT", label: "Ghi nợ toàn bộ" },
-          ]}
-        />
-        {value.method !== "CREDIT" ? (
-          <Field
-            label="Đã thu (để trống = thu đủ)"
-            value={value.paid}
-            onChangeText={(paid) => update({ paid })}
-            keyboardType="numeric"
-            placeholder={String(Math.max(total, 0))}
+          <Notice error>{held.storageError}</Notice>
+          <Button
+            secondary
+            title="Đóng giỏ tạm giữ"
+            onPress={() => setShowHeld(false)}
           />
-        ) : null}
-        <Row>
-          <Caption>Công nợ phát sinh</Caption>
-          <Label numeric tone="warning">
-            {money(Math.max(debt, 0))}
-          </Label>
-        </Row>
-        <Caption>
-          Điểm cộng theo quy tắc admin đã chọn; đơn ghi nợ có thể có điểm đang
-          chờ thu tiền.
-        </Caption>
-        <Field
-          label="Ghi chú đơn / mã chứng từ liên kết"
-          value={value.note || ""}
-          onChangeText={(note) => update({ note })}
-          multiline
-        />
-        {can("invoices.view") ? (
-          <Toggle
-            label="Mở hộp thoại in sau khi thanh toán"
-            value={autoPrint}
-            onChange={setAutoPrint}
-          />
-        ) : null}
-        <Caption>
-          {draft.saved
-            ? "Đã lưu giỏ nháp trên thiết bị"
-            : "Giỏ tự lưu theo tài khoản"}{" "}
-          · Kho xuất:{" "}
-          {bootstrap.data?.warehouses.find(
-            (item) => item.id === value.warehouseId,
-          )?.name || "Chưa chọn"}
-        </Caption>
-        <Select
-          label="Xuất từ kho"
-          value={value.warehouseId}
-          onChange={async (warehouseId) => {
-            if (
-              value.lines.length &&
-              !(await confirmAction(
-                "Đổi kho",
-                "Bỏ các dòng hàng để chọn lại trong kho mới?",
-              ))
-            )
-              return;
-            update({ warehouseId, lines: [], requestKey: newKey() });
-          }}
-          options={(bootstrap.data?.warehouses || []).map((item) => ({
-            value: item.id,
-            label: item.name,
-          }))}
-        />
-      </Panel>
-      <Notice error>{quote.error?.message || command.error}</Notice>
-      {value.lines.length > 0 && (!quoteCurrent || quote.isError) ? (
-        <Button
-          title="Tính lại điểm và tổng tiền"
-          secondary
-          pending={quote.isFetching}
-          onPress={() => void quote.refetch()}
-        />
-      ) : null}
-      <Caption>
-        Máy chủ xác nhận mới ghi nhận kho, tiền và điểm. Phiếu bán nội bộ chưa
-        áp dụng thuế và không thay hóa đơn điện tử.
-      </Caption>
-    </Page>
+        </ScrollView>
+      </BottomSheet>
+    </View>
   );
 }

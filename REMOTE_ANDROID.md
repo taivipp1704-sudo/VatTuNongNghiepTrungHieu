@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 14
+# Thử AgriStock Android từ xa — bản 15
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-store-v14/AgriStock-internal-signed-14.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 14. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-picture-v15/AgriStock-internal-signed-15.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 15. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 15 thiết kế lại bố cục theo bộ ảnh picture, giữ tông xanh lá: tổng quan bốn cột lối tắt, danh sách sản phẩm/đơn phẳng, trung tâm Sản phẩm dạng menu, hồ sơ khách ba tab, POS với thanh thanh toán cố định và báo cáo theo nhóm. Giữ toàn bộ chức năng bản 14. Cài cập nhật trực tiếp bằng cùng khóa ký, không cần gỡ app. Backend cloud hiện tại được giữ. Xem [bố cục](UI_STYLE.md).
 
 Bản 14 đổi chữ sang **Be Vietnam Pro**, giữ Inter cho số tiền; thêm trung tâm Sản phẩm, giá sỉ, thuộc tính hàng, thiết lập tồn theo kho, tem mã vạch/QR, hồ sơ khách bổ sung, sổ công nợ, chiết khấu %, giỏ tạm giữ và báo cáo Kho/Tài chính. Giữ bán tại quầy, ảnh nền chìm và nút cùng tông. Xem [phạm vi chức năng và cách đối chiếu mẫu](FUNCTION_PARITY.md). Cài cập nhật trực tiếp, không cần gỡ bản trước.
 

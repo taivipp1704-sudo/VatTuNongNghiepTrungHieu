@@ -165,12 +165,16 @@ export function Page({
   footer,
   scrollRef,
   background,
+  edgeToEdge = false,
+  header,
 }: PropsWithChildren<{
   onRefresh?: () => void;
   refreshing?: boolean;
   footer?: ReactNode;
   scrollRef?: Ref<ComponentRef<typeof ScrollView>>;
   background?: ReactNode;
+  edgeToEdge?: boolean;
+  header?: ReactNode;
 }>) {
   const insets = useSafeAreaInsets();
   return (
@@ -179,6 +183,7 @@ export function Page({
       behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={100}
     >
+      {header}
       {background ? (
         <View
           pointerEvents="none"
@@ -203,7 +208,7 @@ export function Page({
           ) : undefined
         }
         contentContainerStyle={{
-          padding: theme.space.lg,
+          padding: edgeToEdge ? 0 : theme.space.lg,
           paddingBottom:
             Math.max(insets.bottom, theme.space.lg) + theme.space.xl,
           gap: theme.space.lg,
@@ -221,7 +226,7 @@ export function Page({
             paddingBottom: Math.max(insets.bottom, 12),
             borderTopWidth: 1,
             borderTopColor: theme.colors.border,
-            backgroundColor: theme.colors.canvas,
+            backgroundColor: theme.colors.paper,
           }}
         >
           {footer}
@@ -258,21 +263,21 @@ export function Button({
         style={{
           height: 50,
           width: "100%",
-          borderRadius: theme.radius.pill,
+          borderRadius: theme.radius.sm,
           borderWidth: secondary ? 1 : 0,
           backgroundColor: unavailable
             ? theme.colors.neutral
             : secondary
               ? "transparent"
               : theme.colors.buttonFill,
-          borderColor: theme.colors.control,
+          borderColor: secondary
+            ? theme.colors.border
+            : theme.colors.buttonFill,
         }}
       >
         <NativeText
           textStyle={{
-            color: unavailable
-              ? theme.colors.muted
-              : theme.colors.primary,
+            color: unavailable ? theme.colors.muted : theme.colors.primary,
             fontSize: theme.type.body,
             fontWeight: "600",
             fontFamily: theme.font.semibold,
@@ -312,9 +317,9 @@ export function Field({
         placeholderTextColor={theme.colors.muted}
         style={{
           minHeight: 50,
-          borderWidth: 1,
+          borderBottomWidth: 1,
           borderColor: theme.colors.control,
-          borderRadius: theme.radius.sm,
+          borderRadius: 0,
           paddingHorizontal: theme.space.md,
           paddingVertical: theme.space.md,
           color: theme.colors.text,

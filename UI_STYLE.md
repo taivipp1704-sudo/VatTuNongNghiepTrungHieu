@@ -1,38 +1,20 @@
-# Bố cục và phối màu AgriStock — Android 14
+# Bố cục AgriStock — Android 15
 
-AgriStock dùng xanh rừng đậm và lime, nền sáng ấm và chữ đậm, áp dụng hướng Smart Garden từ [video người dùng gửi](VIDEO_UI.md). Hệ thống màu và font nằm trong `apps/mobile/src/theme.ts`; các màn hình dùng chung AppText, Label, Panel và các nút hiện có.
+Theo lựa chọn người dùng ngày 03/11/2026: **bố cục giống thư mục picture, giữ tông xanh lá**. Ảnh mẫu dùng để đối chiếu khoảng cách, nhóm nội dung và thao tác. Không sao chép logo, dữ liệu cá nhân hay ảnh màn hình mẫu vào app.
 
-| Vai trò | Màu |
+| Khu vực | Bố cục áp dụng |
 | --- | --- |
-| Chữ chính / số liệu | Xanh đen `#1C2E23` |
-| Thẻ doanh thu | Xanh rừng bán trong suốt, chữ trắng |
-| Thanh đầu trang | Xanh đậm `#0B3224`, chữ trắng |
-| Giá bán / tiền thực thu | Xanh đậm `#224E3B` |
-| Đang giao dịch trên tổng quan | Chữ xanh đen, biểu tượng cam `#8D4500` trên khung sáng |
-| Hoàn thành trên tổng quan | Chữ xanh đen, biểu tượng xanh `#08673E` trên khung sáng |
-| Lỗi / giá trị âm | Đỏ `#B51F3D` |
-| Nút lưu / thanh toán / tab được chọn | Xanh nhạt `#E6EDD9`, chữ xanh rừng `#164B35` |
-| Nút Bán tại quầy | Nền trắng 8% trong suốt, chữ trắng, biểu tượng trên vòng xanh nhạt |
-| Dữ liệu biểu đồ | Xanh `#22834C`, mốc chọn có viền đậm |
+| Tổng quan | Thanh đầu xanh, thẻ doanh thu trắng/số đen, ba chỉ số nhỏ, nút bán tại quầy, tám lối tắt bốn cột, các dòng chờ xử lý. Ảnh cánh đồng cục bộ chỉ còn ở dải đầu trang. |
+| Sản phẩm | Ô thêm sản phẩm lớn và danh mục chức năng dạng hàng phẳng; thanh điều hướng năm mục. |
+| Hàng hóa | Mặc định danh sách phẳng: ảnh/tên/SKU bên trái, giá/tồn bên phải; tìm kiếm, bộ lọc, nút thêm nổi. Chế độ lưới và sửa điểm hàng loạt giữ trong công cụ. |
+| Chi tiết và sửa hàng | Ảnh lớn, nhãn–giá trị gọn, giá hai cột, nhóm kho/tích điểm/kỹ thuật; ô nhập gạch dưới. Giữ tất cả trường đang có. |
+| Đơn bán | Tìm kiếm, tab trạng thái gạch dưới, bộ lọc, hàng mã/khách/ngày và tiền/trạng thái; chạm để mở thu tiền/trả hàng/chứng từ. |
+| Bán tại quầy | Thanh tìm kiếm riêng; nhóm hàng/chiết khấu/khách/bảng giá/hóa đơn/ghi chú; tổng tiền và Lưu tạm–Thanh toán cố định đáy. Thanh toán mở hộp xác nhận, sau đó mới ghi nhận đơn. |
+| Khách hàng | Danh sách phẳng; hồ sơ có mã ở thanh đầu, avatar vàng, ba tab Thông tin–Công nợ–Lịch sử và các hàng thông tin. Bút sửa mở chung thông tin cơ bản và bổ sung. |
+| Báo cáo | Thanh đầu xanh, ba nhóm Bán hàng/Kho/Tài chính, kỳ/kho gọn, thẻ chỉ số trắng và danh mục báo cáo chi tiết. Biểu đồ, bảng và xuất dữ liệu vẫn hoạt động. |
 
-Nhãn chữ, biểu tượng và số tiền đi kèm màu để tránh phải đoán trạng thái chỉ qua màu sắc. Các cặp chữ chính đo được từ 5,18:1 trở lên; chữ trên lime 9,92:1; đường viền ô nhập 3,91:1 trên nền trắng.
+Màu chính `#087C4C`, thanh đầu `#16845B`, chữ `#292B30`, chữ phụ `#73777D`, nền `#F5F5F9`, hàng/thẻ trắng, đường chia `#E4E5E9`, ô tìm `#EDEDF1`. Nút thao tác nền xanh nhạt `#E6EDD9`, chữ xanh; góc bo 6–12 thay cho viên lớn. Trạng thái luôn có nhãn chữ.
 
-Tổng quan có ảnh cánh đồng phủ phía sau toàn màn hình, cố định khi cuộn. Khối doanh thu/thực thu dùng lớp xanh bán trong suốt; các nhóm thông tin bên dưới dùng lớp sáng bán trong suốt, nút Bán tại quầy dạng viên trong suốt cùng tông với thẻ. Đây là ảnh nền được tạo riêng bằng image_gen, nhúng cục bộ trong APK, không phải ảnh sản phẩm hoặc vị trí thật của cửa hàng. Ảnh và prompt nằm trong `apps/mobile/assets/images/agri-landscape-v1.png` và tệp `.source.json` đi kèm. Không dùng blur native hoặc chụp màn hình mẫu làm nền.
+Be Vietnam Pro 400/500/600/700 cho chữ; Inter 400/700 cho tiền và số. Sáu font nhúng cục bộ, đủ dấu Việt, giữ phóng to chữ hệ thống và giấy phép OFL. Ảnh nền được tạo riêng từ bản trước, nhúng trong APK; hàng chưa có ảnh dùng biểu tượng và nhãn rõ.
 
-Lớp phủ nền 26%, thẻ xanh 76% và thẻ sáng 95%. Đo bảo thủ cả hai cực ảnh đen/trắng: chữ trắng trên thẻ xanh đạt 8,24:1, chữ phụ 6,26:1; các cặp chữ trên thẻ sáng từ 5,65:1. Kết quả trong `artifacts/landscape-contrast.json`. Trạng thái đang tải ở tổng quan cũng có nền sáng để chữ không nằm trực tiếp trên ảnh.
-
-Android 13 đồng bộ nút với khung theo ảnh tham khảo: bỏ các mảng cam/xanh đặc của trạng thái, dùng hai vùng bấm trong cùng panel với đường chia mảnh. Lối tắt bỏ viền hộp lồng nhau và nền biểu tượng đậm; chuyển sang vòng xanh nhạt, nhãn rõ. Nút biểu tượng đầu trang dạng tròn trong suốt. Nút lưu/thanh toán dùng nền xanh nhạt; bộ lọc và điều hướng dùng cùng họ màu. Nút native dùng container trong suốt và màu nền từ theme, tránh lớp nền đặc mặc định của nền tảng phủ lên màu đã chọn.
-
-Tương phản mới: chữ trên nút xanh nhạt 8,36:1, trạng thái nhấn 7,38:1, chữ trắng trên nút trong suốt ở cực ảnh sáng nhất 6,63:1; viền nút trên xanh nhạt 3,26:1. Kết quả `artifacts/soft-controls-contrast.json`.
-
-Tám lối tắt theo quyền được giữ; dải Hàng trong kho dùng cùng API đã giới hạn theo kho/quyền. Kho có thẻ ảnh hai cột hoặc danh sách; khi sửa điểm hàng loạt hoặc cỡ chữ hệ thống trên 1,3, dùng danh sách. Chi tiết sản phẩm hiển thị ảnh lớn; ảnh dùng chế độ contain để không cắt bao bì. Chưa có ảnh thì hiển thị biểu tượng và nhãn rõ. Biểu đồ một chỉ số dùng một màu; mốc đang chọn có viền và giá trị/ngày bên dưới.
-
-Tiếp tục dùng công cụ của repo `D:/baoyu-design-main`: kiểm tra màu bằng `skills/dataviz/scripts/validate_palette.js` và xuất tham chiếu bằng `node scripts/export-design-system.mjs`. Thư mục `design-system/agristock/project` được sinh từ theme thật; công cụ check design-system đạt 0 lỗi cấu trúc, không kiểm tra render cover. Bản xuất này không thay nguồn theme của app. Không đưa mã editor, icon font hoặc ảnh mockup từ nguồn tham khảo vào APK.
-
-**Be Vietnam Pro** dùng cho tiêu đề, nội dung, nút, ô nhập và nhãn điều hướng, với bốn độ đậm 400/500/600/700. Số tiền dùng Inter 400/700 và chữ số đều độ rộng để giữ khả năng so sánh số liệu; bộ Be Vietnam Pro có sẵn trong dự án dùng chữ số tỷ lệ. Các font nhúng sẵn, không tải qua mạng khi mở app. Giữ khả năng phóng to chữ của hệ điều hành.
-
-Nguồn: [Be Vietnam Pro](https://github.com/google/fonts/tree/main/ofl/bevietnampro), [Inter](https://github.com/google/fonts/tree/main/ofl/inter). Bốn tệp Be Vietnam Pro được đối chiếu với hash nguồn trong assets/fonts/sources.json; Inter giữ tệp tĩnh đã xác minh trước đó. Sáu font được kiểm tra đủ dấu Việt viết thường/hoa, ký hiệu đồng và tính năng chữ số; thông tin tệp/hash trong assets/fonts/ui-sources.json. Giấy phép OFL đi kèm mã nguồn và APK.
-
-Theo hướng tham khảo người dùng đề xuất: giữ bố cục POS cho bán hàng/sản phẩm/chứng từ, hàng hóa có ảnh–SKU–barcode, số liệu tài chính có phân cấp rõ, trạng thái công việc có nhãn, thao tác chính xuất hiện trực tiếp. Đây là hệ thống giao diện AgriStock, không đưa logo hay tài sản của Shopify POS, Sortly, Revolut, Linear hoặc Things 3 vào app.
-
-Kiểm tra web áp dụng cho cùng mã màn hình; camera, in, chữ cỡ lớn hệ thống và thao tác native vẫn cần nghiệm thu trên điện thoại. Kết quả của từng bản trong VALIDATION.md.
+Theme thật nằm trong apps/mobile/src/theme.ts. Tham chiếu design-system được sinh bằng node scripts/export-design-system.mjs. Bán tại quầy, quyền, tích điểm và API của bản 14 được giữ; không thêm bán online hay vận chuyển. Kiểm tra web không thay thế nghiệm thu camera/in/lịch và cỡ chữ hệ thống trên điện thoại thật. Xem VALIDATION.md.
