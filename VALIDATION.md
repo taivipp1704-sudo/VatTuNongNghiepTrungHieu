@@ -1,8 +1,8 @@
 # Kiểm tra mới nhất · HTAgri Android 18
 
-Ngày 03/11/2026: chỉ sửa client. Bỏ thông báo lỗi khôi phục phiên tự động; vẫn giữ trạng thái mất kết nối và lỗi đăng nhập do thao tác người dùng. Field có secureTextEntry được mặc định che và có con mắt; mỗi ô giữ trạng thái độc lập, có nhãn Hiện/Ẩn, vùng chạm 48×50. Thêm che mật khẩu khởi tạo nhân viên.
+Ngày 03/11/2026: chỉ sửa client. Bỏ thông báo lỗi khôi phục phiên tự động; vẫn giữ trạng thái mất kết nối và lỗi đăng nhập do thao tác người dùng. Field có secureTextEntry được mặc định che và có con mắt; mỗi ô giữ trạng thái độc lập, có nhãn Hiện/Ẩn, vùng chạm 48×50. Thêm che mật khẩu khởi tạo nhân viên. Bỏ nút và ô cấu hình kết nối ở đăng nhập. Bản operational dùng URL nhúng sẵn; chuẩn hóa lựa chọn cũ và xóa token nếu lựa chọn cũ trỏ sang máy chủ khác, rồi lưu URL mới để không yêu cầu đăng nhập lại ở mỗi lần mở.
 
-TypeScript mobile và 4/4 kiểm tra cấu hình phát hành đạt. CUA web: nhập chuỗi thử ở ô mật khẩu, chuyển type password → text → password, nhãn con mắt đổi đúng. Công cụ che giá trị mật khẩu nên không đối chiếu nội dung qua DOM. Viewport 390×844 và 320×740; không tràn ngang, nút vẫn nằm trong màn; không có log error/warn trong phiên. Ảnh password-v18-login-390.png và password-v18-login-320.png. Không gửi thông tin thử đến máy chủ cloud.
+TypeScript mobile và 4/4 kiểm tra cấu hình phát hành đạt. CUA web: nhập chuỗi thử ở ô mật khẩu, chuyển type password → text → password, nhãn con mắt đổi đúng. Công cụ che giá trị mật khẩu nên không đối chiếu nội dung qua DOM. Viewport 390×844 và 320×740; không tràn ngang, nút vẫn nằm trong màn; không có log error/warn trong phiên. Đã kiểm tra không còn nút cấu hình hoặc ô máy chủ; ảnh password-v18-login-final-390.png và password-v18-login-final-320.png. Không gửi thông tin thử đến máy chủ cloud.
 
 Backend tiếp tục commit 74842201a795e7b5927af3ea7cf172bed05c4137; không triển khai lại API và không thay đổi dữ liệu vận hành. Kiểm tra API của bản 17 là lịch sử bên dưới, không tính là chạy lại lần này. Kết quả APK 18 được ghi sau khi ký. Camera/in và thao tác native trên máy thật chưa nghiệm thu lại.
 

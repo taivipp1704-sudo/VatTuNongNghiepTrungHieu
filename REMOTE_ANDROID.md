@@ -2,7 +2,7 @@
 
 [Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/htagri-android-v18/HTAgri-internal-signed-18.apk). App có tên **HTAgri**, Android 7.0+ arm64, bản ký riêng số 18. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
 
-Bản 18 bỏ cảnh báo tự động “Không tải được phiên đăng nhập” trên màn đăng nhập; lỗi khi người dùng bấm đăng nhập vẫn được thông báo. Các ô mật khẩu có con mắt để ẩn/hiện riêng, mặc định được che; áp dụng đăng nhập, đổi mật khẩu và tạo nhân viên. Cài cập nhật trực tiếp, giữ dữ liệu cửa hàng. Backend không triển khai lại và không dọn dữ liệu trong bản này.
+Bản 18 bỏ cảnh báo tự động “Không tải được phiên đăng nhập” trên màn đăng nhập; lỗi khi người dùng bấm đăng nhập vẫn được thông báo. Các ô mật khẩu có con mắt để ẩn/hiện riêng, mặc định được che; áp dụng đăng nhập, đổi mật khẩu và tạo nhân viên. Bỏ nút cấu hình kết nối khỏi đăng nhập; bản cài tự dùng API đã nhúng, bỏ địa chỉ tùy chỉnh cũ của giai đoạn thử. Cài cập nhật trực tiếp, giữ dữ liệu cửa hàng. Backend không triển khai lại và không dọn dữ liệu trong bản này.
 
 Bản 17 đổi tên/logo thành HTAgri, giữ bố cục và ảnh nền bản 16. Cửa hàng cloud đã dọn dữ liệu thử, giữ tài khoản chủ và yêu cầu đổi mật khẩu sau khi đăng nhập lại. Bộ nhớ đệm/giỏ thử được loại bỏ theo thế hệ dữ liệu mới. Không có dữ liệu minh họa tự điền vào ứng dụng. Xem [bắt đầu vận hành nội bộ](HTAGRI_START.md). Theo lựa chọn của chủ dự án, dùng tạm Render Free và chuyển dữ liệu trước 30/11/2026.
 

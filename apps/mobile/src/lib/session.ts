@@ -76,8 +76,13 @@ export const useSession = create<Session>((set, get) => ({
   hydrate: async () => {
     try {
       const storedUrl = await localGet<string>("server-url");
+      // Operational builds use their bundled store endpoint, without a manual connection screen.
+      if (release && storedUrl !== defaultUrl) {
+        if (storedUrl) await credentials.remove();
+        await localSet("server-url", defaultUrl);
+      }
       let apiUrl = defaultUrl;
-      if (storedUrl) {
+      if (storedUrl && !release) {
         try {
           apiUrl = validateApiOrigin(storedUrl, release, physicalDevice);
         } catch {

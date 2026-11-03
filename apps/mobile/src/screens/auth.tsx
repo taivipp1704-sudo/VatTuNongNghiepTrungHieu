@@ -21,8 +21,6 @@ export function Login() {
   const session = useSession();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [server, setServer] = useState(session.apiUrl);
-  const [showServer, setShowServer] = useState(!session.apiUrl);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [help, setHelp] = useState(false);
@@ -31,7 +29,6 @@ export function Login() {
     setPending(true);
     setError("");
     try {
-      if (server !== session.apiUrl) await session.configure(server);
       await session.login(username.trim(), password);
       setPassword("");
       router.replace(
@@ -110,7 +107,7 @@ export function Login() {
             testID="login-submit"
             onPress={login}
             pending={pending}
-            disabled={!username.trim() || !password || !server.trim()}
+            disabled={!username.trim() || !password || !session.apiUrl}
           />
           <Button
             title="Quên mật khẩu?"
@@ -125,25 +122,6 @@ export function Login() {
           ) : null}
         </Section>
       </Panel>
-      <Button
-        title={showServer ? "Ẩn cấu hình kết nối" : "Cấu hình kết nối cửa hàng"}
-        secondary
-        onPress={() => setShowServer(!showServer)}
-      />
-      {showServer ? (
-        <Field
-          label="Địa chỉ máy chủ"
-          value={server}
-          onChangeText={setServer}
-          autoCapitalize="none"
-          keyboardType="url"
-          placeholder={
-            isLanTestBuild
-              ? "http://192.168.1.63:3001"
-              : "https://api.cuahang.vn"
-          }
-        />
-      ) : null}
       <Notice error>{session.message}</Notice>
       <Caption>
         {isLanTestBuild
