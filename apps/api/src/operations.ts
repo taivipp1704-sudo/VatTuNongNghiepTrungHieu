@@ -115,7 +115,7 @@ export class Operations {
         `
       SELECT p.*,count(*) OVER()::int list_total,COALESCE(pref.min_stock,p.min_stock) min_stock,pref.max_stock,COALESCE(pref.location,'') storage_location,COALESCE(jsonb_agg(jsonb_build_object(
         'id',l.id,'code',l.code,'warehouseId',l.warehouse_id,'warehouseName',w.name,'location',l.location,
-        'expiresOn',l.expires_on,'state',l.state,'quantity',l.quantity,'reserved',l.reserved,'costBase',l.cost_base,
+        'expiresOn',l.expires_on,'state',l.state,'quantity',l.quantity,'reserved',l.reserved,'costBase',l.cost_base,'isDeficit',l.is_deficit,
         'available',CASE WHEN l.state='AVAILABLE' AND (l.expires_on IS NULL OR l.expires_on>=CURRENT_DATE) THEN l.quantity-l.reserved ELSE 0 END
       ) ORDER BY l.expires_on NULLS LAST) FILTER(WHERE l.id IS NOT NULL),'[]') lots
       FROM products p LEFT JOIN lots l ON l.product_id=p.id AND ($1::uuid[] IS NULL OR l.warehouse_id=ANY($1))
@@ -199,10 +199,11 @@ export class Operations {
     reason: string,
     documentId?: string,
     orderId?: string,
+    reconciliation = false,
   ) {
     const lot = (
       await client.query(
-        "UPDATE lots SET quantity=quantity+$2 WHERE id=$1 AND quantity+$2>=reserved RETURNING quantity",
+        "UPDATE lots SET quantity=quantity+$2 WHERE id=$1 AND ((NOT is_deficit AND quantity+$2>=reserved) OR (is_deficit AND quantity+$2 BETWEEN -1000000000 AND 0)) RETURNING quantity",
         [lotId, delta],
       )
     ).rows[0];
@@ -211,7 +212,7 @@ export class Operations {
         "Tồn kho đã thay đổi hoặc không đủ để xuất. Vui lòng tải lại.",
       );
     await client.query(
-      "INSERT INTO stock_ledger(id,lot_id,document_id,order_id,delta,balance,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+      "INSERT INTO stock_ledger(id,lot_id,document_id,order_id,delta,balance,reason,created_by,is_reconciliation) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
       [
         randomUUID(),
         lotId,
@@ -221,8 +222,31 @@ export class Operations {
         lot.quantity,
         reason,
         user.id,
+        reconciliation,
       ],
     );
+  }
+
+  async inventoryPolicy(client: Pick<PoolClient, "query">) {
+    const row = (await client.query("SELECT value FROM settings WHERE key='inventory_policy'")).rows[0];
+    return { allowNegativeStock: row?.value?.allowNegativeStock === true };
+  }
+
+  // Caller holds the warehouse/product advisory lock. Offset entries are paired
+  // in one transaction, so replenishment changes net stock exactly once.
+  async settleDeficit(client: PoolClient, user: User, productId: string, warehouseId: string, documentId?: string) {
+    const deficit = (await client.query("SELECT * FROM lots WHERE product_id=$1 AND warehouse_id=$2 AND is_deficit FOR UPDATE", [productId, warehouseId])).rows[0];
+    if (!deficit || deficit.quantity >= 0) return;
+    let missing = -deficit.quantity;
+    const sources = (await client.query("SELECT * FROM lots WHERE product_id=$1 AND warehouse_id=$2 AND NOT is_deficit AND state='AVAILABLE' AND (expires_on IS NULL OR expires_on>=CURRENT_DATE) AND quantity>reserved ORDER BY expires_on NULLS LAST,id FOR UPDATE", [productId, warehouseId])).rows;
+    for (const lot of sources) {
+      const take = Math.min(missing, roundQuantity(lot.quantity-lot.reserved));
+      if (take<=0) continue;
+      await this.ledger(client,user,lot.id,-take,"Bù số lượng đã bán âm",documentId,undefined,true);
+      await this.ledger(client,user,deficit.id,take,"Nhập bù tồn bán âm",documentId,undefined,true);
+      missing=roundQuantity(missing-take);
+      if (!missing) break;
+    }
   }
 
   async createDocument(user: User, input: StockInput, key?: string) {
@@ -357,6 +381,7 @@ export class Operations {
             document.kind === "RETURN"
               ? "TRA-" + id.slice(0, 8) + "-" + (line.lotCode || "LE")
               : line.lotCode || "KHONG-LO";
+          if (lotCode.startsWith("HT-TON-AM")) throw new BadRequestException("Tiền tố HT-TON-AM dành riêng cho tồn bán âm. Chọn mã lô hàng thực tế khác.");
           let lot = (
             await client.query(
               "SELECT * FROM lots WHERE product_id=$1 AND warehouse_id=$2 AND code=$3 FOR UPDATE",
@@ -410,6 +435,8 @@ export class Operations {
             throw new BadRequestException(
               "Lô không thuộc sản phẩm và kho của phiếu.",
             );
+          if (lot.is_deficit && (document.kind !== "COUNT" || line.baseQuantity !== 0))
+            throw new BadRequestException("Tồn bán âm chỉ được kiểm kê về 0 khi đã đối chiếu, hoặc nhập hàng để tự bù. Không xuất/chuyển/hủy từ mục này.");
           if (
             !["COUNT", "DISPOSAL"].includes(document.kind) &&
             (lot.state !== "AVAILABLE" || lot.expired)
@@ -459,6 +486,12 @@ export class Operations {
               id,
             );
           }
+        }
+      }
+      if (document.kind !== "RETURN") {
+        for (const productId of new Set(lines.map(line => line.productId))) {
+          await this.settleDeficit(client,user,productId,document.warehouse_id,id);
+          if (document.destination_id) await this.settleDeficit(client,user,productId,document.destination_id,id);
         }
       }
       if (document.kind === "RECEIPT" && document.partner_id && payable > 0) {
@@ -533,6 +566,7 @@ export class Operations {
           input.lines.map((line) => input.warehouseId + ":" + line.productId),
         );
         const orderId = randomUUID();
+        const policy = await this.inventoryPolicy(client);
         const lines: Data[] = [];
         let subtotal = 0;
         for (const line of input.lines) {
@@ -577,11 +611,20 @@ export class Operations {
             remaining = roundQuantity(remaining - taken);
             if (remaining === 0) break;
           }
-          if (remaining > 0)
-            throw new ConflictException(
+          if (remaining > 0) {
+            if (!policy.allowNegativeStock) throw new ConflictException(
               product.name +
-                ": không đủ tồn khả dụng. Vui lòng tải lại giỏ hàng.",
+                ": không đủ tồn khả dụng. Admin có thể bật Cho phép bán âm tồn kho trong Cửa hàng & bảo mật.",
             );
+            requirePermission(user,"sales.negative");
+            let deficit = (await client.query("SELECT * FROM lots WHERE product_id=$1 AND warehouse_id=$2 AND is_deficit FOR UPDATE", [product.id,input.warehouseId])).rows[0];
+            if (!deficit) {
+              deficit = (await client.query("INSERT INTO lots(id,product_id,warehouse_id,code,is_deficit,cost_base) VALUES($1,$2,$3,$4,true,$5) RETURNING *", [randomUUID(),product.id,input.warehouseId,"HT-TON-AM-"+randomUUID().slice(0,8),product.cost_base])).rows[0];
+            }
+            if (deficit.quantity-remaining < -1000000000) throw new ConflictException("Số lượng tồn âm vượt giới hạn.");
+            const updated = (await client.query("UPDATE lots SET quantity=quantity-$2 WHERE id=$1 RETURNING quantity", [deficit.id,remaining])).rows[0];
+            allocations.push({lotId:deficit.id,quantity:remaining,costBase:product.cost_base,balance:updated.quantity,deficit:true});
+          }
           const total = Math.round(line.quantity * unitPrice);
           subtotal += total;
           lines.push({

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { BottomSheet } from "@expo/ui";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, router, useLocalSearchParams } from "expo-router";
@@ -27,6 +26,17 @@ import { useWarehouse } from "@/lib/warehouse";
 import { useScan } from "@/lib/scanner";
 import { ProductImageEditor } from "@/components/product-image-editor";
 import { parseRate } from "@/lib/loyalty";
+
+const unitDefaults: Record<string,[string,string,string]> = {
+  "Phân bón":["kg","bao","50"], "Thuốc BVTV":["chai","chai","1"],
+  "Hạt giống":["gói","gói","1"], "Vật tư":["cái","cái","1"],
+};
+function moneyInput(raw: string) {
+  const value=raw.trim().replace(/\s/g,"");
+  if (/^\d{1,3}([.,]\d{3})+$/.test(value)) return Number(value.replace(/[.,]/g,""));
+  return /^\d+$/.test(value)?Number(value):NaN;
+}
+const decimalInput=(raw:string)=>Number(raw.trim().replace(",","."));
 
 export function ProductForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -117,6 +127,15 @@ export function ProductForm() {
   if (!can("products.manage") || !can("inventory.cost.view")) return <Denied />;
   const field = (key: keyof typeof form, value: string | boolean) =>
     setForm((current) => ({ ...current, [key]: value }));
+  const chooseCategory = (category: string) => {
+    setForm(current=>{
+      const preset=unitDefaults[current.category];
+      const usePreset=!id && preset && current.baseUnit===preset[0] && current.packUnit===preset[1] && current.packFactor===preset[2];
+      const next=unitDefaults[category];
+      return {...current,category,...(usePreset&&next?{baseUnit:next[0],packUnit:next[1],packFactor:next[2]}:{})};
+    });
+    setCategoryOpen(false);
+  };
   const ready = !id || loadedId === id;
   const warehouse = bootstrap.data?.warehouses.find(
     (item) => item.id === warehouseId,
@@ -132,21 +151,21 @@ export function ProductForm() {
     const body = {
       ...details,
       ...(can("loyalty.manage") ? { loyaltyRate: rate } : {}),
-      packFactor: Number(form.packFactor),
-      priceBase: Number(form.priceBase),
-      pricePack: Number(form.pricePack),
-      costBase: Number(form.costBase),
-      minStock: Number(form.minStock || 0),
+      packFactor: decimalInput(form.packFactor),
+      priceBase: moneyInput(form.priceBase),
+      pricePack: moneyInput(form.pricePack || (form.baseUnit.trim()===form.packUnit.trim() && decimalInput(form.packFactor)===1 ? form.priceBase : "")),
+      costBase: moneyInput(form.costBase),
+      minStock: decimalInput(form.minStock || "0"),
       details: {
         wholesaleBase:
           extra.wholesaleBase.trim() === ""
             ? null
-            : Number(extra.wholesaleBase),
+            : moneyInput(extra.wholesaleBase),
         wholesalePack:
           extra.wholesalePack.trim() === ""
             ? null
-            : Number(extra.wholesalePack),
-        weightGrams: Number(extra.weightGrams || 0),
+            : moneyInput(extra.wholesalePack),
+        weightGrams: decimalInput(extra.weightGrams || "0"),
         dimensions: extra.dimensions,
         sellable: extra.sellable,
       },
@@ -155,12 +174,18 @@ export function ProductForm() {
       !form.sku.trim() ||
       !form.name.trim() ||
       !form.priceBase ||
-      !form.pricePack ||
       !form.costBase
     ) {
       command.setError("Nhập mã hàng, tên, giá bán và giá vốn.");
       return;
     }
+    if (!form.baseUnit.trim() || !form.packUnit.trim() || !Number.isFinite(body.packFactor) || body.packFactor<=0 || body.packFactor>1000000 || Math.abs(body.packFactor*1000-Math.round(body.packFactor*1000))>0.00001) {
+      command.setError("Nhập đơn vị và quy đổi lớn hơn 0, tối đa 3 số thập phân. Bán lẻ chai/gói: dùng cùng đơn vị, quy đổi 1.");return;
+    }
+    for (const [label,amount] of [["Giá bán cơ sở",body.priceBase],["Giá bán đóng gói",body.pricePack],["Giá vốn",body.costBase],["Giá sỉ cơ sở",body.details.wholesaleBase],["Giá sỉ đóng gói",body.details.wholesalePack]] as const) {
+      if(amount!==null && (!Number.isSafeInteger(amount)||amount<0||amount>1000000000000)) {command.setError(label+" cần là số đồng nguyên không âm. Có thể nhập 25000 hoặc 25.000.");return;}
+    }
+    if(!Number.isFinite(body.minStock)||body.minStock<0||body.minStock>1000000||!Number.isFinite(body.details.weightGrams)||body.details.weightGrams<0||body.details.weightGrams>100000000) {command.setError("Kiểm tra tồn tối thiểu và khối lượng: nhập số không âm.");return;}
     if (
       !(await confirmAction(
         id ? "Lưu thay đổi hàng hóa" : "Tạo hàng hóa",
@@ -354,6 +379,11 @@ export function ProductForm() {
             <AppText style={{ fontSize: 15 }}>{form.category}</AppText>
             <Icon name="chevron-down" color={theme.colors.muted} size={20} />
           </Pressable>
+          {categoryOpen ? <View style={{gap:8}}>
+            <ChoiceList label="Chọn nhóm hàng hóa" value={form.category} onChange={chooseCategory}
+              options={Object.keys(unitDefaults).map(value=>({value,title:value,description:value==="Thuốc BVTV"?"Thuốc trừ sâu, trừ bệnh, diệt cỏ và thuốc bảo vệ thực vật":""}))} />
+            <Button title="Đóng chọn nhóm" secondary onPress={()=>setCategoryOpen(false)} />
+          </View> : null}
           <ProductFormColumns columns={3}>
             <Field
               label="Đơn vị cơ sở"
@@ -382,6 +412,7 @@ export function ProductForm() {
             {form.baseUnit || "đơn vị cơ sở"}
             {id ? " · Quy đổi được giữ cố định sau khi tạo." : ""}
           </Caption>
+          {form.category==="Thuốc BVTV" ? <Caption>Bán từng chai: cơ sở chai, đóng gói chai, quy đổi 1. Nếu bán thùng, đổi đóng gói thành thùng và nhập đúng số chai/thùng trên nhãn.</Caption> : null}
         </ProductFormCard>
         <ProductFormCard title="Giá bán" icon="tag-outline">
           <ProductFormColumns>
@@ -397,11 +428,11 @@ export function ProductForm() {
             <Field
               label={"Giá bán / " + (form.packUnit || "đóng gói")}
               accessibilityLabel="Giá bán / đơn vị đóng gói (đồng)"
-              required
+              required={!(form.baseUnit.trim()===form.packUnit.trim() && decimalInput(form.packFactor)===1)}
               value={form.pricePack}
               onChangeText={(value) => field("pricePack", value)}
               keyboardType="numeric"
-              placeholder="0"
+              placeholder={form.baseUnit.trim()===form.packUnit.trim() && decimalInput(form.packFactor)===1?"Dùng giá cơ sở":"0"}
             />
           </ProductFormColumns>
           <ProductFormColumns>
@@ -525,37 +556,6 @@ export function ProductForm() {
         </ProductFormCard>
         <Caption>* Trường bắt buộc</Caption>
       </Page>
-      <BottomSheet
-        isPresented={categoryOpen}
-        onDismiss={() => setCategoryOpen(false)}
-        containerColor={theme.colors.paper}
-        contentPadding={{ left: 16, right: 16, top: 8, bottom: 24 }}
-      >
-        <View style={{ gap: 12 }}>
-          <AppText
-            accessibilityRole="header"
-            style={{ fontSize: 18, fontWeight: "600" }}
-          >
-            Nhóm hàng
-          </AppText>
-          <ChoiceList
-            label="Chọn nhóm hàng hóa"
-            value={form.category}
-            onChange={(value) => {
-              field("category", value);
-              setCategoryOpen(false);
-            }}
-            options={["Phân bón", "Thuốc BVTV", "Hạt giống", "Vật tư"].map(
-              (value) => ({ value, title: value }),
-            )}
-          />
-          <Button
-            title="Đóng chọn nhóm"
-            secondary
-            onPress={() => setCategoryOpen(false)}
-          />
-        </View>
-      </BottomSheet>
     </View>
   );
 }

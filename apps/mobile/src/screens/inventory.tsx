@@ -639,8 +639,8 @@ export function ProductDetail() {
                   <Row>
                     <Label>{lot.code}</Label>
                     <Badge
-                      label={
-                        lot.state === "QUARANTINE"
+                        label={
+                          lot.isDeficit ? "Tồn bán âm" : lot.state === "QUARANTINE"
                           ? "Cách ly"
                           : daysUntil(lot.expiresOn) < 0
                             ? "Hết hạn"

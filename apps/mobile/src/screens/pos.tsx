@@ -265,6 +265,13 @@ export default function Pos() {
         ? total
         : Number(value.paid);
   const debt = total - paid;
+  const canNegativeStock = bootstrap.data?.inventoryPolicy?.allowNegativeStock === true && can("sales.negative");
+  const negativeLines = value.lines.flatMap(line => {
+    const product=inventory.data?.find(p=>p.id===line.productId);
+    if(!product) return [];
+    const after=product.available-line.quantity*(line.unit==="PACK"?product.pack_factor:1);
+    return after<0?[product.name+": tồn sau bán "+number(after)+" "+product.base_unit]:[];
+  });
   const filtered = (inventory.data || [])
     .filter((item) => item.details?.sellable !== false)
     .filter((item) =>
@@ -278,7 +285,7 @@ export default function Pos() {
     const quantity = (existing?.quantity || 0) + 1;
     const unit = existing?.unit || "PACK";
     const factor = unit === "PACK" ? product.pack_factor : 1;
-    if (quantity * factor > product.available) {
+    if (quantity * factor > product.available && !canNegativeStock) {
       command.setError("Không đủ tồn khả dụng cho " + product.name);
       return;
     }
@@ -333,7 +340,7 @@ export default function Pos() {
         "Xuất kho theo lô còn hạn. Thu " +
           money(paid) +
           (debt > 0 ? ", ghi nợ " + money(debt) : "") +
-          ".",
+          "." + (negativeLines.length ? "\nBán vượt tồn:\n"+negativeLines.join("\n") : ""),
       ))
     )
       return;
@@ -650,7 +657,7 @@ export default function Pos() {
                   key={product.id}
                   accessibilityRole="button"
                   accessibilityLabel={"Thêm " + product.sku}
-                  disabled={!draft.ready || product.available <= 0}
+                  disabled={!draft.ready || (product.available <= 0 && !canNegativeStock)}
                   onPress={() => {
                     add(product);
                     setSearch("");
@@ -679,6 +686,7 @@ export default function Pos() {
                     <Caption>
                       {money(priceOf(product, "PACK"))} / {product.pack_unit} ·
                       Tồn {number(product.available / product.pack_factor)}
+                      {product.available<=0 && canNegativeStock ? " · Có thể bán âm" : ""}
                     </Caption>
                   </View>
                   <Icon name="plus-circle-outline" />
@@ -1251,6 +1259,7 @@ export default function Pos() {
           contentContainerStyle={{ padding: 16, gap: 12 }}
         >
           <Label big>Thanh toán tại quầy</Label>
+          {negativeLines.length>0 ? <Notice>{canNegativeStock?"Đơn này bán vượt tồn. ":"Đơn vượt tồn; cần cài đặt và quyền bán âm. "}{negativeLines.join("; ")}. Phần thiếu dùng giá vốn hàng hóa tại lúc bán.</Notice> : null}
           <Panel>
             <SectionHeading title="Phương thức thu tiền & tích điểm" />
             <Select

@@ -143,10 +143,12 @@ export function Settings() {
   const command = useCommand();
   const [store, setStore] = useState({ name: "", address: "", phone: "" });
   const [notifications, setNotifications] = useState(false);
+  const [negativeStock, setNegativeStock] = useState(false);
   const [notice, setNotice] = useState("");
   const session = useSession();
   useEffect(() => {
     if (bootstrap.data) setStore(bootstrap.data.store);
+    if (bootstrap.data) setNegativeStock(bootstrap.data.inventoryPolicy?.allowNegativeStock === true);
   }, [bootstrap.data]);
   useEffect(() => {
     localGet<boolean>(userKey("reminder"))
@@ -248,6 +250,16 @@ export function Settings() {
       {can("settings.manage") ? (
         <WarehouseAdmin warehouses={bootstrap.data?.warehouses || []} />
       ) : null}
+      {can("settings.manage") ? <Section title="Bán hàng & tồn kho"><Panel>
+        <Toggle label="Cho phép bán âm tồn kho" value={negativeStock} onChange={setNegativeStock} />
+        <Caption>Khi hết hàng, chủ cửa hàng hoặc nhân viên có quyền bán âm vẫn ghi nhận đơn. Ví dụ tồn 0 bán 1 còn -1; nhập bù 10 còn 9 sau khi ghi sổ.</Caption>
+        <Caption>Giá vốn phần bán âm dùng giá vốn hàng hóa tại lúc bán. Lô hết hạn/cách ly vẫn không được xuất bán. Cấp thêm quyền Cho phép bán âm tồn kho cho role nhân viên cần dùng.</Caption>
+        <Button title="Lưu cài đặt bán âm" pending={command.pending} disabled={!bootstrap.data} onPress={async()=>{
+          if (!(await confirmAction("Lưu cài đặt bán âm",negativeStock?"Cho phép bán vượt tồn cho tài khoản có quyền. Nhập hàng sẽ tự bù số âm.":"Ngừng phát sinh bán âm mới; số âm cũ vẫn được giữ và bù khi nhập hàng."))) return;
+          const result=await command.run("/settings/inventory",{allowNegativeStock:negativeStock});
+          if(result) setNotice("Đã lưu cài đặt bán âm tồn kho.");
+        }} />
+      </Panel></Section> : null}
       <Section title="Bảo mật & kết nối">
         <Panel>
           <LinkRow

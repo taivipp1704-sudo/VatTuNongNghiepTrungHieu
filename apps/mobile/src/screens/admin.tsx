@@ -40,6 +40,7 @@ const labels: Record<string, string> = {
   "loyalty.redeem": "Đổi điểm giảm tiền khi bán hàng",
   "sales.fulfillment": "Quản lý đơn và ảnh xác nhận trong kho",
   "sales.create": "Tạo đơn bán",
+  "sales.negative": "Cho phép bán âm tồn kho",
   "sales.view": "Xem đơn bán",
   "sales.price.edit": "Sửa giá bán",
   "sales.wholesale": "Bán theo bảng giá sỉ",
@@ -67,6 +68,7 @@ const groups = [
     icon: "cash-register",
     permissions: [
       "sales.create",
+      "sales.negative",
       "sales.view",
       "invoices.view",
       "loyalty.redeem",
@@ -124,6 +126,7 @@ const groups = [
 ];
 const descriptions: Record<string, string> = {
   "sales.create": "Xuất kho và ghi nhận tiền theo đơn bán",
+  "sales.negative": "Bán vượt tồn khi cửa hàng đã bật bán âm. Nhập hàng được ghi sổ sẽ tự bù số âm trong đúng kho.",
   "loyalty.redeem": "Khấu trừ theo số dư và giới hạn admin đã cấu hình",
   "sales.discount": "Cho phép nhập chiết khấu toàn đơn",
   "sales.price.edit": "Thay giá bán so với bảng giá hàng hóa",

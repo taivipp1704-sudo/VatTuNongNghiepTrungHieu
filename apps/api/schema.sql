@@ -78,6 +78,24 @@ CREATE TABLE IF NOT EXISTS idempotency (
   response jsonb, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(user_id,key)
 );
 CREATE TABLE IF NOT EXISTS settings (key text PRIMARY KEY, value jsonb NOT NULL);
+-- Only the internal shortage bucket may carry a negative balance. Real lots
+-- retain their nonnegative quantity/reservation guarantees.
+ALTER TABLE lots ADD COLUMN IF NOT EXISTS is_deficit boolean NOT NULL DEFAULT false;
+DO $$ DECLARE c record; BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='lots'::regclass AND conname='lots_inventory_balance_check') THEN
+    FOR c IN SELECT conname FROM pg_constraint WHERE conrelid='lots'::regclass AND contype='c'
+      AND (pg_get_constraintdef(oid) LIKE '%quantity%' OR pg_get_constraintdef(oid) LIKE '%reserved%') LOOP
+      EXECUTE format('ALTER TABLE lots DROP CONSTRAINT %I',c.conname);
+    END LOOP;
+    ALTER TABLE lots ADD CONSTRAINT lots_inventory_balance_check CHECK (
+      (NOT is_deficit AND quantity>=0 AND reserved>=0 AND reserved<=quantity) OR
+      (is_deficit AND quantity BETWEEN -1000000000 AND 0 AND reserved=0 AND state='AVAILABLE' AND expires_on IS NULL)
+    );
+  END IF;
+END $$;
+CREATE UNIQUE INDEX IF NOT EXISTS lots_deficit_bucket_idx ON lots(product_id,warehouse_id) WHERE is_deficit;
+ALTER TABLE stock_ledger DROP CONSTRAINT IF EXISTS stock_ledger_balance_check;
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS is_reconciliation boolean NOT NULL DEFAULT false;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_snapshot jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_earned numeric(18,0) NOT NULL DEFAULT 0;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_spent numeric(18,0) NOT NULL DEFAULT 0;

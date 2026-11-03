@@ -30,6 +30,7 @@ export const permissionCatalog = [
   "loyalty.redeem",
   "sales.fulfillment",
   "sales.create",
+  "sales.negative",
   "sales.view",
   "sales.price.edit",
   "sales.wholesale",

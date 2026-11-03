@@ -296,7 +296,7 @@ export class ManagementController {
       sum(g.delta) FILTER(WHERE g.created_at>=($2::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')) after_end,
       sum(GREATEST(g.delta,0)) FILTER(WHERE g.created_at>=($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AND g.created_at<($2::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')) incoming,
       sum(GREATEST(-g.delta,0)) FILTER(WHERE g.created_at>=($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AND g.created_at<($2::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')) outgoing
-      FROM stock_ledger g JOIN lots l ON l.id=g.lot_id WHERE ($3::uuid[] IS NULL OR l.warehouse_id=ANY($3)) GROUP BY l.product_id,l.warehouse_id
+      FROM stock_ledger g JOIN lots l ON l.id=g.lot_id WHERE NOT g.is_reconciliation AND ($3::uuid[] IS NULL OR l.warehouse_id=ANY($3)) GROUP BY l.product_id,l.warehouse_id
       ), balances AS(SELECT product_id,warehouse_id,sum(quantity) actual,sum(reserved) reserved,sum(quantity*cost_base) "costTotal" FROM lots WHERE ($3::uuid[] IS NULL OR warehouse_id=ANY($3)) GROUP BY product_id,warehouse_id)
       SELECT p.id,p.sku,p.name,p.base_unit unit,w.id warehouse_id,w.name warehouse,
       COALESCE(b.actual,0)-COALESCE(m.after_start,0) opening,COALESCE(m.incoming,0) incoming,COALESCE(m.outgoing,0) outgoing,

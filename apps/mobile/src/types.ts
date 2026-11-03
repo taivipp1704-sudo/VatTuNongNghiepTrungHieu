@@ -15,6 +15,7 @@ export interface Warehouse {
   address: string;
 }
 export interface Lot {
+  isDeficit?: boolean;
   id: string;
   code: string;
   warehouseId: string;
@@ -95,6 +96,7 @@ export interface CartLine {
   unitPrice: number;
 }
 export interface Bootstrap {
+  inventoryPolicy?: { allowNegativeStock: boolean };
   user: SessionUser;
   warehouses: Warehouse[];
   store: { name: string; address: string; phone: string };

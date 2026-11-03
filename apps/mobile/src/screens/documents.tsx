@@ -649,6 +649,7 @@ export function Orders() {
                 cộng: {number(item.loyalty_earned || 0)}
               </Caption>
               <Caption>{item.note || "Không có ghi chú đơn."}</Caption>
+              {item.lines.some((line: DataRow)=>line.allocations?.some((allocation: DataRow)=>allocation.deficit)) ? <Caption>Đơn có bán âm tồn kho. Giá vốn phần thiếu được chốt theo giá vốn hàng hóa tại lúc bán; nhập bù không tự sửa giá vốn của đơn cũ.</Caption> : null}
               {item.lines.map((line: DataRow, index: number) => (
                 <Row key={index}>
                   <View style={{ flex: 1 }}>

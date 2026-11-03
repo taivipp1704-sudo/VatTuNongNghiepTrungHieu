@@ -1218,6 +1218,97 @@ async function loyaltyFixture() {
   return { customerId, products };
 }
 
+test("all product groups accept bottle units, create and edit without fertilizer-only rules", async()=>{
+  for(const category of ["Phân bón","Thuốc BVTV","Hạt giống","Vật tư"]){
+    const body={sku:"GROUP-"+randomUUID(),name:"Hàng "+category,category,baseUnit:"chai",packUnit:"chai",packFactor:1,priceBase:25000,pricePack:25000,costBase:15000,minStock:0,trackLots:true};
+    const created=await request("/products",body);assert.equal(created.status,201,JSON.stringify(created.data));
+    const edited=await request("/products/"+created.data.id,{...body,name:body.name+" đã sửa"},"owner",randomUUID(),"PATCH");assert.equal(edited.status,200);
+    const stored=(await db.pool.query("SELECT category,base_unit,pack_factor FROM products WHERE id=$1",[created.data.id])).rows[0];
+    assert.equal(stored.category,category);assert.equal(stored.base_unit,"chai");assert.equal(stored.pack_factor,1);
+  }
+});
+
+async function negativeFixture(){
+  const product=await request("/products",{sku:"NEG-"+randomUUID(),name:"Thuốc BVTV bán chai",category:"Thuốc BVTV",baseUnit:"chai",packUnit:"chai",packFactor:1,priceBase:10000,pricePack:10000,costBase:4000,minStock:0,trackLots:false});
+  assert.equal(product.status,201);return product.data.id as string;
+}
+async function receiveNegative(id:string,qty:number,cost=5000){
+  const doc=await request("/documents",{kind:"RECEIPT",warehouseId:main,reason:"Nhập bù tồn âm kiểm thử",status:"PENDING",lines:[{productId:id,lotCode:"NHAP-"+randomUUID(),quantity:qty,unit:"BASE",costBase:cost}]});
+  assert.equal(doc.status,201);return doc.data.id as string;
+}
+async function negativeStock(id:string){
+  return (await db.pool.query("SELECT COALESCE(sum(quantity),0)::numeric actual,COALESCE(sum(CASE WHEN state='AVAILABLE' AND (expires_on IS NULL OR expires_on>=CURRENT_DATE) THEN quantity-reserved ELSE 0 END),0)::numeric available FROM lots WHERE product_id=$1 AND warehouse_id=$2",[id,main])).rows[0];
+}
+test("negative stock is store/role guarded; 100 sold to zero, then -1, receipt 10 makes 9 exactly once",async()=>{
+  const id=await negativeFixture();
+  const sale=(quantity=1)=>({warehouseId:main,lines:[{productId:id,quantity,unit:"BASE"}],paid:10000*quantity,method:"CASH"});
+  assert.equal((await request("/sales",sale())).status,409);
+  assert.equal((await request("/settings/inventory",{allowNegativeStock:true},"banhang")).status,403);
+  assert.equal((await request("/settings/inventory",{allowNegativeStock:true})).status,201);
+  try{
+    assert.equal((await request("/sales",sale(),"banhang")).status,403);
+    const first=await receiveNegative(id,100,4000);assert.equal((await request("/documents/"+first+"/post",{})).status,201);
+    assert.equal((await request("/sales",sale(100))).status,201);assert.equal((await negativeStock(id)).actual,0);
+    const key=randomUUID(),sold=await request("/sales",sale(),"owner",key);assert.equal(sold.status,201);
+    assert.deepEqual((await request("/sales",sale(),"owner",key)).data,sold.data);assert.equal((await negativeStock(id)).actual,-1);
+    const doc=await receiveNegative(id,10);assert.equal((await negativeStock(id)).actual,-1);
+    const postKey=randomUUID();assert.equal((await request("/documents/"+doc+"/post",{},"owner",postKey)).status,201);
+    assert.equal((await request("/documents/"+doc+"/post",{},"owner",postKey)).status,201);
+    assert.deepEqual(await negativeStock(id),{actual:9,available:9});
+    const real=(await db.pool.query("SELECT min(quantity) lowest FROM lots WHERE product_id=$1 AND NOT is_deficit",[id])).rows[0];assert.ok(real.lowest>=0);
+    const movements=(await db.pool.query("SELECT sum(GREATEST(g.delta,0)) incoming,sum(GREATEST(-g.delta,0)) outgoing FROM stock_ledger g JOIN lots l ON l.id=g.lot_id WHERE l.product_id=$1 AND NOT g.is_reconciliation",[id])).rows[0];assert.equal(movements.incoming,110);assert.equal(movements.outgoing,101);
+    const report=await request("/management/reports/inventory?period=DAY&warehouseId="+main);assert.equal(report.status,200);
+    const row=report.data.items.find((r:any)=>r.id===id);assert.equal(row.incoming,110);assert.equal(row.outgoing,101);assert.equal(row.closing,9);
+    const order=(await db.pool.query("SELECT lines FROM orders WHERE id=$1",[sold.data.id])).rows[0];assert.equal(order.lines[0].allocations[0].costBase,4000);assert.equal(order.lines[0].allocations[0].deficit,true);
+    const other=(await db.pool.query("SELECT COALESCE(sum(quantity),0)::numeric qty FROM lots WHERE product_id=$1 AND warehouse_id=$2",[id,secondary])).rows[0];assert.equal(other.qty,0);
+  }finally{await request("/settings/inventory",{allowNegativeStock:false});}
+});
+test("partial replenishment and returned quarantined goods reconcile without double counting",async()=>{
+  const id=await negativeFixture();await request("/settings/inventory",{allowNegativeStock:true});
+  try{
+    const sold=await request("/sales",{warehouseId:main,lines:[{productId:id,quantity:5,unit:"BASE"}],paid:50000,method:"CASH"});assert.equal(sold.status,201);
+    const doc=await receiveNegative(id,2);await request("/documents/"+doc+"/post",{});assert.equal((await negativeStock(id)).actual,-3);
+    await request("/settings/inventory",{allowNegativeStock:false});
+    assert.equal((await request("/orders/"+sold.data.id+"/return",{reason:"Khách trả đủ hàng bán âm"})).status,201);
+    assert.deepEqual(await negativeStock(id),{actual:2,available:-3});
+    const quarantine=(await db.pool.query("SELECT id FROM lots WHERE product_id=$1 AND state='QUARANTINE'",[id])).rows[0];
+    assert.equal((await request("/lots/"+quarantine.id+"/release",{reason:"Đã kiểm tra hàng trả còn nguyên"})).status,201);
+    assert.deepEqual(await negativeStock(id),{actual:2,available:2});
+  }finally{await request("/settings/inventory",{allowNegativeStock:false});}
+});
+test("concurrent negative sales serialize one shortage bucket; ordinary lots remain nonnegative",async()=>{
+  const id=await negativeFixture();await request("/settings/inventory",{allowNegativeStock:true});
+  try{
+    const body={warehouseId:main,lines:[{productId:id,quantity:1,unit:"BASE"}],paid:10000,method:"CASH"};
+    const sales=await Promise.all([request("/sales",body),request("/sales",body)]);assert.deepEqual(sales.map(r=>r.status),[201,201]);
+    assert.equal((await negativeStock(id)).actual,-2);
+    const buckets=(await db.pool.query("SELECT count(*)::int count FROM lots WHERE product_id=$1 AND is_deficit",[id])).rows[0];assert.equal(buckets.count,1);
+    const docs=await Promise.all([receiveNegative(id,1),receiveNegative(id,3)]);
+    const posts=await Promise.all(docs.map(doc=>request("/documents/"+doc+"/post",{})));assert.deepEqual(posts.map(r=>r.status),[201,201]);
+    assert.deepEqual(await negativeStock(id),{actual:2,available:2});
+  }finally{await request("/settings/inventory",{allowNegativeStock:false});}
+});
+
+test("staff negative permission respects warehouse scope; expired and quarantined lots are never allocated",async()=>{
+  const id=await negativeFixture();await request("/settings/inventory",{allowNegativeStock:true});
+  try{
+    const role=await request("/admin/roles",{name:"Bán âm "+randomUUID(),permissions:["sales.create","sales.view","sales.negative"]});
+    const password="Negative-Staff-2026!",username="neg-"+randomUUID().slice(0,8);
+    assert.equal((await request("/admin/users",{username,name:"Nhân viên bán âm",password,roleIds:[role.data.id],warehouseIds:[main]})).status,201);
+    const login=await request("/auth/login",{username,password});tokens.negativeStaff=login.data.token;
+    assert.equal((await request("/auth/password",{currentPassword:password,newPassword:password+"Changed"},"negativeStaff")).status,201);
+    const expiredId=randomUUID(),quarantineId=randomUUID();
+    await db.pool.query("INSERT INTO lots(id,product_id,warehouse_id,code,quantity,cost_base,expires_on) VALUES($1,$2,$3,'EXPIRED',3,4000,CURRENT_DATE-1)",[expiredId,id,main]);
+    await db.pool.query("INSERT INTO lots(id,product_id,warehouse_id,code,quantity,cost_base,state) VALUES($1,$2,$3,'QUARANTINE',2,4000,'QUARANTINE')",[quarantineId,id,main]);
+    const body={warehouseId:main,lines:[{productId:id,quantity:1,unit:"BASE"}],paid:10000,method:"CASH"};
+    const sold=await request("/sales",body,"negativeStaff");assert.equal(sold.status,201);
+    const lines=(await db.pool.query("SELECT lines FROM orders WHERE id=$1",[sold.data.id])).rows[0].lines;assert.equal(lines[0].allocations.length,1);assert.equal(lines[0].allocations[0].deficit,true);
+    assert.equal((await request("/sales",{...body,warehouseId:secondary},"negativeStaff")).status,403);
+    await request("/settings/inventory",{allowNegativeStock:false});assert.equal((await request("/sales",body,"negativeStaff")).status,409);
+    const unchanged=(await db.pool.query("SELECT sum(quantity) qty FROM lots WHERE id=ANY($1::uuid[])",[[expiredId,quarantineId]])).rows[0];assert.equal(unchanged.qty,5);
+  }finally{await request("/settings/inventory",{allowNegativeStock:false});}
+});
+
 test("loyalty rates are per product, admin guarded, audited and preserved by older clients", async () => {
   const fixture = await loyaltyFixture();
   const p = fixture.products[0];

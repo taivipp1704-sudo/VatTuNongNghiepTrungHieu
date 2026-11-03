@@ -67,6 +67,7 @@ export class PublicController {
     return {
       status: "ok",
       service: "HTAgri",
+      capabilities: ["negative-stock-v1", "order-confirmation-photos"],
       invoiceProvider: "NOT_CONFIGURED",
     };
   }
@@ -167,6 +168,7 @@ export class AppController {
       user: request.user,
       warehouses,
       store,
+      inventoryPolicy: await this.operations.inventoryPolicy(this.db.pool),
       permissions: has(request.user, "roles.manage") ? permissionCatalog : [],
       invoiceProvider: "NOT_CONFIGURED",
     };
@@ -676,6 +678,7 @@ export class AppController {
         await client.query("UPDATE lots SET state='AVAILABLE' WHERE id=$1", [
           id,
         ]);
+        await this.operations.settleDeficit(client,request.user,lot.product_id,lot.warehouse_id);
         await audit(client, request.user.id, "LOT_RELEASED", id, input);
         return { id, state: "AVAILABLE" };
       },
@@ -1618,6 +1621,17 @@ export class AppController {
         [JSON.stringify(input)],
       );
       await audit(client, request.user.id, "STORE_UPDATED", "store", input);
+    });
+    return input;
+  }
+
+  @Post("settings/inventory")
+  async inventorySettings(@Req() request: AuthRequest, @Body() body: unknown) {
+    requirePermission(request.user,"settings.manage");
+    const input = parse(z.object({allowNegativeStock:z.boolean()}).strict(),body);
+    await this.db.transaction(async client => {
+      await client.query("INSERT INTO settings(key,value) VALUES('inventory_policy',$1) ON CONFLICT(key) DO UPDATE SET value=$1",[JSON.stringify(input)]);
+      await audit(client,request.user.id,"INVENTORY_POLICY_UPDATED","inventory_policy",input);
     });
     return input;
   }
