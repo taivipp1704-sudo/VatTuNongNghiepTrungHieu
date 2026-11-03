@@ -12,6 +12,7 @@ import { useWarehouse } from "@/lib/warehouse";
 import { api, queryClient } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { SessionUser } from "@/types";
+import { AppKeyboardProvider } from "@/components/app-keyboard-provider";
 
 const titles: Record<string, string> = {
   "/": "HTAgri",
@@ -101,6 +102,7 @@ export default function RootLayout() {
     );
   return (
     <SafeAreaProvider>
+      <AppKeyboardProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style={user && !offline && (pathname === "/" || pathname === "/reports") ? "light" : "dark"} />
         {offline && user ? (
@@ -210,6 +212,7 @@ export default function RootLayout() {
           </Stack.Protected>
         </Stack>
       </QueryClientProvider>
+      </AppKeyboardProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,3 +1,15 @@
+# Kiểm tra mới nhất · HTAgri Android 19
+
+Ngày 03/11/2026: màn đăng nhập dùng header gọn (logo 56, tên và mô tả ngắn). AuthPage trên Android/iOS dùng KeyboardAwareScrollView, bottomOffset 96, không lồng KeyboardAvoidingView; provider native ở root, tắt preload để tránh bàn phím nháy lúc mở app. Android đặt softwareKeyboardLayoutMode=resize. Màn đổi mật khẩu dùng cùng cơ chế. Phím Next chuyển focus, Go/Done dùng thao tác sẵn có.
+
+Thư viện react-native-keyboard-controller 1.22.7 cài theo Expo SDK 58 và autolinking, kèm giấy phép MIT. Tham chiếu: https://docs.expo.dev/versions/v58.0.0/sdk/keyboard-controller/ và https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-aware-scroll-view. Không tự dựng chuyển động bàn phím bằng sự kiện JavaScript/timing.
+
+TypeScript mobile đạt, 6/6 bài cấu hình/phiên đạt. CUA web: header gọn, Enter ở tên đăng nhập chuyển focus sang mật khẩu; viewport 390×430 có đáy ô mật khẩu tại 239,8; 320×400 có đáy tại 224,8; không tràn ngang, không có log error/warn. Đây là kiểm tra bố cục thu hẹp, không phải kiểm tra bàn phím native. adb không có thiết bị kết nối và máy này chưa cài emulator. Chưa xác nhận trực tiếp IME trên Android/iOS; cần nghiệm thu trên điện thoại người dùng.
+
+Chỉ sửa client; không triển khai API hoặc thay dữ liệu cửa hàng. Kết quả APK 19 được ghi sau khi build/ký. API tiếp tục commit 74842201a795e7b5927af3ea7cf172bed05c4137.
+
+---
+
 # Kiểm tra mới nhất · HTAgri Android 18
 
 Ngày 03/11/2026: chỉ sửa client. Bỏ thông báo lỗi khôi phục phiên tự động; vẫn giữ trạng thái mất kết nối và lỗi đăng nhập do thao tác người dùng. Field có secureTextEntry được mặc định che và có con mắt; mỗi ô giữ trạng thái độc lập, có nhãn Hiện/Ẩn, vùng chạm 48×50. Thêm che mật khẩu khởi tạo nhân viên. Bỏ nút và ô cấu hình kết nối ở đăng nhập. Bản operational dùng URL nhúng sẵn; chuẩn hóa lựa chọn cũ và xóa token nếu lựa chọn cũ trỏ sang máy chủ khác, rồi lưu URL mới để không yêu cầu đăng nhập lại ở mỗi lần mở.

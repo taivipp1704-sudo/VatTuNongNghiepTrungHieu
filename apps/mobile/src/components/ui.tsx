@@ -11,6 +11,7 @@ import {
   PropsWithChildren,
   ReactNode,
   Ref,
+  RefObject,
   useState,
   useRef,
 } from "react";
@@ -298,10 +299,12 @@ export function Field({
   onFocus,
   onBlur,
   secureTextEntry,
+  focusRef,
   ...props
-}: TextInputProps & { label: string }) {
+}: TextInputProps & { label: string; focusRef?: RefObject<ComponentRef<typeof TextInput> | null> }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const localRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const inputRef = focusRef ?? localRef;
   const [editing, setEditing] = useState(false);
   const [buffer, setBuffer] = useState(value || "");
   const numeric =

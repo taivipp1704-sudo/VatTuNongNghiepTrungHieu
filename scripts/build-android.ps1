@@ -43,6 +43,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $agriMobile 'assets\licenses\Inter-OFL.txt') -Destination $agriLicenses
     Copy-Item -LiteralPath (Join-Path $agriMobile 'assets\licenses\Manrope-OFL.txt') -Destination $agriLicenses
     Copy-Item -LiteralPath (Join-Path $agriMobile 'assets\licenses\BwipJs-MIT.txt') -Destination $agriLicenses
+    Copy-Item -LiteralPath (Join-Path $agriMobile 'assets\licenses\KeyboardController-MIT.txt') -Destination $agriLicenses
     # React Native caches the package name independently of Expo prebuild.
     # Refresh that generated file when switching between the LAN and release apps.
     $agriAutolinking = Join-Path $agriMobile 'android\build\generated\autolinking\autolinking.json'

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { ComponentRef, useRef, useState } from "react";
 import { router } from "expo-router";
-import { View } from "react-native";
+import { TextInput, View } from "react-native";
 import { Image } from "expo-image";
 import { AppText as Text } from "@/components/text";
 import {
@@ -8,7 +8,6 @@ import {
   Caption,
   Field,
   Notice,
-  Page,
   Panel,
   Section,
 } from "@/components/ui";
@@ -16,16 +15,18 @@ import { isLanTestBuild, isOperationalBuild, useSession } from "@/lib/session";
 import { useCommand } from "@/lib/api";
 import { SessionUser } from "@/types";
 import { theme } from "@/theme";
+import { AuthPage } from "@/components/auth-page";
 
 export function Login() {
   const session = useSession();
+  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [help, setHelp] = useState(false);
   const login = async () => {
-    if (pending) return;
+    if (pending || !username.trim() || !password || !session.apiUrl) return;
     setPending(true);
     setError("");
     try {
@@ -43,45 +44,16 @@ export function Login() {
     }
   };
   return (
-    <Page>
-      <View
-        style={{
-          paddingTop: theme.space.huge,
-          gap: theme.space.md,
-          paddingBottom: theme.space.xl,
-        }}
-      >
-        <Image source={require("../../assets/images/htagri-logo.png")} accessible accessibilityLabel="Logo HTAgri" contentFit="contain" style={{ width: 96, height: 96 }} />
-        <View
-          style={{
-            backgroundColor: theme.colors.soft,
-            borderRadius: theme.radius.lg,
-            padding: theme.space.lg,
-            alignSelf: "flex-start",
-          }}
-        >
-          <Text
-            style={{
-              color: theme.colors.primary,
-              fontWeight: "700",
-              fontSize: theme.type.title,
-            }}
-          >
-            {isLanTestBuild ? "HTAgri Test" : "HTAgri"}
-          </Text>
+    <AuthPage>
+      <View style={{ gap: 8, paddingTop: 8, paddingBottom: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Image source={require("../../assets/images/htagri-logo.png")} accessible accessibilityLabel="Logo HTAgri" contentFit="contain" style={{ width: 56, height: 56 }} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ color: theme.colors.primary, fontSize: 27, lineHeight: 36, fontWeight: "700" }}>{isLanTestBuild ? "HTAgri Test" : "HTAgri"}</Text>
+            <Caption>Quản lý cửa hàng</Caption>
+          </View>
         </View>
-        <Text
-          style={{
-            color: theme.colors.text,
-            fontSize: theme.type.display,
-            fontWeight: "600",
-          }}
-        >
-          Một cửa hàng.{"\n"}Cùng một nhịp làm việc.
-        </Text>
-        <Caption>
-          Kho hàng, bán hàng và công nợ trong một ứng dụng nội bộ.
-        </Caption>
+        <Caption>Đăng nhập để quản lý kho, bán hàng và công nợ.</Caption>
       </View>
       <Panel>
         <Section title="Đăng nhập">
@@ -92,9 +64,14 @@ export function Login() {
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="username"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
           <Field
             label="Mật khẩu"
+            focusRef={passwordRef}
+            returnKeyType="go"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -130,17 +107,20 @@ export function Login() {
             ? "Chỉ sử dụng tài khoản được cửa hàng cấp."
             : "Chỉ sử dụng tài khoản được cửa hàng cấp. Dữ liệu được cập nhật từ thao tác thực tế tại cửa hàng."}
       </Caption>
-    </Page>
+    </AuthPage>
   );
 }
 
 export function ChangePassword() {
+  const nextRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const confirmRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const command = useCommand();
   const user = useSession((state) => state.user);
   const save = async () => {
+    if (command.pending || !current || !next || !confirm) return;
     if (next.length < 12 || next !== confirm) {
       command.setError(
         "Mật khẩu mới cần ít nhất 12 ký tự và nhập lại phải khớp.",
@@ -157,7 +137,7 @@ export function ChangePassword() {
     }
   };
   return (
-    <Page>
+    <AuthPage headerShown>
       <Notice>
         {user?.mustChangePassword
           ? "Bạn cần đổi mật khẩu khởi tạo trước khi sử dụng."
@@ -166,18 +146,28 @@ export function ChangePassword() {
       <Panel>
         <Field
           label="Mật khẩu hiện tại"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => nextRef.current?.focus()}
           value={current}
           onChangeText={setCurrent}
           secureTextEntry
         />
         <Field
           label="Mật khẩu mới (ít nhất 12 ký tự)"
+          focusRef={nextRef}
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => confirmRef.current?.focus()}
           value={next}
           onChangeText={setNext}
           secureTextEntry
         />
         <Field
           label="Nhập lại mật khẩu mới"
+          focusRef={confirmRef}
+          returnKeyType="done"
+          onSubmitEditing={save}
           value={confirm}
           onChangeText={setConfirm}
           secureTextEntry
@@ -195,6 +185,6 @@ export function ChangePassword() {
         secondary
         onPress={() => useSession.getState().logout()}
       />
-    </Page>
+    </AuthPage>
   );
 }

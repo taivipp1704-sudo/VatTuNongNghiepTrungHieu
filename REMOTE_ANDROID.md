@@ -1,6 +1,8 @@
-# HTAgri Android — bản 18
+# HTAgri Android — bản 19
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/htagri-android-v18/HTAgri-internal-signed-18.apk). App có tên **HTAgri**, Android 7.0+ arm64, bản ký riêng số 18. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/htagri-android-v19/HTAgri-internal-signed-19.apk). App có tên **HTAgri**, Android 7.0+ arm64, bản ký riêng số 19. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 19 làm gọn phần đầu đăng nhập, dùng cuộn tránh bàn phím native ở đăng nhập và đổi mật khẩu, giữ khoảng cách cho ô nhập/nút bên dưới. Phím Tiếp chuyển sang ô kế tiếp; ô cuối có phím Đi/Xong. Giữ con mắt, máy chủ cài sẵn và dữ liệu cửa hàng. Cài cập nhật trực tiếp lên bản trước.
 
 Bản 18 bỏ cảnh báo tự động “Không tải được phiên đăng nhập” trên màn đăng nhập; lỗi khi người dùng bấm đăng nhập vẫn được thông báo. Các ô mật khẩu có con mắt để ẩn/hiện riêng, mặc định được che; áp dụng đăng nhập, đổi mật khẩu và tạo nhân viên. Bỏ nút cấu hình kết nối khỏi đăng nhập; bản cài tự dùng API đã nhúng, bỏ địa chỉ tùy chỉnh cũ của giai đoạn thử. Cài cập nhật trực tiếp, giữ dữ liệu cửa hàng. Backend không triển khai lại và không dọn dữ liệu trong bản này.
 
