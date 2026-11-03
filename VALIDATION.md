@@ -6,7 +6,7 @@ Thư viện react-native-keyboard-controller 1.22.7 cài theo Expo SDK 58 và au
 
 TypeScript mobile đạt, 6/6 bài cấu hình/phiên đạt. CUA web: header gọn, Enter ở tên đăng nhập chuyển focus sang mật khẩu; viewport 390×430 có đáy ô mật khẩu tại 239,8; 320×400 có đáy tại 224,8; không tràn ngang, không có log error/warn. Đây là kiểm tra bố cục thu hẹp, không phải kiểm tra bàn phím native. adb không có thiết bị kết nối và máy này chưa cài emulator. Chưa xác nhận trực tiếp IME trên Android/iOS; cần nghiệm thu trên điện thoại người dùng.
 
-Chỉ sửa client; không triển khai API hoặc thay dữ liệu cửa hàng. Kết quả APK 19 được ghi sau khi build/ký. API tiếp tục commit 74842201a795e7b5927af3ea7cf172bed05c4137.
+Chỉ sửa client; không triển khai API hoặc thay dữ liệu cửa hàng. APK 19: 54,774,825 byte, SHA-256 `b454e28ea269a637d62e9b92dc96e5e62e0769cceb3442b2b05eb3459569c829`; cùng package/chứng chỉ, nhãn HTAgri, minSdk 24/targetSdk 36, arm64. Đã xác minh cấu hình cloud HTTPS, native keyboard autolinking/DEX, adjustResize, bundle JS, sáu font, giấy phép (gồm KeyboardController MIT) và ảnh nền; debug/backup/HTTP tắt. Native source `3455a364b20e1d9a1f0e6c8b787351a2d0674026`. Kiểm tra IME trên điện thoại vẫn pending. API tiếp tục commit 74842201a795e7b5927af3ea7cf172bed05c4137.
 
 ---
 
