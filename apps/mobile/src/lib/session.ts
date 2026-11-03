@@ -118,8 +118,7 @@ export const useSession = create<Session>((set, get) => ({
           }
         } catch {
           set({
-            message:
-              "Không tải được phiên đăng nhập. Kiểm tra mạng và máy chủ.",
+            message: "",
             offline: true,
           });
         }

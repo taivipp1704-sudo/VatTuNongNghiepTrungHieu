@@ -12,6 +12,7 @@ import {
   ReactNode,
   Ref,
   useState,
+  useRef,
 } from "react";
 import {
   ActivityIndicator,
@@ -27,6 +28,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { theme } from "@/theme";
 import { AppText as Text } from "./text";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 function Host(props: ComponentProps<typeof NativeHost>) {
   return (
@@ -295,8 +297,11 @@ export function Field({
   onChangeText,
   onFocus,
   onBlur,
+  secureTextEntry,
   ...props
 }: TextInputProps & { label: string }) {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [editing, setEditing] = useState(false);
   const [buffer, setBuffer] = useState(value || "");
   const numeric =
@@ -312,7 +317,10 @@ export function Field({
       >
         {label}
       </Text>
+      <View style={{ position: "relative" }}>
       <TextInput
+        ref={inputRef}
+        secureTextEntry={Boolean(secureTextEntry) && !passwordVisible}
         accessibilityLabel={label}
         placeholderTextColor={theme.colors.muted}
         style={{
@@ -321,12 +329,15 @@ export function Field({
           borderColor: theme.colors.control,
           borderRadius: 0,
           paddingHorizontal: theme.space.md,
+          paddingRight: secureTextEntry ? 56 : theme.space.md,
           paddingVertical: theme.space.md,
           color: theme.colors.text,
           backgroundColor: theme.colors.paper,
           fontSize: theme.type.body,
           fontFamily: theme.font.regular,
         }}
+        autoCapitalize={secureTextEntry ? "none" : undefined}
+        autoCorrect={secureTextEntry ? false : undefined}
         {...props}
         value={numeric && editing ? buffer : value}
         onFocus={(event) => {
@@ -343,6 +354,23 @@ export function Field({
           onChangeText?.(text);
         }}
       />
+      {secureTextEntry ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={(passwordVisible ? "Ẩn " : "Hiện ") + label.toLocaleLowerCase("vi-VN")}
+          accessibilityState={{ disabled: props.editable === false }}
+          aria-pressed={passwordVisible}
+          disabled={props.editable === false}
+          onPress={() => {
+            setPasswordVisible((visible) => !visible);
+            inputRef.current?.focus();
+          }}
+          style={({ pressed }) => ({ position: "absolute", right: 0, top: 0, bottom: 0, minHeight: 50, width: 48, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
+        >
+          <MaterialCommunityIcons name={passwordVisible ? "eye-off-outline" : "eye-outline"} size={23} color={theme.colors.muted} />
+        </Pressable>
+      ) : null}
+      </View>
     </View>
   );
 }

@@ -347,6 +347,7 @@ export default function Admin() {
                     />
                     <Field
                       label="Mật khẩu khởi tạo (ít nhất 12 ký tự)"
+                      secureTextEntry
                       value={form.password}
                       onChangeText={(password) =>
                         setForm({ ...form, password })

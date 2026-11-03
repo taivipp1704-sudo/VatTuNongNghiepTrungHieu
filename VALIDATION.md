@@ -1,3 +1,13 @@
+# Kiểm tra mới nhất · HTAgri Android 18
+
+Ngày 03/11/2026: chỉ sửa client. Bỏ thông báo lỗi khôi phục phiên tự động; vẫn giữ trạng thái mất kết nối và lỗi đăng nhập do thao tác người dùng. Field có secureTextEntry được mặc định che và có con mắt; mỗi ô giữ trạng thái độc lập, có nhãn Hiện/Ẩn, vùng chạm 48×50. Thêm che mật khẩu khởi tạo nhân viên.
+
+TypeScript mobile và 4/4 kiểm tra cấu hình phát hành đạt. CUA web: nhập chuỗi thử ở ô mật khẩu, chuyển type password → text → password, nhãn con mắt đổi đúng. Công cụ che giá trị mật khẩu nên không đối chiếu nội dung qua DOM. Viewport 390×844 và 320×740; không tràn ngang, nút vẫn nằm trong màn; không có log error/warn trong phiên. Ảnh password-v18-login-390.png và password-v18-login-320.png. Không gửi thông tin thử đến máy chủ cloud.
+
+Backend tiếp tục commit 74842201a795e7b5927af3ea7cf172bed05c4137; không triển khai lại API và không thay đổi dữ liệu vận hành. Kiểm tra API của bản 17 là lịch sử bên dưới, không tính là chạy lại lần này. Kết quả APK 18 được ghi sau khi ký. Camera/in và thao tác native trên máy thật chưa nghiệm thu lại.
+
+---
+
 # Kiểm tra mới nhất · HTAgri Android 17
 
 Ngày 03/11/2026: API/mobile TypeScript đạt; 35/35 bài API và 4/4 bài cấu hình phát hành đạt. Kiểm tra chuyển dữ liệu thử gồm chặn nhân viên/không đăng nhập, chế độ bảo trì, hủy bảo trì, bản sao lưu thay đổi bị từ chối, bảng lạ bị từ chối, sao lưu đủ, giữ owner, thu hồi phiên cũ, yêu cầu đổi mật khẩu, chặn chuyển lần hai và ghi sản phẩm thật còn sau khởi động lại.
