@@ -36,6 +36,7 @@ import { ListPager } from "@/components/list-pager";
 import { CalendarField } from "@/components/report-range";
 import { counterStatus } from "@/lib/counter";
 import { useScan } from "@/lib/scanner";
+import { OrderConfirmationPhotos } from "@/components/delivery-photos";
 
 const statusNames: Record<string, string> = {
   DRAFT: "Bản nháp",
@@ -778,6 +779,7 @@ export function Orders() {
                   />
                 </>
               ) : null}
+              <OrderConfirmationPhotos orderId={item.id} returned={Boolean(item.returned)} />
             </View>
           ) : null}
         </View>
