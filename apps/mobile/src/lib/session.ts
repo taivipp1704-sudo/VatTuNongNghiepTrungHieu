@@ -47,6 +47,16 @@ async function responseJson(response: Response) {
   return data;
 }
 
+// A server data generation separates operational data from every previous test draft/cache.
+async function prepareDataEpoch(apiUrl: string, user: SessionUser) {
+  const prefix = apiUrl + ":" + user.id + ":";
+  const epoch = user.dataEpoch || "legacy";
+  if (await localGet<string>(prefix + "data-epoch") !== epoch) {
+    await clearUserCache(prefix);
+    await localSet(prefix + "data-epoch", epoch);
+  }
+}
+
 export const useSession = create<Session>((set, get) => ({
   user: null,
   token: null,
@@ -101,7 +111,11 @@ export const useSession = create<Session>((set, get) => ({
           if (response.status === 401) {
             await credentials.remove();
             set({ token: null });
-          } else set({ user: await responseJson(response), offline: false });
+          } else {
+            const user = await responseJson(response);
+            await prepareDataEpoch(apiUrl, user);
+            set({ user, offline: false });
+          }
         } catch {
           set({
             message:
@@ -142,6 +156,7 @@ export const useSession = create<Session>((set, get) => ({
       );
     }
     const data = await responseJson(response);
+    await prepareDataEpoch(get().apiUrl, data.user);
     await credentials.set(data.token);
     set({ user: data.user, token: data.token, offline: false, message: "" });
   },
@@ -164,7 +179,7 @@ export const useSession = create<Session>((set, get) => ({
       });
     }
     if (user)
-      await clearUserCache(apiUrl + ":" + user.id + ":cache:").catch(() => {});
+      await clearUserCache(apiUrl + ":" + user.id + ":" + (user.dataEpoch || "legacy") + ":cache:").catch(() => {});
   },
 }));
 
@@ -174,5 +189,5 @@ export function can(permission: string) {
 }
 export function userKey(suffix: string) {
   const { apiUrl, user } = useSession.getState();
-  return apiUrl + ":" + user?.id + ":" + suffix;
+  return apiUrl + ":" + user?.id + ":" + (user?.dataEpoch || "legacy") + ":" + suffix;
 }

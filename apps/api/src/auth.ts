@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   UnauthorizedException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import {
   createHash,
@@ -53,6 +54,7 @@ export const permissionCatalog = [
 export type Permission = (typeof permissionCatalog)[number];
 export interface User {
   id: string;
+  dataEpoch?: string;
   username: string;
   name: string;
   owner: boolean;
@@ -97,7 +99,7 @@ export class AuthService {
 
   async user(id: string): Promise<User> {
     const result = await this.db.pool.query(
-      "SELECT id,username,name,owner,active,must_change_password,warehouse_ids FROM users WHERE id=$1",
+      "SELECT id,username,name,owner,active,must_change_password,warehouse_ids,COALESCE((SELECT value #>> '{}' FROM settings WHERE key='data_epoch'),'legacy') data_epoch FROM users WHERE id=$1",
       [id],
     );
     const row = result.rows[0];
@@ -111,6 +113,7 @@ export class AuthService {
     ).rows;
     return {
       id: row.id,
+      dataEpoch: row.data_epoch,
       username: row.username,
       name: row.name,
       owner: row.owner,
@@ -181,6 +184,10 @@ export class SessionGuard implements CanActivate {
       !["/api/me", "/api/auth/password", "/api/auth/logout"].includes(path)
     ) {
       throw new ForbiddenException("Bạn cần đổi mật khẩu trước khi sử dụng.");
+    }
+    if (!path.startsWith("/api/admin/go-live/") && !["/api/me", "/api/auth/password", "/api/auth/logout"].includes(path)) {
+      const lock = (await this.db.pool.query("SELECT value FROM settings WHERE key='_go_live_lock'")).rows[0]?.value;
+      if (lock === true) throw new ServiceUnavailableException("Cửa hàng đang chuyển từ dữ liệu thử. Vui lòng thử lại sau.");
     }
     return true;
   }

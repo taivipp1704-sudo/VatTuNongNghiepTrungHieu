@@ -66,7 +66,7 @@ export class PublicController {
     await this.db.pool.query("SELECT 1");
     return {
       status: "ok",
-      service: "AgriStock",
+      service: "HTAgri",
       invoiceProvider: "NOT_CONFIGURED",
     };
   }
@@ -162,7 +162,7 @@ export class AppController {
     ).rows;
     const store = (
       await this.db.pool.query("SELECT value FROM settings WHERE key='store'")
-    ).rows[0]?.value ?? { name: "AgriStock", address: "", phone: "" };
+    ).rows[0]?.value ?? { name: "HTAgri", address: "", phone: "" };
     return {
       user: request.user,
       warehouses,

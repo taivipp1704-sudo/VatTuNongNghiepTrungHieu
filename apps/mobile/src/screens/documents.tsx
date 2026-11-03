@@ -808,7 +808,7 @@ export function Invoices() {
     try {
       await shareReceipt(
         item,
-        bootstrap.data?.store || { name: "AgriStock", address: "", phone: "" },
+        bootstrap.data?.store || { name: "HTAgri", address: "", phone: "" },
       );
     } catch {
       setError(

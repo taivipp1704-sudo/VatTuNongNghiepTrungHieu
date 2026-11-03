@@ -14,7 +14,7 @@ import { useSession } from "@/lib/session";
 import { SessionUser } from "@/types";
 
 const titles: Record<string, string> = {
-  "/": "AgriStock",
+  "/": "HTAgri",
   "/inventory": "Kho hàng",
   "/products": "Sản phẩm & kho hàng",
   "/barcode-labels": "In tem mã vạch",
@@ -72,6 +72,7 @@ export default function RootLayout() {
             queryClient.clear();
             useSession.getState().setUser(next);
           }
+          void queryClient.invalidateQueries({ refetchType: "active" });
         })
         .catch(() => {});
     };
@@ -127,7 +128,7 @@ export default function RootLayout() {
           screenOptions={{
             header: ({ options, navigation, back }) => (
               <AppHeader
-                title={String(options.title || "AgriStock")}
+                title={String(options.title || "HTAgri")}
                 back={Boolean(back) && options.headerBackVisible !== false}
                 onBack={() => navigation.goBack()}
               />
@@ -174,7 +175,7 @@ export default function RootLayout() {
                         : "Lịch sử kho"
                       : pathname === "/finance"
                         ? "Công nợ"
-                        : "AgriStock"),
+                        : "HTAgri"),
               }}
             />
             {[

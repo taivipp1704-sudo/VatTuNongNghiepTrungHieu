@@ -5,7 +5,7 @@ export type PhotoDraft = { uri: string; base64: string };
 export async function pickPhoto(camera = false): Promise<PhotoDraft | undefined> {
   if (camera) {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) throw new Error("Chưa có quyền camera. Vào Cài đặt > Ứng dụng > AgriStock > Quyền để cho phép Camera rồi thử lại.");
+    if (!permission.granted) throw new Error("Chưa có quyền camera. Vào Cài đặt > Ứng dụng > HTAgri > Quyền để cho phép Camera rồi thử lại.");
   }
   const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.85, allowsEditing: false, exif: false };
   const result = camera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);

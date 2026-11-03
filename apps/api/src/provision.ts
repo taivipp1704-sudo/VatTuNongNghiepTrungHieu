@@ -95,7 +95,7 @@ if (require.main === module) {
       username: process.env.AGRISTOCK_OWNER_USERNAME || "owner",
       password: process.env.AGRISTOCK_OWNER_PASSWORD,
       ownerName: process.env.AGRISTOCK_OWNER_NAME || "Chủ cửa hàng",
-      storeName: process.env.AGRISTOCK_STORE_NAME || "AgriStock",
+      storeName: process.env.AGRISTOCK_STORE_NAME || "HTAgri",
       warehouseName: process.env.AGRISTOCK_WAREHOUSE_NAME || "Kho cửa hàng",
     });
     console.log(

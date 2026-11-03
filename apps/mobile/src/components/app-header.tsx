@@ -84,7 +84,7 @@ export function AppHeader({
               numberOfLines={1}
               style={{ fontSize: 17, color: foreground, flexShrink: 1 }}
             >
-              {warehouse?.name || data.data?.store.name || "AgriStock"}
+              {warehouse?.name || data.data?.store.name || "HTAgri"}
             </AppText>
             <Icon name="chevron-down" color={foreground} size={18} />
           </Pressable>

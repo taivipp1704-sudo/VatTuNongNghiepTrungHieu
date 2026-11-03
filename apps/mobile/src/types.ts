@@ -1,4 +1,5 @@
 export interface SessionUser {
+  dataEpoch?: string;
   id: string;
   username: string;
   name: string;

@@ -180,7 +180,7 @@ export function Settings() {
         await Notifications.scheduleNotificationAsync({
           identifier,
           content: {
-            title: "AgriStock · Bắt đầu ngày làm việc",
+            title: "HTAgri · Bắt đầu ngày làm việc",
             body: "Mở ứng dụng để kiểm tra lô cận hạn, phiếu chờ duyệt và công nợ.",
           },
           trigger: {

@@ -7,7 +7,7 @@
     "start": "node --env-file-if-exists=../../.local/api.env dist/main.js",
     "seed": "node --env-file-if-exists=../../.local/api.env dist/seed.js",
     "provision": "node dist/provision.js",
-    "test": "node --test --test-concurrency=1 dist/integration.test.js dist/provision.test.js"
+    "test": "node --test --test-concurrency=1 dist/integration.test.js dist/provision.test.js dist/go-live.test.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

@@ -23,7 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     );
   return {
     ...config,
-    name: lanTest ? "AgriStock Test" : "AgriStock",
+    name: lanTest ? "HTAgri Test" : "HTAgri",
     slug: "agristock-mobile",
     scheme: lanTest ? "agristock-lan-test" : config.scheme,
     android: {
@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         },
       ],
-      ["expo-image-picker", { photosPermission: "Cho phép AgriStock chọn ảnh hàng hóa và ảnh giao hàng.", cameraPermission: "Cho phép AgriStock chụp ảnh hàng hóa và xác nhận giao hàng.", microphonePermission: false }],
+      ["expo-image-picker", { photosPermission: "Cho phép HTAgri chọn ảnh hàng hóa và ảnh giao hàng.", cameraPermission: "Cho phép HTAgri chụp ảnh hàng hóa và xác nhận giao hàng.", microphonePermission: false }],
       "./plugins/with-release-signing.cjs",
     ],
   };

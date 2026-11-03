@@ -7,12 +7,12 @@ const { createApp } = require('./dist/main');
     await db.onModuleInit();
     const existing = (await db.pool.query('SELECT COUNT(*)::int count FROM users')).rows[0].count;
     if (existing === 0) {
-      if (!process.env.AGRISTOCK_OWNER_PASSWORD) throw new Error('Initial owner password is required for the empty test store.');
+      if (!process.env.AGRISTOCK_OWNER_PASSWORD) throw new Error('Initial owner password is required for the empty operational store.');
       await provisionStore(db, {
         username: 'owner', password: process.env.AGRISTOCK_OWNER_PASSWORD,
-        ownerName: 'Chủ cửa hàng Trung Hiếu', storeName: 'Vật tư nông nghiệp Trung Hiếu · TEST', warehouseName: 'Kho thử nghiệm',
+        ownerName: 'Chủ cửa hàng Trung Hiếu', storeName: 'HTAgri', warehouseName: 'Kho cửa hàng',
       });
-      console.log('Initialized an empty test store; change the initial owner password in the app.');
+      console.log('Initialized an empty operational store; change the initial owner password in the app.');
     }
   } finally { await db.onModuleDestroy(); }
   delete process.env.AGRISTOCK_OWNER_PASSWORD;

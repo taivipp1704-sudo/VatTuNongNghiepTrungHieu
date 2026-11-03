@@ -1,0 +1,13 @@
+{
+  "source": "User supplied HTAgri logo",
+  "method": "Original pixels retained; connected neutral outer background excluded; cropped to rounded tile",
+  "crop": {
+    "left": 81,
+    "top": 65,
+    "width": 853,
+    "height": 885
+  },
+  "roundedCornersTransparent": true,
+  "derivatives": "sharp sizing for Expo launcher, adaptive icon, splash and favicon",
+  "aiExtractionCandidateUsed": false
+}

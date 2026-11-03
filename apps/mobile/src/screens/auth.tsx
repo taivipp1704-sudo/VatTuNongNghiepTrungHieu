@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { router } from "expo-router";
 import { View } from "react-native";
+import { Image } from "expo-image";
 import { AppText as Text } from "@/components/text";
 import {
   Button,
@@ -53,6 +54,7 @@ export function Login() {
           paddingBottom: theme.space.xl,
         }}
       >
+        <Image source={require("../../assets/images/htagri-logo.png")} accessible accessibilityLabel="Logo HTAgri" contentFit="contain" style={{ width: 96, height: 96 }} />
         <View
           style={{
             backgroundColor: theme.colors.soft,
@@ -68,7 +70,7 @@ export function Login() {
               fontSize: theme.type.title,
             }}
           >
-            {isLanTestBuild ? "AgriStock Test" : "AgriStock"}
+            {isLanTestBuild ? "HTAgri Test" : "HTAgri"}
           </Text>
         </View>
         <Text
@@ -148,7 +150,7 @@ export function Login() {
           ? "Bản kiểm thử qua Wi-Fi. Máy tính chạy máy chủ cần được bật và cùng mạng với điện thoại."
           : isOperationalBuild
             ? "Chỉ sử dụng tài khoản được cửa hàng cấp."
-            : "Chỉ sử dụng tài khoản được cửa hàng cấp. Dữ liệu ban đầu là dữ liệu minh họa."}
+            : "Chỉ sử dụng tài khoản được cửa hàng cấp. Dữ liệu được cập nhật từ thao tác thực tế tại cửa hàng."}
       </Caption>
     </Page>
   );

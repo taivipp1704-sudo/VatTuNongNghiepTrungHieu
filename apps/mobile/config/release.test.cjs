@@ -70,6 +70,8 @@ test("release cannot silently use a development server and keeps a private signi
     assert.equal(config.extra.agristock.apiUrl, "https://api.cuahang.vn");
     assert.equal(config.extra.agristock.release, true);
     assert.equal(config.android.versionCode, 2);
+    assert.equal(config.name, "HTAgri");
+    assert.equal(config.android.adaptiveIcon.monochromeImage, undefined);
     assert.equal(config.android.allowBackup, false);
     assert.equal(
       config.plugins.find(
@@ -108,7 +110,7 @@ test("LAN testing uses a separate app, accepts HTTP and cannot mix with the oper
     process.env.AGRISTOCK_ALLOW_HTTP = "1";
     process.env.EXPO_PUBLIC_API_URL = "http://192.168.1.63:3001";
     const config = configure({ config: base });
-    assert.equal(config.name, "AgriStock Test");
+    assert.equal(config.name, "HTAgri Test");
     assert.equal(config.android.package, "vn.agristock.internal.lantest");
     assert.equal(config.extra.agristock.apiUrl, "http://192.168.1.63:3001");
     assert.equal(config.extra.agristock.release, false);

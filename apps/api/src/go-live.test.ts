@@ -1,0 +1,92 @@
+import "reflect-metadata";
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { randomUUID, createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { Pool } from "pg";
+import { createApp } from "./main";
+import { Database } from "./db";
+import { provisionStore } from "./provision";
+import { goLiveTables } from "./go-live";
+
+test("one-time go-live backs up, rejects stale/unauthorized resets, clears test data atomically and keeps operational writes", async () => {
+  const config = JSON.parse(readFileSync(resolve(__dirname, "../../../.local/postgres.json"), "utf8"));
+  const name = "agristock_go_live_" + randomUUID().replaceAll("-", "");
+  const base = `postgresql://${config.user}:${config.password}@127.0.0.1:${config.port}/`;
+  const admin = new Pool({ connectionString: base + "postgres" });
+  const previous = { url: process.env.DATABASE_URL, mode: process.env.NODE_ENV };
+  await admin.query("CREATE DATABASE " + name);
+  process.env.DATABASE_URL = base + name; process.env.NODE_ENV = "test";
+  let app = await createApp();
+  await app.listen(0, "127.0.0.1");
+  let origin = await app.getUrl();
+  let db = app.get(Database);
+  const password = randomUUID() + randomUUID();
+  let token = "";
+  const call = (path: string, body?: unknown, auth = token) => fetch(origin + "/api" + path, { method: body === undefined ? "GET" : "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + auth, "Idempotency-Key": randomUUID() }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const count = async (table: string) => (await db.pool.query("SELECT COUNT(*)::int n FROM " + table)).rows[0].n;
+  try {
+    const owner = await provisionStore(db, { username: "owner", password, ownerName: "Chủ cửa hàng QA", storeName: "Vật tư nông nghiệp Trung Hiếu · TEST", warehouseName: "Kho thử nghiệm" });
+    await db.pool.query("UPDATE users SET must_change_password=false");
+    await db.pool.query("INSERT INTO users(id,username,name,password_hash,warehouse_ids,must_change_password) SELECT $1,'tester','Tài khoản thử',password_hash,warehouse_ids,false FROM users WHERE id=$2", [randomUUID(), owner.ownerId]);
+    await db.pool.query("INSERT INTO products(id,sku,name,category,base_unit,pack_unit,pack_factor,price_base,price_pack,cost_base) VALUES($1,'TEST-01','Hàng mẫu','Phân bón','kg','bao',50,100,5000,80)", [randomUUID()]);
+    const login = await (await call("/auth/login", { username: "owner", password })).json(); token = login.token;
+    const employee = await (await call("/auth/login", { username: "tester", password })).json();
+    assert.equal((await call("/admin/go-live/prepare", {}, "")).status, 401);
+    assert.equal((await call("/admin/go-live/prepare", {}, employee.token)).status, 403);
+    assert.equal((await call("/admin/go-live/backup")).status, 409);
+    assert.equal((await call("/admin/go-live/prepare", {})).status, 201);
+    assert.equal((await call("/inventory")).status, 503);
+    assert.equal((await call("/admin/go-live/cancel", {})).status, 201);
+    assert.equal((await call("/inventory")).status, 200);
+    await call("/admin/go-live/prepare", {});
+    async function backup() {
+      const result = await call("/admin/go-live/backup"); assert.equal(result.status, 200);
+      const bytes = Buffer.from(await result.arrayBuffer());
+      const snapshot = JSON.parse(gunzipSync(bytes).toString("utf8"));
+      assert.equal(snapshot.format, "agristock-backup-v1");
+      assert.equal(snapshot.tables.users.length, 2); assert.equal(snapshot.tables.products.length, 1);
+      assert.equal(snapshot.tables.sessions, undefined);
+      const fingerprint = result.headers.get("x-htagri-fingerprint");
+      assert.equal(fingerprint, createHash("sha256").update(JSON.stringify(snapshot.tables)).digest("hex"));
+      const backupSha256 = createHash("sha256").update(bytes).digest("hex");
+      assert.equal(backupSha256, result.headers.get("x-content-sha256"));
+      return { confirmation: "CLEAR_TEST_DATA_FOR_HTAGRI", fingerprint, backupSha256 };
+    }
+    const stale = await backup();
+    await db.pool.query("UPDATE products SET price_base=101");
+    assert.equal((await call("/admin/go-live/reset", stale)).status, 409); assert.equal(await count("products"), 1);
+    const ready = await backup();
+    assert.equal((await call("/admin/go-live/reset", { ...ready, confirmation: "wrong" })).status, 400);
+    await db.pool.query("CREATE TABLE unexpected_table(id int)");
+    assert.equal((await call("/admin/go-live/reset", ready)).status, 409); assert.equal(await count("users"), 2);
+    await db.pool.query("DROP TABLE unexpected_table");
+    const response = await call("/admin/go-live/reset", ready); assert.equal(response.status, 201);
+    const cleared = await response.json(); assert.equal(cleared.cleared, true);
+    for (const table of goLiveTables.filter(t => !["warehouses", "users", "roles", "user_roles", "settings", "audit_log"].includes(t))) assert.equal(await count(table), 0, table);
+    assert.equal(await count("users"), 1); assert.equal(await count("sessions"), 0);
+    assert.equal((await call("/me")).status, 401);
+    assert.equal((await call("/auth/login", { username: "tester", password })).status, 401);
+    const next = await (await call("/auth/login", { username: "owner", password })).json();
+    token = next.token; assert.equal(next.user.mustChangePassword, true); assert.equal(next.user.dataEpoch, cleared.dataEpoch);
+    assert.equal((await call("/inventory")).status, 403);
+    // Only a fixture credential changes here; real owner password is handed to the user.
+    const changed = await call("/auth/password", { currentPassword: password, newPassword: randomUUID() + randomUUID() });
+    assert.equal(changed.status, 201);
+    assert.equal((await call("/admin/go-live/prepare", {})).status, 404);
+    const product = { sku: "LIVE-01", name: "Hàng vận hành", category: "Phân bón", baseUnit: "kg", packUnit: "bao", packFactor: 50, priceBase: 100, pricePack: 5000, costBase: 80, minStock: 0, trackLots: true, technicalInfo: "" };
+    const created = await call("/products", product); assert.equal(created.status, 201, await created.text());
+    assert.equal(await count("products"), 1);
+    await app.close();
+    app = await createApp(); await app.listen(0, "127.0.0.1"); origin = await app.getUrl(); db = app.get(Database);
+    assert.equal(await count("products"), 1, "real writes survive server restart without seeding");
+    assert.equal((await db.pool.query("SELECT value FROM settings WHERE key='store'")).rows[0].value.name, "HTAgri");
+  } finally {
+    await app.close();
+    process.env.DATABASE_URL = previous.url;
+    if (previous.mode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previous.mode;
+    await admin.query("DROP DATABASE " + name); await admin.end();
+  }
+});

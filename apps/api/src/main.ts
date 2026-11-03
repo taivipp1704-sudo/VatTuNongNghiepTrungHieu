@@ -18,6 +18,7 @@ import { AppController, PublicController } from "./controller";
 import { PhotoController, Photos } from "./photos";
 import { Reports } from "./reports";
 import { ManagementController } from "./management";
+import { GoLiveController } from "./go-live";
 
 @Catch()
 class ApiExceptionFilter implements ExceptionFilter {
@@ -52,7 +53,7 @@ class ApiExceptionFilter implements ExceptionFilter {
 }
 
 @Module({
-  controllers: [PublicController, AppController, PhotoController, ManagementController],
+  controllers: [PublicController, AppController, PhotoController, ManagementController, GoLiveController],
   providers: [
     Database,
     AuthService,

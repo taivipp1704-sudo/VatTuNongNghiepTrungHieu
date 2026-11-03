@@ -1,20 +1,25 @@
 {
   "expo": {
-    "name": "AgriStock",
+    "name": "HTAgri",
     "slug": "agristock-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "agristock",
     "userInterfaceStyle": "light",
-    "ios": { "bundleIdentifier": "vn.agristock.internal", "supportsTablet": true },
+    "ios": {
+      "bundleIdentifier": "vn.agristock.internal",
+      "supportsTablet": true
+    },
     "android": {
       "package": "vn.agristock.internal",
-      "permissions": ["CAMERA", "POST_NOTIFICATIONS"],
+      "permissions": [
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
-        "backgroundColor": "#164B35",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#057E74",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -29,10 +34,16 @@
         {
           "backgroundColor": "#F3F5EE",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 140
         }
       ],
-      ["expo-camera", { "cameraPermission": "Cho phép AgriStock quét mã sản phẩm.", "recordAudioAndroid": false }],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phÃ©p HTAgri quÃ©t mÃ£ sáº£n pháº©m.",
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-secure-store",
       "expo-sqlite",
       "expo-sharing",
