@@ -1,3 +1,15 @@
+# Kiểm tra mới nhất · HTAgri Android 17
+
+Ngày 03/11/2026: API/mobile TypeScript đạt; 35/35 bài API và 4/4 bài cấu hình phát hành đạt. Kiểm tra chuyển dữ liệu thử gồm chặn nhân viên/không đăng nhập, chế độ bảo trì, hủy bảo trì, bản sao lưu thay đổi bị từ chối, bảng lạ bị từ chối, sao lưu đủ, giữ owner, thu hồi phiên cũ, yêu cầu đổi mật khẩu, chặn chuyển lần hai và ghi sản phẩm thật còn sau khởi động lại.
+
+Cloud đã dọn dữ liệu thử sau khi tải bản sao lưu private, xác minh hash và khôi phục vào database QA riêng: đối chiếu toàn bộ hàng của 21 bảng, gồm ảnh. Hàng/lô/đối tác/đơn/phiếu/tiền/nợ/điểm/ảnh đều 0 ngay sau chuyển. Giữ một tài khoản owner và một kho mới; mật khẩu owner không bị đổi bởi agent. Các tài khoản thử bị xóa. API source 74842201a795e7b5927af3ea7cf172bed05c4137.
+
+Logo cắt từ ảnh người dùng: giữ pixel trong khung bo góc, loại nền trung tính nối với biên và ngôi sao ngoài khung, tạo ảnh alpha và kích cỡ launcher/splash/favicon bằng sharp. Bản tách AI được tạo để đối chiếu nhưng không dùng; asset cuối giữ ảnh gốc. Không đưa nền đen vào biểu tượng.
+
+CUA web kiểm tra được trang đăng nhập có logo/tên HTAgri, đăng nhập vào database QA trống, Tổng quan bằng 0 và danh sách hàng rỗng có hướng dẫn thêm sản phẩm. Khi kiểm tra lưu sản phẩm, kết nối CDP của trình duyệt hết thời gian chờ trước khi gửi lệnh; luồng lưu UI này chưa được xác nhận. Luồng ghi sản phẩm qua API và tồn tại sau khởi động lại đã đạt trong bài go-live. Không ghi sản phẩm QA vào cloud. Kết quả đóng gói Android được ghi sau khi ký. Native camera/in và iOS chưa nghiệm thu trong lần này. Hạ tầng Free chỉ dùng tạm theo lựa chọn người dùng; cần chuyển trước 30/11/2026.
+
+---
+
 # Kiểm tra mới nhất · Android 16
 
 Ngày 03/11/2026: khôi phục ảnh cánh đồng toàn nền Tổng quan, giữ bố cục và chức năng bản 15. Chỉ thay màu/lớp nền và tùy chọn surface của StoreRow (mặc định giữ trắng cho các màn khác). Backend không đổi.

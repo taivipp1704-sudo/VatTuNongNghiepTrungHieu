@@ -1,3 +1,13 @@
+# HTAgri — máy chủ dùng tạm cho cửa hàng
+
+Ngày 03/11/2026: đã sao lưu logic toàn database (trừ phiên đăng nhập), khôi phục vào database QA riêng và đối chiếu toàn bộ 21 bảng/các ảnh. Sau đó dọn dữ liệu thử theo yêu cầu người dùng trong một giao dịch; giữ một chủ cửa hàng, một kho trống và role chủ. Các bảng nghiệp vụ đều bằng 0; phiên cũ bị thu hồi, chủ cần đổi mật khẩu. Chức năng chuyển thử đã khóa sau hoàn tất. Kết quả không chứa bí mật tại artifacts/htagri-cloud-go-live-validation.json.
+
+Người dùng chọn dùng tạm hạ tầng hiện tại và chuyển trước 30/11/2026; không tạo tài nguyên trả phí. API source 74842201a795e7b5927af3ea7cf172bed05c4137, Render deployment dep-dbko4kss728c738tfjp0. Sao lưu trước dọn nằm riêng trong .local/backups, không công bố lên GitHub.
+
+Xem [cách bắt đầu](HTAGRI_START.md). Các đoạn bên dưới là lịch sử giai đoạn thử, không mô tả dữ liệu hiện tại.
+
+---
+
 # Môi trường thử AgriStock từ xa
 
 API: `https://agristock-trunghieu-test-1704.onrender.com`.

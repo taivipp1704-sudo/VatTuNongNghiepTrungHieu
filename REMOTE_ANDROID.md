@@ -1,6 +1,8 @@
-# Thử AgriStock Android từ xa — bản 16
+# HTAgri Android — bản 17
 
-[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/android-landscape-v16/AgriStock-internal-signed-16.apk). App có tên **AgriStock**, Android 7.0+ arm64, bản ký riêng số 16. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+[Tải APK](https://github.com/taivipp1704-sudo/VatTuNongNghiepTrungHieu/releases/download/htagri-android-v17/HTAgri-internal-signed-17.apk). App có tên **HTAgri**, Android 7.0+ arm64, bản ký riêng số 17. Đã cài sẵn API cloud `https://agristock-trunghieu-test-1704.onrender.com`. Người nhận dùng Wi-Fi bất kỳ hoặc 4G/5G; laptop của người phát triển có thể tắt. Không cần Expo Go hoặc Metro.
+
+Bản 17 đổi tên/logo thành HTAgri, giữ bố cục và ảnh nền bản 16. Cửa hàng cloud đã dọn dữ liệu thử, giữ tài khoản chủ và yêu cầu đổi mật khẩu sau khi đăng nhập lại. Bộ nhớ đệm/giỏ thử được loại bỏ theo thế hệ dữ liệu mới. Không có dữ liệu minh họa tự điền vào ứng dụng. Xem [bắt đầu vận hành nội bộ](HTAGRI_START.md). Theo lựa chọn của chủ dự án, dùng tạm Render Free và chuyển dữ liệu trước 30/11/2026.
 
 Bản 16 giữ bố cục picture của bản 15 và đưa ảnh cánh đồng chìm về toàn nền Tổng quan. Khối doanh thu dùng xanh trong suốt, các nhóm phía dưới dùng lớp sáng để đọc rõ. Giữ lối tắt bốn cột, chức năng và máy chủ hiện tại. Cài cập nhật trực tiếp, không cần gỡ bản trước.
 

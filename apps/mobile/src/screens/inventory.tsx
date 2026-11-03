@@ -319,7 +319,7 @@ export default function Inventory() {
         }
         ListEmptyComponent={
           query.data ? (
-            <Empty message="Không có hàng hóa phù hợp với bộ lọc." />
+            <Empty message={search.trim() || category !== "all" || filter !== "all" ? "Không có hàng hóa phù hợp với bộ lọc." : can("products.manage") && can("inventory.cost.view") ? "Chưa có hàng hóa. Bấm dấu + để thêm sản phẩm đầu tiên." : "Chưa có hàng hóa trong kho được cấp quyền."} />
           ) : undefined
         }
         ListFooterComponent={
